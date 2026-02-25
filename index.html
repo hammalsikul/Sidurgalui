@@ -237,7 +237,7 @@ function checkLoaded() {
 }
 window._fbListen('constraints',    v => { window._allC=v||{}; loaded.c=true; checkLoaded(); if(window._appReady&&window._currentPage==='home')renderHome(); });
 window._fbListen('vacations',      v => { window._allV=Array.isArray(v)?v:Object.values(v||{}); loaded.v=true; checkLoaded(); if(window._appReady&&window._currentPage==='home')renderHome(); });
-window._fbListen('schedule',       v => { const s=v||{}; window._schedule=s.schedule||{}; window._schedReady=s.schedReady||false; loaded.s=true; checkLoaded(); });
+window._fbListen('schedule',       v => { const s=v||{}; window._schedule=s.schedule||{}; window._schedReady=s.schedReady||false; window._schedOfficial=s.official||false; loaded.s=true; checkLoaded(); });
 window._fbListen('sick',           v => { window._allSick=Array.isArray(v)?v:Object.values(v||{}); loaded.sk=true; checkLoaded(); if(window._appReady&&window._currentPage==='home')renderHome(); });
 window._fbListen('past_schedules', v => { window._pastSchedules=v||{}; loaded.p=true; checkLoaded(); });
 </script>
@@ -367,6 +367,7 @@ function get_schedule(){return window._schedule||{};}
 function get_schedReady(){return window._schedReady||false;}
 function get_allSick(){return window._allSick||[];}
 function get_pastSchedules(){return window._pastSchedules||{};}
+function get_schedOfficial(){return window._schedOfficial||false;}
 
 function saveC(d){
   window._allC=d;
@@ -377,13 +378,17 @@ function saveC(d){
   window._fbSet('constraints',d).then(()=>setSyncing(false));
 }
 function saveV(d){window._allV=d;setSyncing(true);window._fbSet('vacations',d).then(()=>setSyncing(false));}
-function saveS(s,r){
-  window._schedule=s;window._schedReady=r;setSyncing(true);
-  // Archive current month when saving
+function saveS(s,r,official,warnIfOfficial){
+  if(warnIfOfficial&&window._schedOfficial){
+    if(!confirm('⚠️ הסידור הרשמי כבר פורסם!\nשינויים ידניים עלולים לפגוע בסידור המאושר.\nלהמשיך?'))return;
+  }
+  window._schedule=s;window._schedReady=r;
+  if(official!==undefined)window._schedOfficial=official;
+  setSyncing(true);
   const key=`${SCHEDULE_DAYS[0]?.year}_${SCHEDULE_DAYS[0]?.month}`;
   const past=get_pastSchedules();past[key]={schedule:s,schedReady:r,month:SCHEDULE_DAYS[0]?.month,year:SCHEDULE_DAYS[0]?.year,label:MONTH_LABEL};
   window._fbSet('past_schedules',past).catch(()=>{});
-  window._fbSet('schedule',{schedule:s,schedReady:r}).then(()=>setSyncing(false));
+  window._fbSet('schedule',{schedule:s,schedReady:r,official:window._schedOfficial||false}).then(()=>setSyncing(false));
 }
 function saveSick(d){window._allSick=d;setSyncing(true);window._fbSet('sick',d).then(()=>setSyncing(false));}
 
@@ -433,7 +438,8 @@ window._renderHome = function(){
   g('home-stat-v').textContent=allV.length;
   g('home-stat-p').textContent=pend;
   g('home-prog').style.width=(total?sub/total*100:0)+'%';
-  g('home-avatars').innerHTML=ALL_WORKERS.map(n=>{const s=allC[n]?.submitted;const col=POP_COLOR[POP_MAP[n]];return`<div class="avatar" title="${n}" style="background:${s?col:'#1e2a40'};border:2px solid ${s?col:'#243048'};color:${s?'white':'#64748b'}">${n[0]}</div>`;}).join('');
+  const today_d=new Date().getDate();
+  g('home-avatars').innerHTML=ALL_WORKERS.map(n=>{const wd=allC[n];const s=wd?.submitted;const col=POP_COLOR[POP_MAP[n]];const earlyBadge=s&&wd?.submittedAt&&new Date(wd.submittedAt).getDate()<=10?'⭐':'';return`<div class="avatar" title="${n}${earlyBadge?' — הגשה מוקדמת ⭐':''}" style="background:${s?col:'#1e2a40'};border:2px solid ${s?col:'#243048'};color:${s?'white':'#64748b'}">${n[0]}${earlyBadge}</div>`;}).join('');
   if(activeSick>0){show('home-sick-banner');g('home-sick-banner').textContent=`🚨 ${activeSick} דיווח מחלה פעיל — לחץ לפרטים`;}else hide('home-sick-banner');
   decided>0?show('home-vac-badge'):hide('home-vac-badge');
   // Alert: days 15-22 of month
@@ -594,9 +600,29 @@ function submitCons(){
   if(pop==='student'){const fC=cons.filter(c=>new Date(yr,c.month-1,c.day).getDay()===5&&c.type==='prefer').length,sC=cons.filter(c=>new Date(yr,c.month-1,c.day).getDay()===6&&c.type==='prefer').length;if(fC<2||sC<2){toast('❌ חסר שישי/שבת (מינימום 2 כ"א)');return;}if(cons.reduce((s,c)=>(SHIFT_HOURS[c.shiftKey]||8)+s,0)<80){toast('❌ מינימום 80h');return;}}
   if(pop==='keva'){const fC=cons.filter(c=>new Date(yr,c.month-1,c.day).getDay()===5&&c.type==='prefer').length,sC=cons.filter(c=>new Date(yr,c.month-1,c.day).getDay()===6&&c.type==='prefer').length;if(fC<1||sC<1){toast('❌ חסר שישי/שבת');return;}}
   if(!cons.length){toast('⚠️ אין בחירות');return;}
-  saveC({...allC,[window._empWorker]:{...wData,submitted:true}});toast('✅ נשלח למפקד!');renderConsPanel();
+  const allCBefore=get_allC();const prevSubmitted=allCBefore[window._empWorker]?.submitted;
+  const wasEarly=()=>{const now=new Date();return now.getDate()<=10;};// submitted before 10th = early
+  saveC({...allC,[window._empWorker]:{...wData,submitted:true,submittedAt:new Date().toISOString()}});
+  // praise logic
+  const praises=['כל הכבוד! הגשת אילוצים מהר — זה עוזר לנו לבנות סידור טוב יותר 🌟', 'ברוכה! הגשה מוקדמת כזו מקלה על כולם 🏆', 'ממש מדהים — אחת הראשונות להגיש! 💪'];
+  const praiseChange=['תודה על הגמישות! השינוי שביצעת עוזר לסידור להיות מבצעי יותר 🙏', 'כל הכבוד על הנכונות לשנות — זה רוח צוות אמיתית ⭐', 'השינוי שלך תורם לכולם — תודה! 💙'];
+  if(!prevSubmitted&&wasEarly()){
+    setTimeout(()=>{showPraise(praises[Math.floor(Math.random()*praises.length)]);},400);
+  } else if(prevSubmitted){
+    setTimeout(()=>{showPraise(praiseChange[Math.floor(Math.random()*praiseChange.length)]);},400);
+  } else {
+    toast('✅ נשלח למפקד!');
+  }
+  renderConsPanel();
 }
 function unsubmitCons(){const allC=get_allC();const wData=allC[window._empWorker]||{};saveC({...allC,[window._empWorker]:{...wData,submitted:false}});renderConsPanel();}
+function showPraise(msg){
+  const el=document.createElement('div');
+  el.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,#0f2a1e,#0a1f2e);border:2px solid #6ee7b7;border-radius:16px;padding:1.5rem 2rem;z-index:99999;max-width:320px;text-align:center;box-shadow:0 0 40px rgba(110,231,183,.2)';
+  el.innerHTML=`<div style="font-size:1.5rem;margin-bottom:.5rem">🌟</div><div style="color:#6ee7b7;font-weight:700;font-size:.95rem;line-height:1.5">${msg}</div><button onclick="this.parentNode.remove()" style="margin-top:.9rem;background:#059669;color:white;border:none;padding:.4rem 1.2rem;border-radius:8px;cursor:pointer;font-family:Heebo,sans-serif;font-weight:700">תודה! 💙</button>`;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove&&el.remove(),6000);
+}
 function renderMySchedPanel(){
   const schedule=get_schedule(),schedReady=get_schedReady();
   if(!schedReady){g('emp-panel-sched').innerHTML='<div style="text-align:center;color:#64748b;padding:2rem">הסידור טרם נוצר</div>';return;}
@@ -629,8 +655,62 @@ function mgrReject(id){const allV=get_allV();saveV(allV.map(v=>v.id===id?{...v,s
 
 let mgrSchedView='week',mgrSchedWeek=0;
 function renderMgrSched(){
-  const weeks=getWeeks();
-  g('mgr-panel-sched').innerHTML=`<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;align-items:center"><button class="btn btn-blue" style="padding:.55rem 1rem;font-size:.88rem" onclick="runGenerate()">⚡ צור סידור</button>${get_schedReady()?`<button class="btn" style="background:#1e2a40;color:#94a3b8;font-size:.78rem" onclick="toggleSchedView()">${mgrSchedView==='week'?'🗓 חודשי':'📅 שבועי'}</button>`:''}</div><div id="sched-output">${get_schedReady()?buildSchedOutput():'<div style="text-align:center;color:#475569;padding:2rem">לחץ ⚡ צור סידור</div>'}</div>`;
+  const ready=get_schedReady(),official=get_schedOfficial();
+  const officialBadge=official?`<span style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);padding:.2rem .55rem;border-radius:6px;font-size:.72rem;font-weight:700">✅ רשמי</span>`:'';
+  const btns=`<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;align-items:center">
+    <button class="btn btn-blue" style="padding:.55rem 1rem;font-size:.88rem" onclick="runGenerate()">⚡ צור סידור</button>
+    ${ready?`<button class="btn" style="background:#1e2a40;color:#94a3b8;font-size:.78rem" onclick="toggleSchedView()">${mgrSchedView==='week'?'🗓 חודשי':'📅 שבועי'}</button>`:''}
+    ${ready&&!official?`<button class="btn" style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);font-size:.78rem" onclick="makeOfficial()">📌 הגדר כרשמי</button>`:''}
+    ${ready?`<button class="btn" style="background:rgba(37,99,235,.15);color:#93c5fd;border:1px solid rgba(37,99,235,.4);font-size:.78rem" onclick="downloadPDF()">📄 הורד PDF</button>`:''}
+    ${officialBadge}
+  </div>`;
+  g('mgr-panel-sched').innerHTML=btns+`<div id="sched-output">${ready?buildSchedOutput():'<div style="text-align:center;color:#475569;padding:2rem">לחץ ⚡ צור סידור</div>'}</div>`;
+}
+function makeOfficial(){
+  if(!confirm('להגדיר סידור זה כרשמי?\nלאחר מכן כל שינוי יציג אזהרה.'))return;
+  saveS(get_schedule(),true,true,false);
+  toast('📌 הסידור הוגדר כרשמי!');renderMgrSched();
+}
+function downloadPDF(){
+  const el=document.getElementById('sched-output');
+  if(!el)return;
+  // open print dialog with schedule content
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>סידור ${MONTH_LABEL}</title>
+  <style>
+    body{font-family:Arial,sans-serif;direction:rtl;font-size:10px;color:#000;background:#fff}
+    table{border-collapse:collapse;width:100%;margin-bottom:12px}
+    th,td{border:1px solid #999;padding:3px 4px;text-align:center;font-size:9px}
+    th{background:#eee;font-weight:bold}
+    h2{font-size:14px;margin-bottom:8px}
+    .official{color:green;font-weight:bold}
+    .week-title{font-weight:bold;margin:8px 0 4px;font-size:11px}
+    @media print{button{display:none}}
+  </style></head><body>
+  <h2>⬡ הסידור הגלוי — ${MONTH_LABEL} ${get_schedOfficial()?'<span class="official">✅ רשמי</span>':''}</h2>
+  ${buildPDFTable()}
+  <br><button onclick="window.print()">🖨️ הדפס / שמור PDF</button>
+  </body></html>`);
+  win.document.close();
+}
+function buildPDFTable(){
+  const schedule=get_schedule();const weeks=getWeeks();const shL={a:'א׳ 07:00-15:00',b:'ב׳ 15:00-21:30',c:'ג׳ 21:30-07:00'};
+  return weeks.map((wk,wi)=>{
+    const headers=wk.map(d=>`<th>${HEB_DAYS[d.jsDay]}<br>${d.label}${d.holiday?'<br>'+d.holiday.name:''}</th>`).join('');
+    const rows=SHIFTS_K.map(sh=>{
+      const cells=wk.map(d=>{
+        const sk=`${d.day}-${d.month}`;const slot=schedule[sk]||{};
+        // ordered: keva, achmash, desks
+        const names=[];
+        if(slot[`${sh.key}_keva`])names.push(slot[`${sh.key}_keva`]);
+        if(slot[`${sh.key}_achmash`])names.push('אחמ"ש: '+slot[`${sh.key}_achmash`]);
+        DESKS.forEach(desk=>{if(slot[`${sh.key}_${desk}`])names.push(slot[`${sh.key}_${desk}`]);if(slot[`${sh.key}_${desk}_stu`])names.push(slot[`${sh.key}_${desk}_stu`]);if(slot[`${sh.key}_${desk}_extra`])names.push(slot[`${sh.key}_${desk}_extra`]);});
+        return`<td style="font-size:8px">${names.join('<br>')}</td>`;
+      }).join('');
+      return`<tr><td style="background:#eee;font-weight:bold;white-space:nowrap">${shL[sh.key]}</td>${cells}</tr>`;
+    }).join('');
+    return`<div class="week-title">שבוע ${wi+1}</div><table><thead><tr><th>משמרת</th>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
+  }).join('');
 }
 function buildSchedOutput(){
   const weeks=getWeeks();
@@ -668,9 +748,23 @@ function buildWeekTable(week){
     const note=name?getSpecialNote(name,dayObj?.jsDay??-1,shKey):null;
     let bg,border,labelEl='';
     if(isAch){bg=empty?'rgba(220,38,38,.08)':'rgba(16,185,129,.06)';border=empty?'rgba(220,38,38,.5)':'rgba(16,185,129,.4)';labelEl=`<div class="cell-label" style="color:${empty?'#fca5a5':'#10b981'}">אחמ"ש${empty?' ⚠️':''}</div>`;}
+    else if(field==='keva'||field.endsWith('_keva')){bg='rgba(245,158,11,.1)';border='#f59e0b';labelEl=`<div class="cell-label" style="color:#fcd34d">פיקוד</div>`;}
     else if(dc&&name){bg=dc.bg;border=dc.border;labelEl=`<div class="cell-label" style="color:${dc.text}">${dc.label}</div>`;}
     else{bg='transparent';border='rgba(100,116,139,.2)';}
     return`<div class="cell-inner" style="background:${bg};border-color:${border}" onclick="openCellModal('${sk}','${shKey}_${field}')">${labelEl}<div style="color:${dc?dc.text:empty?'#374151':'#e2e8f0'}">${name||''}</div>${note?`<div style="font-size:.44rem;color:#fcd34d;font-weight:700">${note}</div>`:''}</div>`;
+  };
+  // build ordered cell list per day per shift: keva first, then achmash, then desks
+  const orderedCells=(sk,shKey,d)=>{
+    let html='';
+    html+=cellHTML(sk,shKey,'keva');
+    html+=cellHTML(sk,shKey,'achmash');
+    DESKS.forEach(desk=>{
+      html+=cellHTML(sk,shKey,desk);
+      html+=cellHTML(sk,shKey,desk+'_stu');
+      const slot=schedule[sk]||{};
+      if(slot[`${shKey}_${desk}_extra`])html+=cellHTML(sk,shKey,desk+'_extra');
+    });
+    return html;
   };
   const headers=week.map(d=>{const h=d.holiday;return`<th style="min-width:72px;background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.06)':d.isWeekend?'rgba(245,158,11,.04)':'#080c14'}"><div style="font-weight:800;color:${h?HOLIDAY_TEXT[h.type]||'#c4b5fd':d.isWeekend?'#fcd34d':'#e2e8f0'};font-size:.68rem">${HEB_DAYS[d.jsDay]}</div><div style="font-size:.55rem;color:${h?HOLIDAY_TEXT[h.type]:'#64748b'}">${d.label}</div>${h?`<div style="font-size:.48rem;color:${HOLIDAY_TEXT[h.type]||'#c4b5fd'}">${h.name}</div>`:''}</th>`;}).join('');
   const rows=SHIFTS_K.map(sh=>`<tr><td style="background:#080c14;position:sticky;right:0;z-index:1;white-space:nowrap;padding:.35rem .4rem;min-width:68px"><div style="font-weight:700;color:#e2e8f0;font-size:.68rem">משמרת ${sh.label}</div><div style="font-size:.52rem;color:#64748b">${sh.time}</div></td>${week.map(d=>{const sk=`${d.day}-${d.month}`;const h=d.holiday;let cells='';if(d.isWeekend){if(d.isFri||(d.isSat&&sh.key!=='c')){if(sh.key==='a'||sh.key==='b')cells+=cellHTML(sk,sh.key,'keva');cells+=DESKS.map(desk=>cellHTML(sk,sh.key,desk+'_stu')).join('');}else if(d.isSat&&sh.key==='c')cells+=DESKS.map(desk=>cellHTML(sk,sh.key,desk)).join('');}else{if(sh.key==='a'||sh.key==='b'){cells+=cellHTML(sk,sh.key,'keva');cells+=cellHTML(sk,sh.key,'achmash');}cells+=DESKS.map(desk=>cellHTML(sk,sh.key,desk)+cellHTML(sk,sh.key,desk+'_stu')).join('');}return`<td style="background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.04)':d.isWeekend?'rgba(245,158,11,.02)':'transparent'};min-width:72px">${cells}</td>`;}).join('')}</tr>`).join('');
@@ -685,21 +779,25 @@ function openCellModal(sk,field){
   g('modal-box').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem"><div style="font-weight:900;font-size:.9rem">✏️ ${day?.label}${day?.holiday?' — '+day.holiday.name:''}</div><button onclick="closeModal()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:1.3rem">✕</button></div><div style="display:flex;flex-direction:column;gap:.3rem;margin-bottom:.6rem">${pool.map(r=>{const dc2=getDeskColor(r.name);return`<button onclick="cellSet('${sk}','${field}','${r.name}')" style="text-align:right;padding:.4rem .6rem;border-radius:7px;border:1px solid ${dc2.border}40;background:${current===r.name?'#1e3a5f':'#0f1623'};color:#e2e8f0;cursor:pointer;font-family:Heebo,sans-serif"><span style="color:${dc2.text};font-weight:700">${r.name}</span> <span style="font-size:.62rem;background:${dc2.bg};color:${dc2.text};padding:.1rem .35rem;border-radius:4px;border:1px solid ${dc2.border}40">${dc2.label}</span> <span style="font-size:.6rem;color:#64748b">${POP_LABEL[r.pop]}</span></button>`;}).join('')}</div><button onclick="cellSet('${sk}','${field}',null)" style="width:100%;background:rgba(220,38,38,.1);color:#fca5a5;border:1px solid rgba(220,38,38,.25);padding:.5rem;border-radius:7px;cursor:pointer;font-family:Heebo,sans-serif">🗑 פנה תא</button>`;
   g('modal').classList.add('show');
 }
-function cellSet(sk,field,name){const schedule=get_schedule();const ns={...schedule,[sk]:{...schedule[sk],[field]:name||null}};saveS(ns,get_schedReady());closeModal();toast(name?`✏️ ${name}`:'🗑');renderMgrSched();}
+function cellSet(sk,field,name){const schedule=get_schedule();const ns={...schedule,[sk]:{...schedule[sk],[field]:name||null}};saveS(ns,get_schedReady(),undefined,true);closeModal();toast(name?`✏️ ${name}`:'🗑');renderMgrSched();}
 function closeModal(){g('modal').classList.remove('show');}
 g('modal').addEventListener('click',e=>{if(e.target===g('modal'))closeModal();});
 
-// ══════ SCHEDULING ENGINE (5 shifts/week for bashal+keva, night logic) ══════
-function canAssign(name,day,month,shKey,usedToday,monthC,wkC,lastS,stuH){
+// ══════ SCHEDULING ENGINE ══════
+function canAssign(name,day,month,shKey,usedToday,monthC,wkC,lastS,stuH,sunOff){
   const allC=get_allC(),allV=get_allV();
   const w=ROSTER.find(r=>r.name===name);if(!w||usedToday.has(name))return false;
-  const yr=SCHEDULE_DAYS[0]?.year||new Date().getFullYear(),jd=new Date(yr,month-1,day).getDay(),isFri=jd===5,isSat=jd===6;
+  const yr=SCHEDULE_DAYS[0]?.year||new Date().getFullYear(),jd=new Date(yr,month-1,day).getDay(),isFri=jd===5,isSat=jd===6,isSun=jd===0;
   if(allV.some(v=>v.status==='approved'&&v.worker===name&&v.days?.some(d=>d.day===day&&d.month===month)))return false;
   if((allC[name]?.constraints||[]).some(c=>c.day===day&&c.month===month&&c.shiftKey===shKey&&c.type==='block'))return false;
+  // no א after ג (consecutive)
   if(shKey==='a'&&lastS[name]==='c')return false;
+  // no ג after ג
   if(shKey==='c'&&lastS[name]==='c')return false;
+  // Sunday off if worked Saturday night (sat night = 6th shift, gets sun free)
+  if(isSun&&sunOff&&sunOff[name])return false;
   // ראשון: בנות שירות מסוימות — בוקר בלבד
-  if(SUN_MORNING_ONLY.includes(name)&&jd===0&&(shKey==='b'||shKey==='c'))return false;
+  if(SUN_MORNING_ONLY.includes(name)&&isSun&&(shKey==='b'||shKey==='c'))return false;
   if(w.pop==='keva'&&shKey==='c')return false;
   if(w.pop==='bashal'){if(isFri)return false;if(isSat&&(shKey==='a'||shKey==='b'))return false;}
   if(w.pop==='student'&&isSat&&shKey==='c')return false;
@@ -718,42 +816,59 @@ function scoreW(name,day,month,shKey,monthC){
   return s+(Math.random()-.5)*.4;
 }
 function runGenerate(){
-  const monthC={},wkC={},lastS={},stuH={};const sched={};
+  const monthC={},wkC={},lastS={},stuH={},sunOff={};const sched={};
   SCHEDULE_DAYS.forEach(({day,month,isWeekend,isFri,isSat,jsDay})=>{
     const sk=`${day}-${month}`;sched[sk]={};const usedToday=new Set();
-    if(jsDay===0)Object.keys(wkC).forEach(n=>wkC[n]=0);
-    const elig=(filter,shKey)=>ROSTER.filter(r=>filter(r)&&canAssign(r.name,day,month,shKey,usedToday,monthC,wkC,lastS,stuH)).sort((a,b)=>scoreW(a.name,day,month,shKey,monthC)-scoreW(b.name,day,month,shKey,monthC));
-    const assign=(name,field,shKey)=>{if(!name)return;sched[sk][`${shKey}_${field}`]=name;usedToday.add(name);monthC[name]=(monthC[name]||0)+1;wkC[name]=(wkC[name]||0)+1;lastS[name]=shKey;if(POP_MAP[name]==='student')stuH[name]=(stuH[name]||0)+(SHIFT_HOURS[shKey]||8);};
+    // reset weekly counter on Sunday
+    if(jsDay===0){Object.keys(wkC).forEach(n=>wkC[n]=0);Object.keys(sunOff).forEach(n=>delete sunOff[n]);}
+    const elig=(filter,shKey)=>ROSTER.filter(r=>filter(r)&&canAssign(r.name,day,month,shKey,usedToday,monthC,wkC,lastS,stuH,sunOff)).sort((a,b)=>scoreW(a.name,day,month,shKey,monthC)-scoreW(b.name,day,month,shKey,monthC));
+    const assign=(name,field,shKey,isSatNight)=>{
+      if(!name)return;
+      sched[sk][`${shKey}_${field}`]=name;
+      usedToday.add(name);
+      monthC[name]=(monthC[name]||0)+1;
+      wkC[name]=(wkC[name]||0)+1;
+      lastS[name]=shKey;
+      if(POP_MAP[name]==='student')stuH[name]=(stuH[name]||0)+(SHIFT_HOURS[shKey]||8);
+      // sat night = 6th shift -> get Sunday off (week resets to 4)
+      if(isSatNight){sunOff[name]=true;wkC[name]=Math.max(0,(wkC[name]||1)-1);}
+    };
     SHIFTS_K.forEach(sh=>{
       if(isWeekend){
-        if(isFri){const kp=elig(w=>w.pop==='keva',sh.key);if(kp.length)assign(kp[0].name,'keva',sh.key);DESKS.forEach(desk=>{const p=elig(w=>w.desk===desk&&w.pop==='student',sh.key);if(p.length)assign(p[0].name,desk+'_stu',sh.key);});}
-        else if(isSat&&sh.key==='c'){
-          // Night shift logic
+        if(isFri){
+          const kp=elig(w=>w.pop==='keva',sh.key);if(kp.length)assign(kp[0].name,'keva',sh.key);
+          DESKS.forEach(desk=>{const p=elig(w=>w.desk===desk&&w.pop==='student',sh.key);if(p.length)assign(p[0].name,desk+'_stu',sh.key);});
+        } else if(isSat&&sh.key==='c'){
+          // Saturday night — assign bashal, mark as sat-night (6th shift, get Sun off)
           DESKS.forEach(desk=>{
             const p=elig(w=>w.desk===desk&&w.pop==='bashal'&&!NO_SAT_NIGHT.includes(w.name),sh.key);
             if(!p.length)return;
-            assign(p[0].name,desk,sh.key);
-            // If NIGHT_2 person assigned, also assign second
-            if(NIGHT_2.includes(p[0].name)){const p2=elig(w=>w.desk===desk&&w.pop==='bashal'&&w.name!==p[0].name,sh.key);if(p2.length)assign(p2[0].name,desk+'_extra',sh.key);}
+            assign(p[0].name,desk,sh.key,true);
+            if(NIGHT_2.includes(p[0].name)){const p2=elig(w=>w.desk===desk&&w.pop==='bashal'&&w.name!==p[0].name,sh.key);if(p2.length)assign(p2[0].name,desk+'_extra',sh.key,true);}
           });
+        } else {
+          const kp=elig(w=>w.pop==='keva',sh.key);if(kp.length)assign(kp[0].name,'keva',sh.key);
+          DESKS.forEach(desk=>{const p=elig(w=>w.desk===desk&&w.pop==='student',sh.key);if(p.length)assign(p[0].name,desk+'_stu',sh.key);});
         }
-        else{const kp=elig(w=>w.pop==='keva',sh.key);if(kp.length)assign(kp[0].name,'keva',sh.key);DESKS.forEach(desk=>{const p=elig(w=>w.desk===desk&&w.pop==='student',sh.key);if(p.length)assign(p[0].name,desk+'_stu',sh.key);});}
       } else {
         if(sh.key==='a'||sh.key==='b'){const kp=elig(w=>w.pop==='keva',sh.key);if(kp.length)assign(kp[0].name,'keva',sh.key);}
         DESKS.forEach(desk=>{const p=elig(w=>w.desk===desk&&w.pop==='bashal',sh.key);if(p.length)assign(p[0].name,desk,sh.key);});
         DESKS.forEach(desk=>{const p=elig(w=>w.desk===desk&&w.pop==='student',sh.key);if(p.length)assign(p[0].name,desk+'_stu',sh.key);});
         if(sh.key==='c'){
-          // Weeknight: if NIGHT_2 person in shift, add second
-          DESKS.forEach(desk=>{
-            const n1=sched[sk][`c_${desk}`];
-            if(n1&&NIGHT_2.includes(n1)){const p2=elig(w=>w.desk===desk&&w.pop==='bashal'&&w.name!==n1,sh.key);if(p2.length)assign(p2[0].name,desk+'_extra',sh.key);}
-          });
+          DESKS.forEach(desk=>{const n1=sched[sk][`c_${desk}`];if(n1&&NIGHT_2.includes(n1)){const p2=elig(w=>w.desk===desk&&w.pop==='bashal'&&w.name!==n1,sh.key);if(p2.length)assign(p2[0].name,desk+'_extra',sh.key);}});
         }
-        if(sh.key==='a'||sh.key==='b'){const isElig=n=>ACHMASH.includes(n)||POP_MAP[n]==='student';const inShift=Object.entries(sched[sk]).filter(([k,v])=>v&&k.startsWith(sh.key+'_')&&!k.includes('achmash')).map(([,v])=>v);const cands=inShift.filter(isElig);const counts={};Object.values(sched).forEach(slot=>Object.entries(slot||{}).forEach(([k,v])=>{if(k.includes('achmash')&&v)counts[v]=(counts[v]||0)+1;}));if(cands.length){cands.sort((a,b)=>(counts[a]||0)-(counts[b]||0));sched[sk][`${sh.key}_achmash`]=cands[0];}else{const ki=inShift.find(n=>POP_MAP[n]==='keva');sched[sk][`${sh.key}_achmash`]=ki||null;}}
+        if(sh.key==='a'||sh.key==='b'){
+          const isElig=n=>ACHMASH.includes(n)||POP_MAP[n]==='student';
+          const inShift=Object.entries(sched[sk]).filter(([k,v])=>v&&k.startsWith(sh.key+'_')&&!k.includes('achmash')).map(([,v])=>v);
+          const cands=inShift.filter(isElig);
+          const counts={};Object.values(sched).forEach(slot=>Object.entries(slot||{}).forEach(([k,v])=>{if(k.includes('achmash')&&v)counts[v]=(counts[v]||0)+1;}));
+          if(cands.length){cands.sort((a,b)=>(counts[a]||0)-(counts[b]||0));sched[sk][`${sh.key}_achmash`]=cands[0];}
+          else{const ki=inShift.find(n=>POP_MAP[n]==='keva');sched[sk][`${sh.key}_achmash`]=ki||null;}
+        }
       }
     });
   });
-  saveS(sched,true);toast('✅ סידור נוצר!');renderMgrSched();
+  saveS(sched,true,false,false);toast('✅ סידור נוצר!');renderMgrSched();
 }
 
 // ══════ SICK ══════
