@@ -87,26 +87,42 @@ select option{background:#0f1623;color:#e2e8f0}
     </div>
     <div id="home-alert-banner" class="alert-banner hidden">⚠️ <span id="home-alert-text"></span></div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:1rem">
-      <div class="card" style="text-align:center;padding:.75rem .5rem;margin-bottom:0"><div>📋</div><div style="font-size:1.3rem;font-weight:900;color:#93c5fd" id="home-stat-c">0/17</div><div style="font-size:.62rem;color:#64748b">הגישו</div></div>
+      <div class="card" style="text-align:center;padding:.75rem .5rem;margin-bottom:0"><div>📋</div><div style="font-size:1.3rem;font-weight:900;color:#93c5fd" id="home-stat-c">0/17</div><div style="font-size:.62rem;color:#64748b">הגישו</div><div style="font-size:.6rem;color:#a5b4fc;font-weight:700;margin-top:2px" id="home-cons-label"></div></div>
       <div class="card" style="text-align:center;padding:.75rem .5rem;margin-bottom:0"><div>🏖</div><div style="font-size:1.3rem;font-weight:900;color:#6ee7b7" id="home-stat-v">0</div><div style="font-size:.62rem;color:#64748b">חופשות</div></div>
       <div class="card" style="text-align:center;padding:.75rem .5rem;margin-bottom:0"><div>⏳</div><div style="font-size:1.3rem;font-weight:900;color:#fcd34d" id="home-stat-p">0</div><div style="font-size:.62rem;color:#64748b">ממתינות</div></div>
     </div>
     <div id="home-sick-banner" class="hidden" onclick="nav('sick')" style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.35);border-radius:10px;padding:.65rem .9rem;margin-bottom:.75rem;font-size:.8rem;color:#fca5a5;font-weight:700;cursor:pointer"></div>
+    <button onclick="showMahMatzav()" style="width:100%;padding:.65rem;border-radius:10px;background:linear-gradient(135deg,rgba(16,185,129,.15),rgba(16,185,129,.08));border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-family:Heebo,sans-serif;font-size:.88rem;font-weight:900;cursor:pointer;margin-bottom:.65rem">🔍 מה מצב?</button>
+    <div id="mah-matzav-panel" class="hidden"></div>
     <div style="display:flex;flex-direction:column;gap:.65rem">
       <div style="position:relative">
-        <button class="big-btn" style="background:linear-gradient(135deg,#05966920,#05966910);border:1px solid #05966940" onclick="nav('vac')">
-          <div style="font-size:1.5rem;margin-bottom:.25rem">🏖</div><div style="font-weight:800;font-size:.9rem">בקשת חופשה</div><div style="font-size:.68rem;opacity:.7">הגשת בקשה ומעקב</div>
+        <button class="big-btn" style="background:linear-gradient(135deg,#2563eb20,#2563eb10);border:1px solid #2563eb40" onclick="nav('emp')">
+          <div style="font-size:1.5rem;margin-bottom:.25rem">📋</div><div style="font-weight:800;font-size:.9rem">אילוצים</div><div style="font-size:.68rem;opacity:.7">בש״ל, סטודנטים, קבע</div>
         </button>
-        <div id="home-vac-badge" class="hidden" style="position:absolute;top:8px;left:8px;background:#059669;color:white;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:900">🔔</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
-        <button class="big-btn" style="background:linear-gradient(135deg,#2563eb20,#2563eb10);border:1px solid #2563eb40" onclick="nav('emp')"><div style="font-size:1.5rem;margin-bottom:.25rem">📋</div><div style="font-weight:800;font-size:.9rem">אילוצים</div><div style="font-size:.68rem;opacity:.7">בש״ל, סטודנטים, קבע</div></button>
+        <div style="position:relative">
+          <button class="big-btn" style="background:linear-gradient(135deg,#05966920,#05966910);border:1px solid #05966940;width:100%" onclick="nav('vac')"><div style="font-size:1.5rem;margin-bottom:.25rem">🏖</div><div style="font-weight:800;font-size:.9rem">בקשת חופשה</div><div style="font-size:.68rem;opacity:.7">הגשת בקשה ומעקב</div></button>
+          <div id="home-vac-badge" class="hidden" style="position:absolute;top:8px;left:8px;background:#059669;color:white;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:900">🔔</div>
+        </div>
         <button class="big-btn" style="background:linear-gradient(135deg,#7c3aed20,#7c3aed10);border:1px solid #7c3aed40" onclick="nav('mgr')"><div style="font-size:1.5rem;margin-bottom:.25rem">🔐</div><div style="font-weight:800;font-size:.9rem">מפקד</div><div style="font-size:.68rem;opacity:.7">אישורים וסידור</div></button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
         <button class="big-btn" style="background:linear-gradient(135deg,#dc262620,#dc262610);border:1px solid #dc262640" onclick="nav('sick')"><div style="font-size:1.5rem;margin-bottom:.25rem">🤒</div><div style="font-weight:800;font-size:.9rem">דיווח מחלה</div><div style="font-size:.68rem;opacity:.7">דיווח בזמן אמת</div></button>
         <button class="big-btn" style="background:linear-gradient(135deg,#0891b220,#0891b210);border:1px solid #0891b240" onclick="nav('past')"><div style="font-size:1.5rem;margin-bottom:.25rem">🗂</div><div style="font-weight:800;font-size:.9rem">סידורים קודמים</div><div style="font-size:.68rem;opacity:.7">ארכיון חודשים</div></button>
       </div>
+      <div style="position:relative">
+        <button class="big-btn" style="background:linear-gradient(135deg,#f59e0b20,#f59e0b10);border:1px solid #f59e0b40;width:100%" onclick="nav('chat')">
+          <div style="font-size:1.5rem;margin-bottom:.25rem">💬</div>
+          <div style="font-weight:800;font-size:.9rem">צ'אט עם הפיקוד</div>
+          <div style="font-size:.68rem;opacity:.7">שלחו הודעה למפקד</div>
+        </button>
+        <div id="home-chat-badge" class="hidden" style="position:absolute;top:8px;left:8px;background:#f59e0b;color:white;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:900">●</div>
+      </div>
+    </div>
+    <!-- HELP LINKS -->
+    <div style="display:flex;gap:.5rem;margin-top:.5rem;margin-bottom:.25rem">
+
     </div>
     <!-- TICKER -->
     <div id="home-ticker-wrap" style="background:#0a1120;border:1px solid #1e2a40;border-radius:10px;padding:.5rem .8rem;margin-bottom:.65rem;overflow:hidden;display:none">
@@ -195,7 +211,11 @@ select option{background:#0f1623;color:#e2e8f0}
           <button class="btn" id="mgr-tab-sched-btn" onclick="setMgrTab('sched')" style="border:1px solid #243048;font-size:.75rem">🏙 ירושלים</button>
           <button class="btn" id="mgr-tab-chouf-btn" onclick="setMgrTab('chouf')" style="border:1px solid #243048;font-size:.75rem">🌊 חוף</button>
           <button class="btn" id="mgr-tab-combined-btn" onclick="setMgrTab('combined')" style="border:1px solid #243048;font-size:.75rem">🗂 מאוחד</button>
-          <button class="btn" id="mgr-tab-admin-btn" onclick="setMgrTab('admin')" style="border:1px solid #243048;font-size:.75rem">⚙️ ניהול</button>
+          <button class="btn" id="mgr-tab-justice-btn" onclick="setMgrTab('justice')" style="border:1px solid #243048;font-size:.75rem">⚖️ טבלת צדק</button>
+          <button class="btn" id="mgr-tab-xrep-btn" onclick="setMgrTab('xrep')" style="border:1px solid #243048;font-size:.75rem">📊 דו"ח איקסים</button>
+          <button class="btn" id="mgr-tab-chat-btn" onclick="setMgrTab('chat')" style="border:1px solid #243048;font-size:.75rem">💬 צ'אטים <span id="mgr-chat-badge" class="hidden" style="background:#f59e0b;color:#000;border-radius:50%;padding:0 .35rem;font-size:.65rem;font-weight:900">●</span></button>
+          <button class="btn" id="mgr-tab-holidays-btn" onclick="setMgrTab('holidays')" style="border:1px solid #243048;font-size:.75rem">🗓 חגים</button>
+<button class="btn" id="mgr-tab-admin-btn" onclick="setMgrTab('admin')" style="border:1px solid #243048;font-size:.75rem">⚙️ ניהול</button>
         </div>
       </div>
       <div id="mgr-panel-cons"></div>
@@ -203,7 +223,11 @@ select option{background:#0f1623;color:#e2e8f0}
       <div id="mgr-panel-sched" class="hidden"></div>
       <div id="mgr-panel-chouf" class="hidden"></div>
       <div id="mgr-panel-combined" class="hidden"></div>
-      <div id="mgr-panel-admin" class="hidden"></div>
+      <div id="mgr-panel-justice" class="hidden"></div>
+      <div id="mgr-panel-xrep" class="hidden"></div>
+      <div id="mgr-panel-chat" class="hidden"></div>
+      <div id="mgr-panel-holidays" class="hidden"></div>
+<div id="mgr-panel-admin" class="hidden"></div>
     </div>
   </div>
 </div>
@@ -220,6 +244,18 @@ select option{background:#0f1623;color:#e2e8f0}
   </div>
 </div>
 
+<!-- CHAT -->
+<div class="page" id="page-chat">
+  <div class="wrap">
+    <div class="header">
+      <button class="btn btn-ghost" onclick="chatBack()">← חזרה</button>
+      <div><h1 id="chat-title">💬 צ'אט עם הפיקוד</h1></div>
+    </div>
+    <div id="chat-worker-wrap" style="margin-bottom:.75rem"></div>
+    <div id="chat-content"></div>
+  </div>
+</div>
+
 <!-- PAST SCHEDULES -->
 <div class="page" id="page-past">
   <div class="wrap">
@@ -227,6 +263,7 @@ select option{background:#0f1623;color:#e2e8f0}
     <div id="past-content"></div>
   </div>
 </div>
+
 
 <!-- Firebase SDK -->
 <script type="module">
@@ -259,15 +296,57 @@ function checkLoaded() {
     window.showLoginScreen();
   }
 }
-window._fbListen('constraints',    v => { window._allC=v||{}; loaded.c=true; checkLoaded(); if(window._appReady&&window._currentPage==='home')renderHome(); });
+// Listen on current month schedule
+window._fbListen('schedule_'+SCHED_MONTH+'_'+CURRENT_YEAR, v => { const s=v||{}; window._schedule=s.schedule||{}; window._schedReady=s.schedReady||false; window._schedOfficial=s.official||false; loaded.s=true; checkLoaded(); });
+// Listen on constraints for BOTH months
+window._fbListen('constraints_'+SCHED_MONTH+'_'+CURRENT_YEAR, v => { window._allC_curr=v||{}; if(CONS_MONTH===SCHED_MONTH)window._allC=window._allC_curr; if(window._appReady&&window._currentPage==='home')renderHome(); });
+window._fbListen('constraints_'+CONS_MONTH+'_'+CONS_YEAR, v => { window._allC_next=v||{}; window._allC=CONS_MONTH===SCHED_MONTH?window._allC_curr:window._allC_next; loaded.c=true; checkLoaded(); if(window._appReady&&window._currentPage==='home')renderHome(); });
 window._fbListen('vacations',      v => { window._allV=Array.isArray(v)?v:Object.values(v||{}); loaded.v=true; checkLoaded(); if(window._appReady&&window._currentPage==='home')renderHome(); });
-window._fbListen('schedule',       v => { const s=v||{}; window._schedule=s.schedule||{}; window._schedReady=s.schedReady||false; window._schedOfficial=s.official||false; loaded.s=true; checkLoaded(); });
 window._fbListen('sick',           v => { window._allSick=Array.isArray(v)?v:Object.values(v||{}); loaded.sk=true; checkLoaded(); if(window._appReady&&window._currentPage==='home')renderHome(); });
 window._fbListen('past_schedules', v => { window._pastSchedules=v||{}; loaded.p=true; checkLoaded(); });
-window._fbListen('chouf_constraints', v => { window._choufC=v||{}; loaded.cc=true; checkLoaded(); });
-window._fbListen('chouf_schedule',    v => { const s=v||{}; window._choufSched=s.schedule||{}; window._choufReady=s.schedReady||false; window._choufOfficial=s.official||false; loaded.cs=true; checkLoaded(); });
+window._fbListen('chouf_constraints_'+CONS_MONTH+'_'+CONS_YEAR, v => { window._choufC=v||{}; loaded.cc=true; checkLoaded(); });
+window._fbListen('chouf_schedule_'+SCHED_MONTH+'_'+CURRENT_YEAR, v => { const s=v||{}; window._choufSched=s.schedule||{}; window._choufReady=s.schedReady||false; window._choufOfficial=s.official||false; loaded.cs=true; checkLoaded(); });
 window._fbListen('ticker',     v => { window._ticker=Array.isArray(v)?v:Object.values(v||{}); loaded.t=true; checkLoaded(); if(window._appReady)renderTicker(); });
 window._fbListen('birthdays',  v => { window._birthdays=v||{}; loaded.b=true; checkLoaded(); if(window._appReady&&window._currentPage==='home')renderBirthdays(); });
+window._effectiveHolidays={...JEWISH_HOLIDAYS};
+window._fbListen('holiday_overrides', v => {
+  window._holidayOverrides=v||{};
+  window._effectiveHolidays={...JEWISH_HOLIDAYS};
+  Object.entries(window._holidayOverrides).forEach(([sk,h])=>{
+    if(h)window._effectiveHolidays[sk]=h;
+    else delete window._effectiveHolidays[sk];
+  });
+});
+window._fbListen('chats', v => {
+  window._chats=v||{};
+  // Badge: count threads where worker sent last message and no mgr reply yet (needs attention)
+  if(window._appReady){
+    let unread=0;
+    Object.values(window._chats).forEach(workerThreads=>{
+      if(typeof workerThreads!=='object')return;
+      Object.values(workerThreads).forEach(th=>{
+        if(typeof th!=='object'||!th.messages)return;
+        const msgs=Array.isArray(th.messages)?th.messages:Object.values(th.messages||{});
+        if(!msgs.length)return;
+        const last=msgs[msgs.length-1];
+        if(last.from==='worker'&&!th.mgrRead)unread++;
+      });
+    });
+    const badge=document.getElementById('mgr-chat-badge');
+    if(badge){badge.textContent=unread>0?unread:'';badge.classList.toggle('hidden',unread===0);}
+    const homeBadge=document.getElementById('home-chat-badge');
+    if(homeBadge){
+      if(window._empWorker){
+        const myThread=window._chats[window._empWorker];
+        const myMsgs=Array.isArray(myThread?.messages)?myThread.messages:Object.values(myThread?.messages||{});
+        const hasUnread=myMsgs.length>0&&myMsgs[myMsgs.length-1].from==='mgr'&&!myThread?.workerRead;
+        homeBadge.classList.toggle('hidden',!hasUnread);
+      }
+    }
+    if(window._currentPage==='chat')renderChatMessages();
+    if(window._appReady&&window._currentMgrPage==='chat')renderMgrChat();
+  }
+});
 </script>
 
 <script>
@@ -281,13 +360,19 @@ const DESK_MAP={'יוסף':'סד"צ','נורית':'סד"צ','תהילה':'סד"�
 const POP_MAP={...Object.fromEntries(WORKERS_BASHAL.map(n=>[n,'bashal'])),...Object.fromEntries(WORKERS_STUDENT.map(n=>[n,'student'])),...Object.fromEntries(WORKERS_KEVA.map(n=>[n,'keva']))};
 const POP_LABEL={bashal:'⭐ בש"ל',student:'🎓 סטודנט',keva:'👮 קבע'};
 const POP_COLOR={bashal:'#3b82f6',student:'#8b5cf6',keva:'#f59e0b'};
-const NO_SAT_NIGHT=['תהילה','נורית','שירה נ','שירה ח','לאה'];
-// night shift: 1 person if יוסף/נועה/ליאן/עמית; 2 if תהילה/נורית/שירה נ/שירה ח/לאה
-const NIGHT_1=['יוסף','נועה','ליאן','עמית'];
-const NIGHT_2=['תהילה','נורית','שירה נ','שירה ח','לאה'];
+const NO_SAT_NIGHT=['תהילה','נורית','שירה ח','עמית'];// שירה נ ולאה הוסרו — יכולות לעבוד מוצ"ש (עם ליווי)
+// לבד בלילה (לא יכולים עם אחרים): נועה, ליאן, יוסף, עמית
+const NIGHT_ALONE=['נועה','ליאן','יוסף','עמית'];
+// חייבות עם עוד מישהו בלילה: חנה, שירה ח, שירה נ, תהילה, נורית
+const NIGHT_NEED_COMPANION=['חנה','שירה ח','שירה נ','תהילה','נורית','לאה'];
+// תאימות לאחורה
+const NIGHT_1=NIGHT_ALONE;
+const NIGHT_2=NIGHT_NEED_COMPANION;
 const ACHMASH=['נועה','ליאן','יוסף','עמית'];
-// שירה ח לא עובדת לבד בלילה — חייב ליווי, לא יוסף/עידו/שמואל
+// שירה ח — ליווי לא יכול להיות יוסף/עידו/שמואל
 const SHIRA_NIGHT_COMPANION_EXCLUDE=['יוסף','עידו','שמואל'];
+// יוסף — לא יכול להיות עם אף אחד בלילה (לבד תמיד)
+const YOSEF_ALONE=true;
 // ראשון: בנות שירות אלה — בוקר בלבד (לא ערב/לילה)
 const SUN_MORNING_10=['נורית','שירה ח']; // משעה 10:00
 const SUN_MORNING_9=['תהילה']; // משעה 09:00
@@ -302,6 +387,24 @@ const HEB_DAYS=['ראשון','שני','שלישי','רביעי','חמישי','ש
 const HEB_MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 const HEB_MONTHS_HE=['ניסן','אייר','סיוון','תמוז','אב','אלול','תשרי','חשוון','כסלו','טבת','שבט','אדר'];
 const DESKS=['sadatz','plili','paha'];
+
+// ══ תאריך עברי — מבוסס על JDN ══
+const _HEB_NUMS=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ז׳','ח׳','ט׳','י׳','י״א','י״ב','י״ג','י״ד','ט״ו','ט״ז','י״ז','י״ח','י״ט','כ׳','כ״א','כ״ב','כ״ג','כ״ד','כ״ה','כ״ו','כ״ז','כ״ח','כ״ט','ל׳'];
+function _gToJDN(d,m,y){const a=Math.floor((14-m)/12),yy=y+4800-a,mm=m+12*a-3;return d+Math.floor((153*mm+2)/5)+365*yy+Math.floor(yy/4)-Math.floor(yy/100)+Math.floor(yy/400)-32045;}
+// עוגנים מאומתים: 1 תשרי לכל שנה רלוונטית
+const _HEB_ANCHORS=[
+  {jdn:_gToJDN(2,10,2024), months:[30,30,30,29,30,29,30,29,30,29,30,29], names:['תשרי','חשוון','כסלו','טבת','שבט','אדר','ניסן','אייר','סיוון','תמוז','אב','אלול']},
+  {jdn:_gToJDN(22,9,2025), months:[30,30,29,30,30,29,30,29,30,29,30,29], names:['תשרי','חשוון','כסלו','טבת','שבט','אדר','ניסן','אייר','סיוון','תמוז','אב','אלול']},
+  {jdn:_gToJDN(11,9,2026), months:[30,29,30,29,30,30,29,30,29,30,29,30,29], names:['תשרי','חשוון','כסלו','טבת','שבט','אדר א׳','אדר ב׳','ניסן','אייר','סיוון','תמוז','אב','אלול']},
+];
+function toHebrewDate(day,month,year){
+  const jdn=_gToJDN(day,month,year);
+  let anchor=_HEB_ANCHORS[0];
+  for(let i=_HEB_ANCHORS.length-1;i>=0;i--){if(jdn>=_HEB_ANCHORS[i].jdn){anchor=_HEB_ANCHORS[i];break;}}
+  let rem=jdn-anchor.jdn,mi=0;
+  while(mi<anchor.months.length&&rem>=anchor.months[mi]){rem-=anchor.months[mi];mi++;}
+  return`${_HEB_NUMS[Math.min(rem,29)]} ${anchor.names[mi]||''}`;
+}
 // Desk colors for schedule display
 const DESK_COLOR={sadatz:'rgba(139,92,246,',plili:'rgba(37,99,235,',paha:'rgba(220,38,38,'};
 const DESK_BORDER={sadatz:'#7c3aed',plili:'#2563eb',paha:'#dc2626'};
@@ -329,8 +432,8 @@ const JEWISH_HOLIDAYS={
   '17-4':{name:'חול המועד',type:'chol_moed'},
   '18-4':{name:'חול המועד',type:'chol_moed'},
   '19-4':{name:'חול המועד',type:'chol_moed'},
-  '20-4':{name:'פסח ז׳',type:'chag'},
-  '21-4':{name:'פסח ח׳',type:'chag'},
+  '20-4':{name:'פסח ז׳ (ערב פסח ב׳)',type:'erev'},
+  '21-4':{name:'פסח ב׳',type:'chag'},
   '1-5':{name:'יום העצמאות',type:'chag'},
   '2-6':{name:'ערב שבועות',type:'erev'},
   '3-6':{name:'שבועות',type:'chag'},
@@ -370,47 +473,67 @@ const JEWISH_HOLIDAYS={
   '7-3':{name:'שושן פורים',type:'minor'},
   '31-3':{name:'ערב פסח',type:'erev'},
   '1-4':{name:'פסח א׳',type:'chag'},
-  '2-4':{name:'פסח ב׳',type:'chag'},
-  '3-4':{name:'חול המועד',type:'chol_moed'},
-  '4-4':{name:'חול המועד',type:'chol_moed'},
-  '5-4':{name:'חול המועד',type:'chol_moed'},
-  '6-4':{name:'חול המועד',type:'chol_moed'},
-  '7-4':{name:'פסח ז׳',type:'chag'},
-  '8-4':{name:'פסח ח׳',type:'chag'},
-  '21-4':{name:'יום העצמאות',type:'chag'},
+  '2-4':{name:'חול המועד פסח',type:'chol_moed'},
+  '3-4':{name:'חול המועד פסח',type:'chol_moed'},
+  '5-4':{name:'חול המועד פסח',type:'chol_moed'},
+  '6-4':{name:'חול המועד פסח',type:'chol_moed'},
+  '7-4':{name:'ערב פסח ב׳',type:'erev'},
+  '8-4':{name:'פסח ב׳',type:'chag'},
+  '21-4':{name:'ערב יום העצמאות',type:'yom_haatzmaut_erev'},
+  '22-4':{name:'יום העצמאות',type:'yom_haatzmaut'},
   '21-5':{name:'ערב שבועות',type:'erev'},
   '22-5':{name:'שבועות',type:'chag'},
   '23-5':{name:'שבועות ב׳',type:'chag'},
 };
-const HOLIDAY_COLORS={chag:'rgba(139,92,246,.15)',tzom:'rgba(100,116,139,.12)',erev:'rgba(245,158,11,.08)',chol_moed:'rgba(139,92,246,.07)',chanuka:'rgba(250,204,21,.08)',minor:'rgba(16,185,129,.08)'};
-const HOLIDAY_TEXT={chag:'#c4b5fd',tzom:'#94a3b8',erev:'#fcd34d',chol_moed:'#a78bfa',chanuka:'#fde68a',minor:'#6ee7b7'};
+const HOLIDAY_COLORS={chag:'rgba(139,92,246,.15)',tzom:'rgba(100,116,139,.12)',erev:'rgba(245,158,11,.08)',chol_moed:'rgba(139,92,246,.07)',chanuka:'rgba(250,204,21,.08)',minor:'rgba(16,185,129,.08)',yom_haatzmaut:'rgba(37,99,235,.18)',yom_haatzmaut_erev:'rgba(245,158,11,.08)'};
+const HOLIDAY_TEXT={chag:'#c4b5fd',tzom:'#94a3b8',erev:'#fcd34d',chol_moed:'#a78bfa',chanuka:'#fde68a',minor:'#6ee7b7',yom_haatzmaut:'#93c5fd',yom_haatzmaut_erev:'#fcd34d'};
 
-function getHoliday(day,month){return JEWISH_HOLIDAYS[`${day}-${month}`]||null;}
+function getHoliday(day,month){return (window._effectiveHolidays||JEWISH_HOLIDAYS)[`${day}-${month}`]||null;}
 
 // Chag types treated like Shabbat for staffing purposes
 const CHAG_LIKE_SAT=new Set(['chag']);
 const CHAG_LIKE_FRI=new Set(['erev']);
-function isChagSat(h){return h&&CHAG_LIKE_SAT.has(h.type);}
-function isChagFri(h){return h&&CHAG_LIKE_FRI.has(h.type);}
+function isChagSat(h){return h&&(CHAG_LIKE_SAT.has(h.type)||h.type==='yom_haatzmaut');}
+function isChagFri(h){return h&&(CHAG_LIKE_FRI.has(h.type)||h.type==='yom_haatzmaut_erev');}
+function isYomHaatzmaut(h){return h&&h.type==='yom_haatzmaut';}
 function buildScheduleDays(){
   const today=new Date();const todayD=today.getDate();
-  // Always show next month (constraints for coming month, resets on 1st of each month)
-  let y=today.getFullYear(),m=today.getMonth()+2;
-  if(m>12){m=1;y++;}
-  const days=[];const dim=new Date(y,m,0).getDate();
-  for(let i=1;i<=dim;i++){
-    const jd=new Date(y,m-1,i).getDay();
-    const h=getHoliday(i,m);
-    // treat chag like sat, erev chag like fri
+  let y=today.getFullYear(),m=today.getMonth()+1;
+  const daysInCurrentMonth=new Date(y,m,0).getDate();
+  if(todayD>daysInCurrentMonth){m++;if(m>12){m=1;y++;}}
+
+  function makeDay(d,mo,yr){
+    const jd=new Date(yr,mo-1,d).getDay();
+    const h=getHoliday(d,mo);
     const effectiveSat=jd===6||isChagSat(h);
     const effectiveFri=jd===5||isChagFri(h);
-    const effectiveWeekend=effectiveSat||effectiveFri;
-    days.push({day:i,month:m,year:y,label:`${i}/${m}`,jsDay:jd,
-      isWeekend:effectiveWeekend,isFri:effectiveFri,isSat:effectiveSat,
-      realWeekend:jd===5||jd===6,holiday:h});
+    return{day:d,month:mo,year:yr,label:`${d}/${mo}`,hebrewDate:toHebrewDate(d,mo,yr),
+      jsDay:jd,isWeekend:effectiveSat||effectiveFri,isFri:effectiveFri,isSat:effectiveSat,
+      realWeekend:jd===5||jd===6,holiday:h};
   }
-  const last=days[days.length-1];
-  if(last.jsDay!==6){let d=last.day+1,mo=m,yr=y;while(true){if(d>new Date(yr,mo,0).getDate()){d=1;mo++;if(mo>12){mo=1;yr++;}}const jd=new Date(yr,mo-1,d).getDay();const h=getHoliday(d,mo);const effectiveSat=jd===6||isChagSat(h);const effectiveFri=jd===5||isChagFri(h);days.push({day:d,month:mo,year:yr,label:`${d}/${mo}`,jsDay:jd,isWeekend:effectiveSat||effectiveFri,isFri:effectiveFri,isSat:effectiveSat,realWeekend:jd===5||jd===6,holiday:h});if(jd===6||effectiveSat)break;d++;}}
+  function prevDay(d,mo,yr){if(d>1)return{d:d-1,mo,yr};if(mo>1)return{d:new Date(yr,mo-1,0).getDate(),mo:mo-1,yr};return{d:31,mo:12,yr:yr-1};}
+  function nextDay(d,mo,yr){const dim=new Date(yr,mo,0).getDate();if(d<dim)return{d:d+1,mo,yr};if(mo<12)return{d:1,mo:mo+1,yr};return{d:1,mo:1,yr:yr+1};}
+
+  const days=[];
+  // Start from Sunday of the week containing day 1 of the month
+  let {d:sd,mo:sm,yr:sy}={d:1,mo:m,yr:y};
+  while(new Date(sy,sm-1,sd).getDay()!==0){
+    const p=prevDay(sd,sm,sy);sd=p.d;sm=p.mo;sy=p.yr;
+  }
+  // End at Saturday of the week containing last day of the month
+  const dim=new Date(y,m,0).getDate();
+  let {d:ed,mo:em,yr:ey}={d:dim,mo:m,yr:y};
+  while(new Date(ey,em-1,ed).getDay()!==6){
+    const n=nextDay(ed,em,ey);ed=n.d;em=n.mo;ey=n.yr;
+  }
+  // Build array from start to end
+  let cd=sd,cm=sm,cy=sy;
+  while(true){
+    days.push(makeDay(cd,cm,cy));
+    if(cd===ed&&cm===em&&cy===ey)break;
+    const n=nextDay(cd,cm,cy);cd=n.d;cm=n.mo;cy=n.yr;
+    if(days.length>45)break;// safety
+  }
   return days;
 }
 const SCHEDULE_DAYS=buildScheduleDays();
@@ -419,6 +542,37 @@ const TODAY=new Date();
 const CURRENT_MONTH=TODAY.getMonth()+1; // actual current month (for birthdays)
 const CURRENT_YEAR=TODAY.getFullYear();
 const SCHED_MONTH=SCHEDULE_DAYS[0]?.month||CURRENT_MONTH; // month being scheduled
+// Month management
+const TODAY_D=TODAY.getDate();
+// Schedule month = current month (always)
+// Constraints month = next month (after 15th) or current month (before 15th)
+const CONS_MONTH=TODAY_D>=15?(SCHED_MONTH%12)+1:SCHED_MONTH;
+const CONS_YEAR=CONS_MONTH===1&&SCHED_MONTH===12?CURRENT_YEAR+1:CURRENT_YEAR;
+const NEXT_MONTH=CONS_MONTH;
+const NEXT_YEAR=CONS_YEAR;
+// Firebase keys per month
+const SCHED_KEY=`schedule_${SCHED_MONTH}_${SCHED_MONTH===1?CURRENT_YEAR:CURRENT_YEAR}`;
+const CONS_KEY=`constraints_${CONS_MONTH}_${CONS_YEAR}`;
+const CHOUF_SCHED_KEY=`chouf_schedule_${SCHED_MONTH}_${CURRENT_YEAR}`;
+const CHOUF_CONS_KEY=`chouf_constraints_${CONS_MONTH}_${CONS_YEAR}`;
+// Build NEXT month days for constraint panel
+function buildNextMonthDays(){
+  const y=CONS_YEAR,m=CONS_MONTH;
+  function makeDay2(d,mo,yr){const jd=new Date(yr,mo-1,d).getDay();const h=getHoliday(d,mo);const effectiveSat=jd===6||isChagSat(h);const effectiveFri=jd===5||isChagFri(h);return{day:d,month:mo,year:yr,label:`${d}/${mo}`,hebrewDate:toHebrewDate(d,mo,yr),jsDay:jd,isWeekend:effectiveSat||effectiveFri,isFri:effectiveFri,isSat:effectiveSat,realWeekend:jd===5||jd===6,holiday:h};}
+  function nextDay2(d,mo,yr){const dim=new Date(yr,mo,0).getDate();if(d<dim)return{d:d+1,mo,yr};if(mo<12)return{d:1,mo:mo+1,yr};return{d:1,mo:1,yr:yr+1};}
+  function prevDay2(d,mo,yr){if(d>1)return{d:d-1,mo,yr};if(mo>1)return{d:new Date(yr,mo-1,0).getDate(),mo:mo-1,yr};return{d:31,mo:12,yr:yr-1};}
+  const days=[];
+  let {d:sd,mo:sm,yr:sy}={d:1,mo:m,yr:y};
+  while(new Date(sy,sm-1,sd).getDay()!==0){const p=prevDay2(sd,sm,sy);sd=p.d;sm=p.mo;sy=p.yr;}
+  const dim=new Date(y,m,0).getDate();
+  let {d:ed,mo:em,yr:ey}={d:dim,mo:m,yr:y};
+  while(new Date(ey,em-1,ed).getDay()!==6){const n=nextDay2(ed,em,ey);ed=n.d;em=n.mo;ey=n.yr;}
+  let cd=sd,cm=sm,cy=sy;
+  while(true){days.push(makeDay2(cd,cm,cy));if(cd===ed&&cm===em&&cy===ey)break;const n=nextDay2(cd,cm,cy);cd=n.d;cm=n.mo;cy=n.yr;if(days.length>45)break;}
+  return days;
+}
+const NEXT_MONTH_DAYS=CONS_MONTH!==SCHED_MONTH?buildNextMonthDays():SCHEDULE_DAYS;
+const NEXT_MONTH_LABEL=`${HEB_MONTHS[(CONS_MONTH||1)-1]} ${CONS_YEAR}`;
 
 function get_allC(){return window._allC||{};}
 function get_allV(){return window._allV||[];}
@@ -430,12 +584,13 @@ function get_schedOfficial(){return window._schedOfficial||false;}
 
 function saveC(d){
   window._allC=d;
-  // render immediately without waiting for Firebase
+  if(CONS_MONTH===SCHED_MONTH)window._allC_curr=d; else window._allC_next=d;
   if(window._currentPage==='emp'&&window._empWorker)renderConsPanel();
   else if(window._currentPage==='home')renderHome();
   setSyncing(true);
-  window._fbSet('constraints',d).then(()=>setSyncing(false));
+  window._fbSet('constraints_'+CONS_MONTH+'_'+CONS_YEAR,d).then(()=>setSyncing(false));
 }
+function get_schedC(){return window._allC_curr||{};}// constraints for CURRENT month (for schedule engine)
 function saveV(d){window._allV=d;setSyncing(true);window._fbSet('vacations',d).then(()=>setSyncing(false));}
 function saveS(s,r,official,warnIfOfficial){
   if(warnIfOfficial&&window._schedOfficial){
@@ -447,7 +602,7 @@ function saveS(s,r,official,warnIfOfficial){
   const key=`${SCHEDULE_DAYS[0]?.year}_${SCHEDULE_DAYS[0]?.month}`;
   const past=get_pastSchedules();past[key]={schedule:s,schedReady:r,month:SCHEDULE_DAYS[0]?.month,year:SCHEDULE_DAYS[0]?.year,label:MONTH_LABEL};
   window._fbSet('past_schedules',past).catch(()=>{});
-  window._fbSet('schedule',{schedule:s,schedReady:r,official:window._schedOfficial||false}).then(()=>setSyncing(false));
+  window._fbSet('schedule_'+SCHED_MONTH+'_'+CURRENT_YEAR,{schedule:s,schedReady:r,official:window._schedOfficial||false}).then(()=>setSyncing(false));
 }
 function saveSick(d){window._allSick=d;setSyncing(true);window._fbSet('sick',d).then(()=>setSyncing(false));}
 
@@ -481,6 +636,7 @@ function nav(page){
   if(page==='home')renderHome();
   else if(page==='vac')initVac();
   else if(page==='emp')initEmp();
+  else if(page==='chat')initChat();
   else if(page==='mgr')initMgr();
   else if(page==='sick')initSick();
   else if(page==='past')initPast();
@@ -522,17 +678,25 @@ function sysLogin(){
 // ══════ HOME ══════
 window._renderHome = function(){
   if(!g('page-home').classList.contains('active'))return;
-  const allC=get_allC(),allV=get_allV(),allSick=get_allSick();
-  const choufC=get_choufC();
+  // Always show NEXT month constraints (the ones being collected now)
+  // Note: if no one submitted yet, _allC_next = {} — explicitly use it (not fallback to current)
+  const consAllC=CONS_MONTH!==SCHED_MONTH?(window._allC_next||{}):(window._allC||{});
+  const consChoufC=get_choufC();
+  const allC=consAllC;
+  const allV=get_allV(),allSick=get_allSick();
+  const choufC=consChoufC;
   const subJ=Object.values(allC).filter(v=>v.submitted).length;
   const subCh=Object.values(choufC).filter(v=>v.submitted).length;
-  const totalJ=ALL_WORKERS.length;   // 17 — ירושלים
-  const totalCh=CHOUF_ALL.length;    // 11 — חוף
+  const totalJ=ALL_WORKERS.length;
+  const totalCh=CHOUF_ALL.length;
   const sub=subJ+subCh,total=totalJ+totalCh;
   const pend=allV.filter(v=>v.status==='pending').length;
   const decided=allV.filter(v=>v.status==='approved'||v.status==='rejected').length;
   const activeSick=allSick.filter(r=>!r.resolved).length;
   g('home-month').textContent=MONTH_LABEL+' | חמ"ל ירושלים + חוף';
+  // Show which month constraints are being collected
+  const consLabel=CONS_MONTH!==SCHED_MONTH?`אילוצים ל${NEXT_MONTH_LABEL}`:MONTH_LABEL;
+  if(g('home-cons-label'))g('home-cons-label').textContent=consLabel;
   if(g('home-cons-month'))g('home-cons-month').textContent=MONTH_LABEL;
   renderTicker();renderBirthdays();
   g('home-stat-c').textContent=`${sub}/${total}`;
@@ -541,7 +705,19 @@ window._renderHome = function(){
   g('home-prog').style.width=(total?sub/total*100:0)+'%';
   const today_d=new Date().getDate();
   // Jerusalem avatars
-  const initials=n=>{const p=n.trim().split(/\s+/);return p.length>=2?p[0][0]+'.'+p[1][0]:p[0][0];};
+  // Smart initials: detect first-initial duplicates → use full first.last abbreviation
+  const allNames=[...ALL_WORKERS,...CHOUF_ALL];
+  const firstInitialCount={};
+  allNames.forEach(n=>{const fi=n.trim()[0];firstInitialCount[fi]=(firstInitialCount[fi]||0)+1;});
+  const initials=n=>{
+    const p=n.trim().split(/\s+/);
+    const fi=p[0][0];
+    if(firstInitialCount[fi]>1&&p.length>=2){
+      // Same first initial as someone else — use ש.נ style
+      return p[0][0]+'.'+p[p.length-1][0];
+    }
+    return p.length>=2?p[0][0]+'.'+p[1][0]:p[0][0];
+  };
   const jAvatars=ALL_WORKERS.map(n=>{const wd=allC[n];const s=wd?.submitted;const col=POP_COLOR[POP_MAP[n]];const earlyBadge=s&&wd?.submittedAt&&new Date(wd.submittedAt).getDate()<=10?'⭐':'';return`<div class="avatar" title="${n}${earlyBadge?' ⭐':''}" style="background:${s?col:'#1e2a40'};border:2px solid ${s?col:'#243048'};color:${s?'white':'#64748b'};font-size:.48rem">${initials(n)}${earlyBadge}</div>`;}).join('');
   // Chouf avatars
   const chAvatars=CHOUF_ALL.map(n=>{const wd=(choufC||{})[n];const s=wd?.submitted;const col=s?'#10b981':'#1e2a40';const earlyBadge=s&&wd?.submittedAt&&new Date(wd.submittedAt).getDate()<=10?'⭐':'';return`<div class="avatar" title="🌊 ${n}${earlyBadge?' ⭐':''}" style="background:${s?col:'#1e2a40'};border:2px solid ${s?'#10b981':'#243048'};color:${s?'white':'#64748b'};font-size:.48rem">${initials(n)}${earlyBadge}</div>`;}).join('');
@@ -665,7 +841,23 @@ function renderMyVacs(){
 
 // ══════ EMPLOYEE ══════
 window._empWorker='';
-function initEmp(){g('emp-month').textContent=MONTH_LABEL;g('emp-worker-wrap').innerHTML=workerSelHTML('emp-worker','empWorkerChange()',true,true);hide('emp-content');hide('emp-worker-info');if(window._empWorker){g('emp-worker').value=window._empWorker;empWorkerChange();}}
+function initEmp(){
+  // Update tab labels based on active months
+  const consBtn=g('emp-tab-cons');
+  const schedBtn=g('emp-tab-sched');
+  if(CONS_MONTH!==SCHED_MONTH){
+    if(consBtn)consBtn.textContent=`📋 אילוצים — ${NEXT_MONTH_LABEL}`;
+    if(schedBtn)schedBtn.textContent=`📅 סידור — ${MONTH_LABEL}`;
+    g('emp-month').textContent=`סידור ${MONTH_LABEL} | אילוצים ל${NEXT_MONTH_LABEL}`;
+  } else {
+    if(consBtn)consBtn.textContent='📋 אילוצים';
+    if(schedBtn)schedBtn.textContent='📅 הסידור שלי';
+    g('emp-month').textContent=MONTH_LABEL;
+  }
+  g('emp-worker-wrap').innerHTML=workerSelHTML('emp-worker','empWorkerChange()',true,true);
+  hide('emp-content');hide('emp-worker-info');
+  if(window._empWorker){g('emp-worker').value=window._empWorker;empWorkerChange();}
+}
 function isChoufWorker(name){return CHOUF_ALL.includes(name);}
 function empWorkerChange(){
   window._empWorker=g('emp-worker').value;
@@ -691,8 +883,11 @@ function renderConsPanel(){
   if(isChoufWorker(window._empWorker)){renderChoufConsPanel();return;}
   const allC=get_allC();const pop=POP_MAP[window._empWorker]||'bashal';
   const wData=allC[window._empWorker]||{constraints:[],submitted:false};const cons=wData.constraints||[];
-  const wdDays=SCHEDULE_DAYS.filter(d=>!d.isWeekend),friDays=SCHEDULE_DAYS.filter(d=>d.isFri),satDays=SCHEDULE_DAYS.filter(d=>d.isSat);
+  // Use NEXT_MONTH_DAYS for constraint dates
+  const activeDays=NEXT_MONTH_DAYS||SCHEDULE_DAYS;
+  const wdDays=activeDays.filter(d=>!d.isWeekend),friDays=activeDays.filter(d=>d.isFri),satDays=activeDays.filter(d=>d.isSat);
   const shL={a:'א׳',b:'ב׳',c:'ג׳'};const totalH=cons.reduce((s,c)=>(SHIFT_HOURS[c.shiftKey]||8)+s,0);
+  const monthBanner=CONS_MONTH!==SCHED_MONTH?`<div style="background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.35);border-radius:8px;padding:.4rem .7rem;margin-bottom:.6rem;font-size:.75rem;color:#a5b4fc;font-weight:700">📋 מגישים אילוצים ל<b>${NEXT_MONTH_LABEL}</b></div>`:'';
   const slotRows=(days,shifts)=>days.map(d=>{
     const h=d.holiday;
     return`<div class="dayslot-row" style="${h?`background:${HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.07)'}`:''}">`+
@@ -701,7 +896,7 @@ function renderConsPanel(){
     shifts.map(sh=>{const ch=cons.some(c=>c.day===d.day&&c.month===d.month&&c.shiftKey===sh&&c.type==='prefer');return`<button class="slot-btn${ch?' chosen':''}" onclick="toggleSlot(${d.day},${d.month},'${sh}')">${ch?'✓ ':''}${shL[sh]}</button>`;}).join('')+
     `</div>`;
   }).join('');
-  let html='';
+  let html=monthBanner;
   if(pop==='student'){
     html+=`<div style="font-weight:700;color:#a78bfa;font-size:.8rem;margin-bottom:.5rem">📌 סוף שבוע (חובה)</div>`;
     html+=`<div style="margin-bottom:.6rem"><div style="font-size:.68rem;color:#fcd34d;margin-bottom:.3rem">שישי — לפחות 2</div>${slotRows(friDays,['a','b','c'])}</div>`;
@@ -716,7 +911,7 @@ function renderConsPanel(){
     html+=`<div style="display:flex;gap:.4rem;margin-bottom:.5rem;flex-wrap:wrap"><select class="sel" id="cons-day" style="flex:1;margin-bottom:0">${wdDays.map(d=>`<option value="${d.day}-${d.month}">${d.label} ${HEB_DAYS[d.jsDay]}</option>`).join('')}</select><select class="sel" id="cons-sh" style="width:90px;margin-bottom:0"><option value="a">א׳</option><option value="b">ב׳</option></select><button class="btn" style="background:#f59e0b;color:#080c14;padding:.4rem .7rem" onclick="addCons()">⛔</button></div>`;
   } else {
     html+=`<div style="font-weight:700;color:#93c5fd;font-size:.8rem;margin-bottom:.4rem">הוסף אילוץ</div>`;
-    html+=`<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:.35rem;align-items:center;margin-bottom:.5rem"><select class="sel" id="cons-day" style="margin-bottom:0">${SCHEDULE_DAYS.map(d=>`<option value="${d.day}-${d.month}">${d.label} ${HEB_DAYS[d.jsDay]}${d.holiday?' — '+d.holiday.name:''}</option>`).join('')}</select><select class="sel" id="cons-sh" style="width:75px;margin-bottom:0"><option value="a">א׳</option><option value="b">ב׳</option><option value="c">ג׳</option></select><select class="sel" id="cons-type" style="width:150px;margin-bottom:0"><option value="block">❌ מבקש לא לעבוד</option><option value="prefer">✅ מבקש לעבוד</option></select><button class="btn btn-blue" style="padding:.4rem .6rem" onclick="addCons()">➕</button></div>`;
+    html+=`<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:.35rem;align-items:center;margin-bottom:.5rem"><select class="sel" id="cons-day" style="margin-bottom:0">${NEXT_MONTH_DAYS.map(d=>`<option value="${d.day}-${d.month}">${d.label} ${HEB_DAYS[d.jsDay]}${d.holiday?' — '+d.holiday.name:''}</option>`).join('')}</select><select class="sel" id="cons-sh" style="width:75px;margin-bottom:0"><option value="a">א׳</option><option value="b">ב׳</option><option value="c">ג׳</option></select><select class="sel" id="cons-type" style="width:150px;margin-bottom:0"><option value="block">❌ מבקש לא לעבוד</option><option value="prefer">✅ מבקש לעבוד</option></select><button class="btn btn-blue" style="padding:.4rem .6rem" onclick="addCons()">➕</button></div>`;
   }
   if(cons.length){
     html+=`<div style="font-size:.7rem;color:#64748b;margin-bottom:.3rem">${pop==='student'?`${totalH}h${totalH>=80?' ✅':' ⚠️ מינימום 80h'}`:pop==='keva'?`${cons.length} אילוצים`:`${cons.length}/${MAX_C} אילוצים`}</div>`;
@@ -947,6 +1142,68 @@ END:VCALENDAR`;
   toast('📅 קובץ יומן הורד — פתח/י אותו להוספה ליומן');
 }
 
+function showMahMatzav(){
+  const panel=g('mah-matzav-panel');
+  if(!panel.classList.contains('hidden')){panel.classList.add('hidden');return;}
+  const schedule=get_schedule();const choufSched=get_choufSched();
+  const today=new Date();
+  const days=[-1,0,1].map(offset=>{
+    const d=new Date(today);d.setDate(today.getDate()+offset);
+    return{date:d,day:d.getDate(),month:d.getMonth()+1,year:d.getFullYear(),
+      label:offset===-1?'אתמול':offset===0?'היום':'מחר',
+      jsDay:d.getDay()};
+  });
+  const shiftL={a:'א׳ 07:00–15:00',b:'ב׳ 15:00–21:30',c:'ג׳ 21:30–07:00'};
+  const html=days.map(d=>{
+    const sk=`${d.day}-${d.month}`;
+    const slotJ=schedule[sk]||{};
+    const slotC=choufSched[sk]||{};
+    const schedDay=SCHEDULE_DAYS.find(x=>x.day===d.day&&x.month===d.month);
+    const heb=schedDay?.hebrewDate||toHebrewDate(d.day,d.month,d.year);
+    const borderColor=d.label==='היום'?'rgba(99,102,241,.6)':'rgba(100,116,139,.2)';
+    const bgColor=d.label==='היום'?'rgba(99,102,241,.08)':'rgba(15,22,35,.5)';
+    const shifts=['a','b','c'].map(shKey=>{
+      // Jerusalem — collect unique workers, exclude achmash key (value already appears elsewhere)
+      const jNames=[];
+      const seen=new Set();
+      Object.entries(slotJ).forEach(([k,v])=>{
+        if(!v||typeof v!=='string')return;
+        if(!k.startsWith(shKey+'_'))return;
+        if(k===`${shKey}_achmash`)return;// shown separately
+        if(seen.has(v))return;
+        seen.add(v);
+        const isAch=slotJ[`${shKey}_achmash`]===v;
+        jNames.push(isAch?`${v} (אחמ"ש)`:v);
+      });
+      // Chouf
+      const cNames=[];const seenC=new Set();
+      Object.entries(slotC).forEach(([k,v])=>{
+        if(!v||typeof v!=='string')return;
+        if(!k.startsWith(shKey+'_'))return;
+        if(k===`${shKey}_achmash`)return;
+        if(seenC.has(v))return;
+        seenC.add(v);
+        cNames.push(v);
+      });
+      if(!jNames.length&&!cNames.length)return'';
+      return`<div style="padding:.25rem 0;border-bottom:1px solid rgba(100,116,139,.12)">
+        <div style="font-size:.65rem;color:#64748b;margin-bottom:.2rem;font-weight:700">${shiftL[shKey]}</div>
+        ${jNames.length?`<div style="font-size:.72rem;color:#93c5fd;line-height:1.5">🏙 ${jNames.join(' · ')}</div>`:'<div style="font-size:.65rem;color:#374151">🏙 אין סידור ירושלים</div>'}
+        ${cNames.length?`<div style="font-size:.72rem;color:#6ee7b7;line-height:1.5">🌊 ${cNames.join(' · ')}</div>`:''}
+      </div>`;
+    }).join('');
+    return`<div style="background:${bgColor};border:1px solid ${borderColor};border-radius:10px;padding:.65rem .8rem;margin-bottom:.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">
+        <div style="font-weight:900;color:${d.label==='היום'?'#a5b4fc':'#e2e8f0'};font-size:.88rem">${d.label}</div>
+        <div style="font-size:.7rem;color:#64748b">${d.day}/${d.month} · ${heb} · ${HEB_DAYS[d.jsDay]}</div>
+      </div>
+      ${shifts||'<div style="font-size:.72rem;color:#475569;text-align:center;padding:.3rem 0">אין סידור לתאריך זה</div>'}
+    </div>`;
+  }).join('');
+  panel.innerHTML=html;
+  panel.classList.remove('hidden');
+}
+
 function showPraise(msg){
   const el=document.createElement('div');
   el.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,#0f2a1e,#0a1f2e);border:2px solid #6ee7b7;border-radius:16px;padding:1.5rem 2rem;z-index:99999;max-width:320px;text-align:center;box-shadow:0 0 40px rgba(110,231,183,.2)';
@@ -959,20 +1216,28 @@ function renderMySchedPanel(){
   const schedule=get_schedule(),schedReady=get_schedReady();
   if(!schedReady){g('emp-panel-sched').innerHTML='<div style="text-align:center;color:#64748b;padding:2rem">הסידור טרם נוצר</div>';return;}
   const myShifts=[];const shiftL={a:'א׳ 07:00–15:00',b:'ב׳ 15:00–21:30',c:'ג׳ 21:30–07:00'};
-  SCHEDULE_DAYS.forEach(d=>{const sk=`${d.day}-${d.month}`;const slot=schedule[sk]||{};Object.entries(slot).forEach(([k,v])=>{if(v===window._empWorker&&!k.includes('achmash')){const shKey=k.split('_')[0];if(['a','b','c'].includes(shKey))myShifts.push({...d,shKey,isAchmash:slot[`${shKey}_achmash`]===window._empWorker});}});});
+  SCHEDULE_DAYS.forEach(d=>{const sk=`${d.day}-${d.month}`;const slot=schedule[sk]||{};const workerInDay=Object.entries(slot).some(([k,v])=>v===window._empWorker&&!k.includes('achmash'));if(workerInDay){Object.entries(slot).forEach(([k,v])=>{if(v===window._empWorker&&!k.includes('achmash')){const shKey=k.split('_')[0];if(['a','b','c'].includes(shKey))myShifts.push({...d,shKey,isAchmash:slot[`${shKey}_achmash`]===window._empWorker});}});}else if(!d.isWeekend&&POP_MAP[window._empWorker]==='bashal'){// mark as day-off (פגרה) if it's a weekday and worker not scheduled
+  const allV3=get_allV();const onVac=allV3.some(v=>v.status==='approved'&&v.worker===window._empWorker&&v.days?.some(vd=>vd.day===d.day&&vd.month===d.month));const onSick=get_allSick().some(s=>!s.resolved&&s.worker===window._empWorker);if(!onVac&&!onSick)myShifts.push({...d,shKey:'off',isAchmash:false});}});
   if(!myShifts.length){g('emp-panel-sched').innerHTML='<div style="text-align:center;color:#64748b;padding:2rem">אין משמרות מתוכננות</div>';return;}
   const totalH=myShifts.reduce((s,m)=>(SHIFT_HOURS[m.shKey]||8)+s,0);
-  g('emp-panel-sched').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-wrap:wrap;gap:.4rem"><div style="font-weight:700;font-size:.85rem">${window._empWorker} — ${MONTH_LABEL}</div><div style="font-size:.75rem;color:#6ee7b7">${myShifts.length} משמרות | ${totalH}h</div></div><button onclick="exportToCalendar()" style="width:100%;margin-bottom:.6rem;padding:.5rem;border-radius:8px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:#fcd34d;font-family:Heebo,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer">📅 הוסף משמרות ליומן הטלפון</button>${myShifts.map(s=>{const h=s.holiday;return`<div style="display:flex;align-items:center;gap:.4rem;padding:.35rem 0;border-bottom:1px solid #1e2a40;flex-wrap:wrap;${h?`background:${HOLIDAY_COLORS[h.type]||''};border-radius:6px;padding:.35rem .4rem;`:''}">`+`<span style="font-weight:700;color:${s.isWeekend?'#fcd34d':'#e2e8f0'};font-size:.82rem;min-width:3rem">${s.label}</span>`+`<span style="font-size:.65rem;color:#64748b">${HEB_DAYS[s.jsDay]}</span>`+mkTag(shiftL[s.shKey],'rgba(37,99,235,.12)','#93c5fd','rgba(37,99,235,.25)')+`${s.isAchmash?mkTag('אחמ"ש','rgba(16,185,129,.12)','#6ee7b7','rgba(16,185,129,.25)'):''}${h?mkTag(h.name,HOLIDAY_COLORS[h.type]||'',HOLIDAY_TEXT[h.type]||'#c4b5fd',HOLIDAY_TEXT[h.type]||'#c4b5fd'):''}</div>`;}).join('')}`;
+  g('emp-panel-sched').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-wrap:wrap;gap:.4rem"><div style="font-weight:700;font-size:.85rem">${window._empWorker} — ${MONTH_LABEL}</div><div style="font-size:.75rem;color:#6ee7b7">${myShifts.length} משמרות | ${totalH}h</div></div><button onclick="exportToCalendar()" style="width:100%;margin-bottom:.6rem;padding:.5rem;border-radius:8px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:#fcd34d;font-family:Heebo,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer">📅 הוסף משמרות ליומן הטלפון</button>${myShifts.map(s=>{const h=s.holiday;const isOff=s.shKey==='off';return`<div style="display:flex;align-items:center;gap:.4rem;padding:.35rem 0;border-bottom:1px solid #1e2a40;flex-wrap:wrap;${h?`background:${HOLIDAY_COLORS[h.type]||''};border-radius:6px;padding:.35rem .4rem;`:''}${isOff?'opacity:.6':''}">`+`<span style="font-weight:700;color:${s.isWeekend?'#fcd34d':isOff?'#475569':'#e2e8f0'};font-size:.82rem;min-width:3rem">${s.label}</span>`+`<span style="font-size:.65rem;color:#64748b">${HEB_DAYS[s.jsDay]}</span>`+(isOff?mkTag('🅿 פגרה','rgba(100,116,139,.12)','#64748b','rgba(100,116,139,.3)'):mkTag(shiftL[s.shKey],'rgba(37,99,235,.12)','#93c5fd','rgba(37,99,235,.25)'))+`${s.isAchmash?mkTag('אחמ"ש','rgba(16,185,129,.12)','#6ee7b7','rgba(16,185,129,.25)'):''}${h?mkTag(h.name,HOLIDAY_COLORS[h.type]||'',HOLIDAY_TEXT[h.type]||'#c4b5fd',HOLIDAY_TEXT[h.type]||'#c4b5fd'):''}</div>`;}).join('')}`;
 }
 
 // ══════ MANAGER ══════
 let mgrTab='cons';window._mgrAuthed=false;
-function initMgr(){g('mgr-month').textContent=MONTH_LABEL;if(!window._mgrAuthed){show('mgr-login');hide('mgr-panel');}else{hide('mgr-login');show('mgr-panel');renderMgrPanel();}}
+function initMgr(){
+  // Show both months context
+  if(CONS_MONTH!==SCHED_MONTH){
+    g('mgr-month').textContent=`${MONTH_LABEL} | אילוצים: ${NEXT_MONTH_LABEL}`;
+  } else {
+    g('mgr-month').textContent=MONTH_LABEL;
+  }
+  if(!window._mgrAuthed){show('mgr-login');hide('mgr-panel');}else{hide('mgr-login');show('mgr-panel');renderMgrPanel();}}
 function mgrLogin(){if(g('mgr-pw').value===MGR_PW){window._mgrAuthed=true;hide('mgr-pw-err');hide('mgr-login');show('mgr-panel');renderMgrPanel();}else show('mgr-pw-err');}
 function renderMgrPanel(){const allSick=get_allSick();const active=allSick.filter(r=>!r.resolved);g('mgr-sick-banner').innerHTML=active.length?`<div style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.35);border-radius:10px;padding:.65rem;margin-bottom:.75rem;font-size:.78rem;color:#fca5a5">🚨 מחלה: ${active.map(r=>r.worker).join(', ')}</div>`:'';setMgrTab(mgrTab);}
 function setMgrTab(t){
   mgrTab=t;
-  ['cons','vacs','sched','chouf','combined','admin'].forEach(x=>{
+  ['cons','vacs','sched','chouf','combined','justice','xrep','chat','holidays','admin'].forEach(x=>{
     const btn=g('mgr-tab-'+x+'-btn');if(!btn)return;
     btn.style.background=x===t?'#1e3a5f':'#1e2a40';
     btn.style.color=x===t?'#93c5fd':'#64748b';
@@ -984,6 +1249,10 @@ function setMgrTab(t){
   else if(t==='sched')renderMgrSched();
   else if(t==='chouf')renderMgrSchedChouf();
   else if(t==='combined')renderMgrCombined();
+  else if(t==='justice')renderMgrJustice();
+  else if(t==='xrep')renderMgrXReport();
+  else if(t==='chat')renderMgrChat();
+  else if(t==='holidays')renderMgrHolidays();
   else renderMgrAdmin();
 }
 function renderMgrCombined(){
@@ -1001,6 +1270,8 @@ function renderMgrCombined(){
 }
 function renderMgrCons(){
   const allC=get_allC();const choufC=get_choufC();const shL={a:'א׳',b:'ב׳',c:'ג׳'};
+  // Month context banner
+  const monthBanner=CONS_MONTH!==SCHED_MONTH?`<div style="background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:9px;padding:.5rem .8rem;margin-bottom:.75rem;font-size:.78rem;color:#a5b4fc;font-weight:700">📋 אילוצים ל<b>${NEXT_MONTH_LABEL}</b> | סידור נוכחי: <b>${MONTH_LABEL}</b></div>`:'';
   const groups=[
     {label:'⭐ בש"ל — ירושלים',list:WORKERS_BASHAL,color:'#3b82f6',data:allC,isChouf:false},
     {label:'🎓 סטודנטים — ירושלים',list:WORKERS_STUDENT,color:'#8b5cf6',data:allC,isChouf:false},
@@ -1051,7 +1322,7 @@ function renderMgrCons(){
       </div>`;
     }).join('')}
   </div>`).join('');
-  g('mgr-panel-cons').innerHTML=html;
+  g('mgr-panel-cons').innerHTML=monthBanner+html;
 }
 function mgrApproveCon(name,idx,isChouf){
   const allC=isChouf?get_choufC():get_allC();
@@ -1101,10 +1372,868 @@ function renderMgrVacs(){
 function mgrApprove(id){const allV=get_allV();saveV(allV.map(v=>v.id===id?{...v,status:'approved'}:v));toast('✅ אושר');renderMgrVacs();}
 function mgrCancelVac(id){if(!confirm('לבטל את החופשה המאושרת?'))return;saveV(get_allV().filter(v=>v.id!==id));toast('🗑 חופשה בוטלה');renderMgrVacs();}
 
+function renderMgrJustice(){
+  const el=g('mgr-panel-justice');if(!el)return;
+  const sched=get_schedule();const choufSched=get_choufSched();
+  const shiftL={a:'א׳',b:'ב׳',c:'ג׳'};
+
+  function countShifts(workers,schedule,isChouf){
+    // Read from the currently viewed schedule (current or next month)
+    const viewSched=window._schedViewMonth==='next'&&!isChouf?(window._schedule_next||schedule):schedule;
+    const viewDays=window._schedViewMonth==='next'&&!isChouf?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+    return workers.map(name=>{
+      let a=0,b=0,night=0,weekend=0;
+      viewDays.forEach(d=>{
+        const sk=`${d.day}-${d.month}`;
+        const slot=viewSched[sk]||{};
+        const inDay=Object.entries(slot).filter(([k,v])=>v===name&&!k.includes('achmash'));
+        inDay.forEach(([k])=>{
+          const shKey=k.split('_')[0];
+          if(shKey==='a')a++;
+          else if(shKey==='b')b++;
+          else if(shKey==='c')night++;
+          if(d.realWeekend||(d.holiday&&(isChagSat(d.holiday)||isChagFri(d.holiday)))){
+            if(['a','b','c'].includes(shKey))weekend++;
+          }
+        });
+      });
+      const total=a+b+night;
+      return{name,a,b,night,weekend,total};
+    }).sort((x,y)=>y.total-x.total);
+  }
+
+  function scoreColor(val,avg,higher_is_worse){
+    const diff=val-avg;
+    if(Math.abs(diff)<0.5)return'#94a3b8';
+    if(higher_is_worse?diff>0:diff<0)return'#fca5a5';
+    if(higher_is_worse?diff<0:diff>0)return'#6ee7b7';
+    return'#94a3b8';
+  }
+
+  function buildTable(title,color,rows){
+    if(!rows.length)return'';
+    const avgA=rows.reduce((s,r)=>s+r.a,0)/rows.length;
+    const avgB=rows.reduce((s,r)=>s+r.b,0)/rows.length;
+    const avgN=rows.reduce((s,r)=>s+r.night,0)/rows.length;
+    const avgW=rows.reduce((s,r)=>s+r.weekend,0)/rows.length;
+    const avgT=rows.reduce((s,r)=>s+r.total,0)/rows.length;
+    const cell=(val,avg,hisBad=false)=>{
+      const col=scoreColor(val,avg,hisBad);
+      return`<td style="text-align:center;font-size:.75rem;font-weight:700;color:${col};padding:.3rem .4rem">${val}</td>`;
+    };
+    const rows_html=rows.map(r=>`<tr style="border-bottom:1px solid #1e2a40">
+      <td style="padding:.3rem .5rem;font-size:.78rem;font-weight:700;white-space:nowrap">${r.name}</td>
+      ${cell(r.a,avgA)}${cell(r.b,avgB)}${cell(r.night,avgN,true)}${cell(r.weekend,avgW,true)}
+      <td style="text-align:center;font-size:.78rem;font-weight:900;color:${scoreColor(r.total,avgT)};padding:.3rem .4rem">${r.total}</td>
+    </tr>`).join('');
+    const avg_row=`<tr style="background:#0a1120;border-top:2px solid #243048">
+      <td style="padding:.3rem .5rem;font-size:.65rem;color:#64748b">ממוצע</td>
+      <td style="text-align:center;font-size:.65rem;color:#64748b">${avgA.toFixed(1)}</td>
+      <td style="text-align:center;font-size:.65rem;color:#64748b">${avgB.toFixed(1)}</td>
+      <td style="text-align:center;font-size:.65rem;color:#64748b">${avgN.toFixed(1)}</td>
+      <td style="text-align:center;font-size:.65rem;color:#64748b">${avgW.toFixed(1)}</td>
+      <td style="text-align:center;font-size:.65rem;color:#64748b">${avgT.toFixed(1)}</td>
+    </tr>`;
+    return`<div class="card" style="margin-bottom:.75rem">
+      <div style="font-weight:900;font-size:.82rem;color:${color};margin-bottom:.5rem">${title}</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;min-width:280px">
+          <thead><tr style="border-bottom:2px solid #243048">
+            <th style="text-align:right;padding:.3rem .5rem;font-size:.65rem;color:#64748b;min-width:80px">עובד</th>
+            <th style="text-align:center;padding:.3rem .4rem;font-size:.65rem;color:#93c5fd">א׳</th>
+            <th style="text-align:center;padding:.3rem .4rem;font-size:.65rem;color:#a78bfa">ב׳</th>
+            <th style="text-align:center;padding:.3rem .4rem;font-size:.65rem;color:#fcd34d">ג׳</th>
+            <th style="text-align:center;padding:.3rem .4rem;font-size:.65rem;color:#6ee7b7">סו"ש</th>
+            <th style="text-align:center;padding:.3rem .4rem;font-size:.65rem;color:#e2e8f0">סה"כ</th>
+          </tr></thead>
+          <tbody>${rows_html}${avg_row}</tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:.75rem;margin-top:.5rem;flex-wrap:wrap">
+        <span style="font-size:.6rem;color:#6ee7b7">● מעל הממוצע</span>
+        <span style="font-size:.6rem;color:#fca5a5">● מתחת לממוצע</span>
+        <span style="font-size:.6rem;color:#94a3b8">● בממוצע</span>
+      </div>
+    </div>`;
+  }
+
+  // Jerusalem groups
+  const jBashalRows=countShifts(WORKERS_BASHAL,sched,false);
+  const jStudentRows=countShifts(WORKERS_STUDENT,sched,false);
+  const jKevaRows=countShifts(WORKERS_KEVA,sched,false);
+  // Chouf groups
+  const cBashalRows=countShifts(CHOUF_BASHAL,choufSched,true);
+  const cStudentRows=countShifts(CHOUF_STUDENT,choufSched,true);
+
+  const ready=get_schedReady(),choufReady=get_choufReady();
+  el.innerHTML=`
+    <div style="font-weight:900;font-size:.9rem;margin-bottom:.75rem;color:#e2e8f0">⚖️ טבלת צדק — ${MONTH_LABEL}</div>
+    <div style="font-size:.72rem;color:#64748b;margin-bottom:.75rem">
+      🟢 = מעל הממוצע בקבוצה &nbsp;|&nbsp; 🔴 = מתחת לממוצע &nbsp;|&nbsp; עמודת ג׳ ו-סו"ש: אדום = יותר מהממוצע
+    </div>
+    ${!ready&&!choufReady?'<div style="text-align:center;color:#475569;padding:2rem">צור תחילה סידור כדי לראות נתונים</div>':''}
+    ${ready?`
+      <div style="font-size:.75rem;font-weight:900;color:#93c5fd;margin-bottom:.4rem;padding:.3rem .6rem;background:rgba(37,99,235,.1);border-radius:7px">🏙 חמ"ל ירושלים</div>
+      ${buildTable('⭐ בש"ל','#3b82f6',jBashalRows)}
+      ${buildTable('🎓 סטודנטים','#8b5cf6',jStudentRows)}
+      ${buildTable('👮 קבע','#f59e0b',jKevaRows)}
+    `:''}
+    ${choufReady?`
+      <div style="font-size:.75rem;font-weight:900;color:#6ee7b7;margin-bottom:.4rem;padding:.3rem .6rem;background:rgba(16,185,129,.1);border-radius:7px;margin-top:.5rem">🌊 חמ"ל חוף</div>
+      ${buildTable('⭐ בש"ל חוף','#10b981',cBashalRows)}
+      ${buildTable('🎓 סטודנטים חוף','#7c3aed',cStudentRows)}
+    `:''}
+  `;
+}
+
+function renderMgrXReport(){
+  const el=g('mgr-panel-xrep');if(!el)return;
+  // Month selector
+  const xrepMonth=window._xrepMonth||'curr';
+  const isXrepNext=xrepMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  const schedJ=isXrepNext?(window._schedule_next||{}):get_schedule();
+  const schedC=isXrepNext?(window._choufSched_next||{}):get_choufSched();
+  const viewDays=isXrepNext?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+  const label=isXrepNext?NEXT_MONTH_LABEL:MONTH_LABEL;
+
+  // All workers grouped
+  const WORKER_GROUPS=[
+    {label:'⭐ בש"ל ירושלים',workers:WORKERS_BASHAL,sched:schedJ},
+    {label:'👮 קבע ירושלים',workers:WORKERS_KEVA,sched:schedJ},
+    {label:'🎓 סטודנטים ירושלים',workers:WORKERS_STUDENT,sched:schedJ},
+    {label:'⭐ בש"ל חוף',workers:CHOUF_BASHAL,sched:schedC},
+    {label:'🎓 סטודנטים חוף',workers:CHOUF_STUDENT,sched:schedC},
+  ];
+  const allWorkerList=WORKER_GROUPS.flatMap(g=>g.workers.map(n=>({name:n,group:g.label,sched:g.sched})));
+
+  const workerSelectHtml=`<select id="xrep-worker-sel" onchange="renderXTable()" style="background:#0f1623;color:#e2e8f0;border:1px solid #243048;border-radius:8px;padding:.4rem .6rem;font-family:Heebo,sans-serif;font-size:.85rem;margin-left:.5rem">
+    ${WORKER_GROUPS.map(grp=>`<optgroup label="${grp.label}">${grp.workers.map(n=>`<option value="${n}">${n}</option>`).join('')}</optgroup>`).join('')}
+  </select>`;
+
+  const monthToggleBtn=CONS_MONTH!==SCHED_MONTH?`<button onclick="window._xrepMonth=window._xrepMonth==='next'?'curr':'next';renderMgrXReport()" style="background:${isXrepNext?'rgba(99,102,241,.2)':'rgba(99,102,241,.08)'};color:#a5b4fc;border:1px solid rgba(99,102,241,.35);border-radius:7px;padding:.3rem .7rem;font-family:Heebo,sans-serif;font-size:.75rem;cursor:pointer">${isXrepNext?'🔙 '+MONTH_LABEL:'⏭ '+NEXT_MONTH_LABEL}</button>`:'';
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.65rem;flex-wrap:wrap">
+      <div style="font-weight:900;font-size:.9rem;color:#e2e8f0">📊 דו"ח איקסים</div>
+      <div style="font-size:.78rem;font-weight:700;color:${isXrepNext?'#a5b4fc':'#93c5fd'};background:${isXrepNext?'rgba(99,102,241,.1)':'rgba(37,99,235,.1)'};border:1px solid ${isXrepNext?'rgba(99,102,241,.3)':'rgba(37,99,235,.3)'};padding:.2rem .55rem;border-radius:6px">${label}</div>
+      ${monthToggleBtn}
+    </div>
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap">
+      <span style="font-size:.8rem;color:#94a3b8">עובד:</span>
+      ${workerSelectHtml}
+      <button onclick="downloadXReport()" style="background:rgba(16,185,129,.12);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);border-radius:7px;padding:.35rem .7rem;font-family:Heebo,sans-serif;font-size:.75rem;cursor:pointer">🖨️ PDF</button>
+    </div>
+    <div id="xrep-table-wrap"></div>`;
+
+  window._xrepWorkers=allWorkerList;
+  window._xrepViewDays=viewDays;
+  renderXTable();
+}
+
+
+function renderXTable(){
+  const sel=document.getElementById('xrep-worker-sel');
+  if(!sel)return;
+  const workerName=sel.value;
+  const workerData=window._xrepWorkers?.find(w=>w.name===workerName);
+  if(!workerData)return;
+  const {sched}=workerData;
+  const viewDays=window._xrepViewDays||SCHEDULE_DAYS;
+  const weeks=getWeeks(viewDays);
+  const shiftKeys=['a','b','c'];
+  const shiftLabel={a:'א׳',b:'ב׳',c:'ג׳'};
+  const shiftColor={a:'#93c5fd',b:'#c4b5fd',c:'#fcd34d'};
+  let totalShifts=0;
+  const dayHeaders=HEB_DAYS.map((d,i)=>`<th style="text-align:center;padding:.3rem .35rem;font-size:.7rem;color:${i>=5?'#fcd34d':'#94a3b8'};min-width:50px">${d}</th>`).join('');
+  const rows=weeks.map((wk,wi)=>{
+    const dayMap={};wk.forEach(d=>dayMap[d.jsDay]=d);
+    let wkShifts=0;
+    const subRows=shiftKeys.map(sh=>{
+      const cells=HEB_DAYS.map((_,jsDay)=>{
+        const d=dayMap[jsDay];
+        if(!d)return`<td style="background:#050810;min-width:50px"></td>`;
+        const sk=`${d.day}-${d.month}`;const slot=sched[sk]||{};
+        const worked=Object.entries(slot).some(([k,v])=>v===workerName&&k.startsWith(sh+'_')&&!k.endsWith('_achmash'));
+        if(worked){totalShifts++;wkShifts++;}
+        const h=d.holiday;
+        const bg=h?HOLIDAY_COLORS[h.type]||'':d.isWeekend?'rgba(245,158,11,.04)':'transparent';
+        return`<td style="text-align:center;padding:.3rem .2rem;background:${bg};font-size:.9rem;font-weight:900;color:${shiftColor[sh]}">${worked?'✕':''}</td>`;
+      }).join('');
+      return`<tr><td style="background:#080c14;padding:.2rem .6rem;font-size:.7rem;color:${shiftColor[sh]};font-weight:700;white-space:nowrap">${shiftLabel[sh]}</td>${cells}</tr>`;
+    }).join('');
+    const wkRange=`${wk[0]?.label||''}–${wk[wk.length-1]?.label||''}`;
+    const wkColor=wkShifts>=5?'#6ee7b7':wkShifts>0?'#fcd34d':'#475569';
+    return`<tr style="background:#0a0e1a"><td colspan="8" style="padding:.3rem .6rem;font-size:.7rem;color:#64748b;font-weight:700;border-top:2px solid #1e2a40">שבוע ${wi+1} · ${wkRange} · <span style="color:${wkColor};font-weight:900">${wkShifts} משמרות</span></td></tr>${subRows}`;
+  }).join('');
+  const wrap=document.getElementById('xrep-table-wrap');
+  if(!wrap)return;
+  wrap.innerHTML=`<div style="font-size:.75rem;color:#6ee7b7;margin-bottom:.5rem;font-weight:700">סה"כ: ${totalShifts} משמרות בחודש</div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="background:#080c14;padding:.3rem .5rem;font-size:.7rem;color:#64748b;min-width:44px;text-align:right">משמרת</th>${dayHeaders}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function downloadXReport(){
+  const sel=document.getElementById('xrep-worker-sel');if(!sel)return;
+  const name=sel.value;
+  const label=window._schedViewMonth==='next'?NEXT_MONTH_LABEL:MONTH_LABEL;
+  const wrap=document.getElementById('xrep-table-wrap');if(!wrap)return;
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>דו"ח איקסים — ${name}</title><style>body{font-family:Arial,sans-serif;direction:rtl;font-size:10px;color:#000}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:3px 5px;text-align:center}th{background:#eee}h2{font-size:13px}</style></head><body><h2>דו"ח איקסים — ${name} — ${label}</h2>${wrap.outerHTML}<br><button onclick="window.print()">🖨️ הדפס</button></body></html>`);
+  win.document.close();
+}
+// ══════════════════════ CHAT SYSTEM ══════════════════════
+// Structure: chats/{workerName}/{threadId} = {subject, messages:[], closed, createdAt}
+const CHAT_COMMANDERS=['שמואל','תמר','נועם','אוראל','רן חדד','נתנאל פינטו'];
+const CHAT_ALL_WORKERS=[...ALL_WORKERS,...CHOUF_ALL];
+
+function get_chats(){return window._chats||{};}
+function saveChat(data){window._chats=data;window._fbSet('chats',data);}
+function chatThreads(workerName){
+  const raw=get_chats()[workerName]||{};
+  return Object.entries(raw).map(([id,t])=>({id,...t})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+}
+
+// ── Worker chat ──
+function initChat(){
+  g('chat-title').textContent="💬 צ'אט עם הפיקוד";
+  window._chatView='list';
+  window._chatThread=null;
+  const wrap=g('chat-worker-wrap');
+  wrap.innerHTML=workerSelHTML('chat-worker','chatWorkerChange()',false,true);
+  if(window._empWorker){const sel=g('chat-worker');if(sel){sel.value=window._empWorker;chatWorkerChange();}}
+  else{g('chat-content').innerHTML='';}
+}
+
+function chatBack(){
+  if(window._chatView==='thread'){window._chatView='list';window._chatThread=null;renderChatList();}
+  else nav('home');
+}
+
+function chatWorkerChange(){
+  const sel=g('chat-worker');
+  if(!sel||!sel.value)return;
+  window._chatWorker=sel.value;
+  window._chatView='list';
+  window._chatThread=null;
+  renderChatList();
+}
+
+function renderChatList(){
+  const worker=window._chatWorker||window._empWorker;
+  if(!worker)return;
+  g('chat-title').textContent="💬 הפניות שלי";
+  const threads=chatThreads(worker);
+  const open=threads.filter(t=>!t.closed);
+  const closed=threads.filter(t=>t.closed);
+
+  let html=`<button onclick="openNewThread()" style="width:100%;padding:.65rem;border-radius:10px;background:linear-gradient(135deg,rgba(245,158,11,.2),rgba(245,158,11,.1));border:1px solid rgba(245,158,11,.4);color:#fcd34d;font-family:Heebo,sans-serif;font-size:.88rem;font-weight:900;cursor:pointer;margin-bottom:.75rem">➕ פנייה חדשה לפיקוד</button>`;
+
+  if(open.length){
+    html+=`<div style="font-size:.72rem;color:#6ee7b7;font-weight:700;margin-bottom:.4rem">💬 שיחות פתוחות</div>`;
+    html+=open.map(t=>threadCard(t,false)).join('');
+  }
+  if(closed.length){
+    html+=`<div style="font-size:.72rem;color:#64748b;font-weight:700;margin:.75rem 0 .4rem">🔒 שיחות סגורות</div>`;
+    html+=closed.map(t=>threadCard(t,true)).join('');
+  }
+  if(!threads.length){html+=`<div style="text-align:center;color:#475569;padding:2rem;font-size:.85rem">אין פניות עדיין<br><span style="font-size:.75rem">לחצו על ➕ לפנייה חדשה</span></div>`;}
+  g('chat-content').innerHTML=html;
+}
+
+function threadCard(t,isClosed){
+  const lastMsg=t.messages?.[t.messages.length-1];
+  const ts=lastMsg?.ts?new Date(lastMsg.ts).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+  const hasNew=!isClosed&&lastMsg?.from==='mgr'&&!t.workerRead;
+  return`<div onclick="openThreadView('${t.id}')" style="padding:.65rem .75rem;border-radius:10px;cursor:pointer;border:1px solid ${hasNew?'rgba(245,158,11,.5)':isClosed?'rgba(100,116,139,.2)':'rgba(30,42,64,.8)'};background:${hasNew?'rgba(245,158,11,.07)':'rgba(10,14,26,.6)'};margin-bottom:.4rem;display:flex;justify-content:space-between;align-items:center">
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:${hasNew?900:700};color:${hasNew?'#fcd34d':isClosed?'#64748b':'#e2e8f0'};font-size:.82rem">${isClosed?'🔒 ':''}${t.subject||'פנייה'}</div>
+      <div style="font-size:.68rem;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lastMsg?.text?.substring(0,35)||''}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.2rem;margin-right:.5rem">
+      <span style="font-size:.58rem;color:#475569">${ts}</span>
+      ${hasNew?`<span style="background:#f59e0b;color:#000;border-radius:4px;padding:.05rem .3rem;font-size:.6rem;font-weight:900">חדש</span>`:''}
+    </div>
+  </div>`;
+}
+
+function openNewThread(){
+  g('chat-title').textContent='פנייה חדשה';
+  g('chat-content').innerHTML=`
+    <div style="margin-bottom:.6rem">
+      <label style="font-size:.78rem;color:#94a3b8;display:block;margin-bottom:.3rem">נושא הפנייה:</label>
+      <input id="new-thread-subject" type="text" placeholder="לדוג׳: בקשת חופש, שאלה על סידור..." maxlength="60"
+        style="width:100%;background:#0f1623;color:#e2e8f0;border:1px solid #243048;border-radius:9px;padding:.45rem .65rem;font-family:Heebo,sans-serif;font-size:.85rem;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:.75rem">
+      <label style="font-size:.78rem;color:#94a3b8;display:block;margin-bottom:.3rem">הודעה ראשונה:</label>
+      <textarea id="new-thread-msg" rows="3" placeholder="כתבו את ההודעה שלכם..."
+        style="width:100%;background:#0f1623;color:#e2e8f0;border:1px solid #243048;border-radius:9px;padding:.45rem .65rem;font-family:Heebo,sans-serif;font-size:.85rem;resize:none;box-sizing:border-box"></textarea>
+    </div>
+    <button onclick="submitNewThread()" style="width:100%;padding:.65rem;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;border:none;font-family:Heebo,sans-serif;font-size:.9rem;font-weight:900;cursor:pointer">שלח פנייה</button>
+    <button onclick="renderChatList()" style="width:100%;padding:.45rem;border-radius:10px;background:transparent;color:#64748b;border:1px solid #243048;font-family:Heebo,sans-serif;font-size:.82rem;cursor:pointer;margin-top:.4rem">ביטול</button>`;
+}
+
+function submitNewThread(){
+  const worker=window._chatWorker||window._empWorker;
+  const subject=g('new-thread-subject')?.value?.trim();
+  const text=g('new-thread-msg')?.value?.trim();
+  if(!subject){toast('נא להזין נושא');return;}
+  if(!text){toast('נא לכתוב הודעה');return;}
+  const chats=get_chats();
+  if(!chats[worker])chats[worker]={};
+  const threadId='t'+Date.now();
+  chats[worker][threadId]={subject,messages:[{from:'worker',text,ts:Date.now(),senderName:worker}],closed:false,createdAt:Date.now(),workerRead:true,mgrRead:false};
+  saveChat(chats);
+  window._chatThread=threadId;
+  window._chatView='thread';
+  openThreadView(threadId);
+  toast('✅ הפנייה נשלחה!');
+}
+
+function openThreadView(threadId){
+  const worker=window._chatWorker||window._empWorker;
+  const chats=get_chats();
+  const thread=(chats[worker]||{})[threadId]||{};
+  window._chatThread=threadId;
+  window._chatView='thread';
+  // Mark as read
+  if(!chats[worker])chats[worker]={};
+  if(!chats[worker][threadId])chats[worker][threadId]=thread;
+  chats[worker][threadId].workerRead=true;
+  saveChat(chats);
+  g('chat-title').textContent=thread.subject||'שיחה';
+  renderThreadView(worker,threadId);
+}
+
+function renderThreadView(worker,threadId){
+  const chats=get_chats();
+  const thread=(chats[worker]||{})[threadId]||{};
+  const msgs=thread.messages||[];
+  const isClosed=thread.closed||false;
+  const msgsHtml=msgs.length?msgs.map(m=>{
+    if(m.from==='system')return`<div style="text-align:center;padding:.2rem 0"><span style="font-size:.68rem;color:#64748b;background:#0f1623;padding:.15rem .5rem;border-radius:5px">${m.text}</span></div>`;
+    const isMgr=m.from==='mgr';
+    const ts=new Date(m.ts).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    return`<div style="display:flex;justify-content:${isMgr?'flex-start':'flex-end'}">
+      <div style="max-width:82%;background:${isMgr?'rgba(99,102,241,.15)':'rgba(245,158,11,.12)'};border:1px solid ${isMgr?'rgba(99,102,241,.35)':'rgba(245,158,11,.35)'};border-radius:12px;padding:.45rem .7rem">
+        <div style="font-size:.62rem;color:${isMgr?'#a5b4fc':'#fcd34d'};font-weight:700;margin-bottom:.15rem">${isMgr?m.senderName||'פיקוד':'אתה'}</div>
+        <div style="font-size:.82rem;color:#e2e8f0;line-height:1.4">${m.text}</div>
+        <div style="font-size:.56rem;color:#475569;margin-top:.15rem;display:flex;justify-content:space-between;align-items:center;gap:.4rem">
+          <span>${ts}</span>
+          ${m.from==='worker'?`<span style="color:${(get_chats()[worker]||{})[threadId]?.mgrRead?'#60a5fa':'#64748b'};font-size:.7rem" title="${(get_chats()[worker]||{})[threadId]?.mgrRead?'נקרא על ידי הפיקוד':'טרם נקרא'}">${(get_chats()[worker]||{})[threadId]?.mgrRead?'✓✓':'✓'}</span>`:m.from==='mgr'?`<span style="color:${(get_chats()[worker]||{})[threadId]?.workerRead?'#60a5fa':'#64748b'};font-size:.7rem" title="${(get_chats()[worker]||{})[threadId]?.workerRead?'נקרא':'טרם נקרא'}">${(get_chats()[worker]||{})[threadId]?.workerRead?'✓✓':'✓'}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join(''):`<div style="text-align:center;color:#475569;padding:1.5rem;font-size:.8rem">אין הודעות</div>`;
+
+  const inputArea=isClosed
+    ?`<div style="background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);border-radius:9px;padding:.6rem .75rem;font-size:.78rem;color:#fca5a5;text-align:center">🔒 הפנייה נסגרה על ידי הפיקוד</div>`
+    :`<div style="display:flex;gap:.5rem;margin-top:.5rem">
+        <textarea id="chat-input" placeholder="כתבו הודעה..." rows="2" style="flex:1;background:#0f1623;color:#e2e8f0;border:1px solid #243048;border-radius:10px;padding:.5rem .7rem;font-family:Heebo,sans-serif;font-size:.85rem;resize:none"></textarea>
+        <button onclick="sendChatMsg()" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:white;border:none;border-radius:10px;padding:.5rem 1rem;font-family:Heebo,sans-serif;font-weight:900;cursor:pointer">שלח</button>
+      </div>`;
+
+  g('chat-content').innerHTML=`
+    <div id="chat-messages" style="background:#0a0e1a;border:1px solid #1e2a40;border-radius:12px;padding:.75rem;min-height:180px;max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:.5rem;margin-bottom:.5rem">${msgsHtml}</div>
+    ${inputArea}`;
+  const msgEl=g('chat-messages');if(msgEl)msgEl.scrollTop=msgEl.scrollHeight;
+}
+
+function renderChatMessages(){
+  const worker=window._chatWorker||window._empWorker;
+  if(window._chatView==='thread'&&window._chatThread)renderThreadView(worker,window._chatThread);
+  else renderChatList();
+}
+
+function sendChatMsg(){
+  const worker=window._chatWorker||window._empWorker;
+  const threadId=window._chatThread;
+  if(!worker||!threadId)return;
+  const chats=get_chats();
+  const thread=(chats[worker]||{})[threadId];
+  if(!thread||thread.closed){toast('🔒 הפנייה נסגרה');return;}
+  const inp=g('chat-input');
+  const text=inp?.value?.trim();
+  if(!text)return;
+  thread.messages=thread.messages||[];
+  thread.messages.push({from:'worker',text,ts:Date.now(),senderName:worker});
+  thread.workerRead=true;thread.mgrRead=false;
+  saveChat(chats);
+  inp.value='';
+  renderThreadView(worker,threadId);
+}
+
+// ── Manager chat ──
+function renderMgrChat(){
+  const el=g('mgr-panel-chat');if(!el)return;
+  const chats=get_chats();
+  // Build flat list of all threads across all workers
+  const allThreads=[];
+  CHAT_ALL_WORKERS.forEach(worker=>{
+    const wThreads=chats[worker]||{};
+    Object.entries(wThreads).forEach(([id,t])=>{
+      // Skip invalid/empty threads
+      if(!t||typeof t!=='object')return;
+      const msgs=t.messages||[];
+      if(!msgs.length)return;// skip threads with no messages at all
+      if(!t.subject&&!msgs.length)return;// skip completely empty
+      const lastMsg=msgs[msgs.length-1]||null;
+      const unread=lastMsg&&lastMsg.from==='worker'&&!t.mgrRead;
+      allThreads.push({worker,id,subject:t.subject||'פנייה',lastMsg,unread,closed:t.closed||false,msgs});
+    });
+  });
+  allThreads.sort((a,b)=>{if(a.unread&&!b.unread)return -1;if(!a.unread&&b.unread)return 1;return(b.lastMsg?.ts||0)-(a.lastMsg?.ts||0);});
+  const open=allThreads.filter(t=>!t.closed);
+  const closed=allThreads.filter(t=>t.closed);
+
+  const threadRow=(t)=>{
+    const isActive=window._mgrChatThread===t.worker+':'+t.id;
+    const ts=t.lastMsg?.ts?new Date(t.lastMsg.ts).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+    return`<div style="display:flex;align-items:center;gap:.35rem;margin-bottom:.35rem">
+      <div onclick="openMgrThread('${t.worker}','${t.id}')" style="flex:1;padding:.55rem .7rem;border-radius:9px;cursor:pointer;border:1px solid ${isActive?'rgba(245,158,11,.4)':'rgba(30,42,64,.8)'};background:${isActive?'rgba(245,158,11,.08)':'rgba(10,14,26,.6)'}">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-weight:${t.unread?900:700};color:${t.unread?'#fcd34d':'#e2e8f0'};font-size:.8rem">${t.worker} — ${t.subject}</span>
+          <div style="display:flex;gap:.3rem;align-items:center">
+            ${t.unread?`<span style="background:#f59e0b;color:#000;border-radius:3px;padding:.05rem .3rem;font-size:.58rem;font-weight:900">חדש</span>`:''}
+            <span style="font-size:.58rem;color:#475569">${ts}</span>
+          </div>
+        </div>
+        <div style="font-size:.68rem;color:#64748b;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${t.lastMsg?.text?.substring(0,45)||''}</div>
+      </div>
+      ${t.closed?`<button onclick="deleteMgrChat('${t.worker}','${t.id}')" style="background:rgba(220,38,38,.1);color:#fca5a5;border:1px solid rgba(220,38,38,.3);border-radius:7px;padding:.3rem .45rem;font-size:.65rem;font-family:Heebo,sans-serif;cursor:pointer">🗑</button>`:''}
+    </div>`;
+  };
+
+  // Thread detail panel
+  const activeKey=window._mgrChatThread;
+  let detailHtml='';
+  if(activeKey){
+    const [activeWorker,...rest]=activeKey.split(':');const activeId=rest.join(':');
+    const thread=(chats[activeWorker]||{})[activeId]||{};
+    const msgs=thread.messages||[];
+    const isClosed=thread.closed||false;
+    const msgsHtml=msgs.map(m=>{
+      if(m.from==='system')return`<div style="text-align:center;padding:.2rem 0"><span style="font-size:.65rem;color:#64748b;background:#0a0e1a;padding:.15rem .5rem;border-radius:5px">${m.text}</span></div>`;
+      const isMgr=m.from==='mgr';
+      const ts=new Date(m.ts).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      return`<div style="display:flex;justify-content:${isMgr?'flex-start':'flex-end'}">
+        <div style="max-width:85%;background:${isMgr?'rgba(99,102,241,.15)':'rgba(245,158,11,.1)'};border:1px solid ${isMgr?'rgba(99,102,241,.3)':'rgba(245,158,11,.3)'};border-radius:10px;padding:.4rem .65rem">
+          <div style="font-size:.62rem;color:${isMgr?'#a5b4fc':'#fcd34d'};font-weight:700;margin-bottom:.1rem">${isMgr?m.senderName||'פיקוד':m.senderName||activeWorker}</div>
+          <div style="font-size:.8rem;color:#e2e8f0;line-height:1.4">${m.text}</div>
+          <div style="font-size:.55rem;color:#475569;margin-top:.1rem;display:flex;justify-content:space-between;align-items:center;gap:.3rem">
+            <span>${ts}</span>
+            ${m.from==='mgr'?`<span style="color:${thread.workerRead?'#60a5fa':'#64748b'};font-size:.68rem" title="${thread.workerRead?'נקרא על ידי העובד':'טרם נקרא'}">${thread.workerRead?'✓✓':'✓'}</span>`:m.from==='worker'?`<span style="color:${thread.mgrRead?'#60a5fa':'#64748b'};font-size:.68rem" title="${thread.mgrRead?'נקרא':'טרם נקרא'}">${thread.mgrRead?'✓✓':'✓'}</span>`:''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    const senderSel=!window._mgrChatSender
+      ?`<select id="mgr-sender-sel" style="background:#0f1623;color:#e2e8f0;border:1px solid #243048;border-radius:8px;padding:.3rem .5rem;font-family:Heebo,sans-serif;font-size:.78rem;width:100%;margin-bottom:.35rem">
+          <option value="">-- הזדהה לפני שליחה --</option>
+          ${CHAT_COMMANDERS.map(n=>`<option value="${n}">${n}</option>`).join('')}
+        </select>
+        <button onclick="confirmMgrSender()" style="background:rgba(99,102,241,.12);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);border-radius:7px;padding:.3rem .75rem;font-family:Heebo,sans-serif;font-size:.75rem;cursor:pointer;width:100%;margin-bottom:.35rem">✓ אשר</button>`
+      :`<div style="font-size:.7rem;color:#a5b4fc;margin-bottom:.35rem;display:flex;justify-content:space-between;align-items:center"><span>👤 ${window._mgrChatSender}</span><button onclick="window._mgrChatSender=null;renderMgrChat()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:.65rem">החלף</button></div>`;
+    const inputArea=isClosed
+      ?`<div style="font-size:.75rem;color:#fca5a5;text-align:center;padding:.4rem;background:rgba(220,38,38,.08);border-radius:8px;border:1px solid rgba(220,38,38,.2)">🔒 פנייה סגורה</div>
+        <button onclick="reopenChat()" style="width:100%;margin-top:.35rem;background:rgba(16,185,129,.1);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:.35rem;font-family:Heebo,sans-serif;font-size:.75rem;cursor:pointer">🔓 פתח מחדש</button>`
+      :`${senderSel}<div style="display:flex;gap:.4rem">
+        <textarea id="mgr-chat-input" rows="2" placeholder="תגובה..." style="flex:1;background:#0f1623;color:#e2e8f0;border:1px solid #243048;border-radius:9px;padding:.45rem .6rem;font-family:Heebo,sans-serif;font-size:.82rem;resize:none" ${!window._mgrChatSender?'disabled':''}></textarea>
+        <div style="display:flex;flex-direction:column;gap:.3rem">
+          <button onclick="sendMgrMsg()" style="background:linear-gradient(135deg,#6366f1,#4f46e5);color:white;border:none;border-radius:9px;padding:.4rem .75rem;font-family:Heebo,sans-serif;font-weight:900;cursor:pointer" ${!window._mgrChatSender?'disabled':''}>שלח</button>
+          <button onclick="closeChat()" style="background:rgba(220,38,38,.1);color:#fca5a5;border:1px solid rgba(220,38,38,.3);border-radius:9px;padding:.3rem .5rem;font-size:.68rem;font-family:Heebo,sans-serif;cursor:pointer">🔒 סגור</button>
+        </div>
+      </div>`;
+    detailHtml=`<div style="background:#0a0e1a;border:1px solid #1e2a40;border-radius:11px;padding:.65rem;margin-top:.6rem">
+      <div style="font-size:.75rem;font-weight:700;color:#e2e8f0;margin-bottom:.4rem">${activeWorker} — ${thread.subject||'פנייה'}</div>
+      <div id="mgr-chat-messages" style="min-height:120px;max-height:38vh;overflow-y:auto;display:flex;flex-direction:column;gap:.4rem;margin-bottom:.5rem">${msgsHtml}</div>
+      ${inputArea}
+    </div>`;
+    setTimeout(()=>{const m=g('mgr-chat-messages');if(m)m.scrollTop=m.scrollHeight;},30);
+  }
+
+  const listHtml=`
+    ${open.length?`<div style="font-size:.72rem;color:#6ee7b7;font-weight:700;margin-bottom:.35rem">💬 פתוחות (${open.length})</div>${open.map(threadRow).join('')}`:''}
+    ${closed.length?`<div style="font-size:.72rem;color:#64748b;font-weight:700;margin:.6rem 0 .35rem">🔒 סגורות (${closed.length})</div>${closed.map(threadRow).join('')}`:''}
+    ${!allThreads.length?`<div style="text-align:center;color:#475569;padding:1.5rem;font-size:.82rem">אין פניות</div>`:''}`;
+
+  el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem"><div style="font-weight:900;font-size:.88rem;color:#e2e8f0">💬 פניות עובדים</div><button onclick="cleanEmptyChats()" style="background:none;border:1px solid #243048;color:#64748b;border-radius:6px;padding:.15rem .45rem;font-size:.65rem;font-family:Heebo,sans-serif;cursor:pointer">🧹 נקה ריקים</button></div>${listHtml}${detailHtml}`;
+}
+
+function openMgrThread(worker,threadId){
+  window._mgrChatThread=worker+':'+threadId;
+  const chats=get_chats();
+  if((chats[worker]||{})[threadId]){chats[worker][threadId].mgrRead=true;saveChat(chats);}
+  renderMgrChat();
+}
+function confirmMgrSender(){
+  const sel=g('mgr-sender-sel');if(!sel||!sel.value)return;
+  window._mgrChatSender=sel.value;renderMgrChat();
+  setTimeout(()=>{const m=g('mgr-chat-messages');if(m)m.scrollTop=m.scrollHeight;},30);
+}
+function sendMgrMsg(){
+  if(!window._mgrChatSender||!window._mgrChatThread)return;
+  const inp=g('mgr-chat-input');const text=inp?.value?.trim();if(!text)return;
+  const [worker,...rest]=window._mgrChatThread.split(':');const threadId=rest.join(':');
+  const chats=get_chats();
+  const thread=(chats[worker]||{})[threadId];if(!thread)return;
+  thread.messages=thread.messages||[];
+  thread.messages.push({from:'mgr',text,ts:Date.now(),senderName:window._mgrChatSender});
+  thread.mgrRead=true;thread.workerRead=false;
+  saveChat(chats);if(inp)inp.value='';renderMgrChat();
+}
+function closeChat(){
+  if(!window._mgrChatThread)return;
+  const [worker,...rest]=window._mgrChatThread.split(':');const threadId=rest.join(':');
+  if(!confirm('לסגור פנייה זו?'))return;
+  const chats=get_chats();const thread=(chats[worker]||{})[threadId];if(!thread)return;
+  thread.messages=thread.messages||[];
+  thread.messages.push({from:'system',text:'🔒 הפנייה נסגרה על ידי הפיקוד',ts:Date.now()});
+  thread.closed=true;thread.workerRead=false;
+  saveChat(chats);renderMgrChat();
+}
+function reopenChat(){
+  if(!window._mgrChatThread)return;
+  const [worker,...rest]=window._mgrChatThread.split(':');const threadId=rest.join(':');
+  const chats=get_chats();const thread=(chats[worker]||{})[threadId];if(!thread)return;
+  thread.messages=thread.messages||[];
+  thread.messages.push({from:'system',text:'🔓 הפנייה נפתחה מחדש',ts:Date.now()});
+  thread.closed=false;thread.workerRead=false;
+  saveChat(chats);renderMgrChat();
+}
+function cleanEmptyChats(){
+  const chats=get_chats();
+  let removed=0;
+  Object.keys(chats).forEach(worker=>{
+    const wt=chats[worker];
+    if(!wt||typeof wt!=='object')return;
+    Object.keys(wt).forEach(tid=>{
+      const t=wt[tid];
+      if(!t||typeof t!=='object'||(t.messages||[]).length===0){
+        delete wt[tid];removed++;
+      }
+    });
+    if(Object.keys(wt).length===0)delete chats[worker];
+  });
+  if(removed>0){saveChat(chats);toast(`🗑 נוקו ${removed} שיחות ריקות`);renderMgrChat();}
+  else toast('✅ אין שיחות ריקות');
+}
+function deleteMgrChat(worker,threadId){
+  if(!confirm('למחוק פנייה זו לצמיתות?'))return;
+  const chats=get_chats();
+  if((chats[worker]||{})[threadId])delete chats[worker][threadId];
+  if(window._mgrChatThread===worker+':'+threadId)window._mgrChatThread=null;
+  saveChat(chats);toast('🗑 נמחק');renderMgrChat();
+}
+
+
+function renderMgrHolidays(){
+  const el=g('mgr-panel-holidays');if(!el)return;
+  // Get active month's days
+  const isNext=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  const activeDays=isNext?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+  const activeLabel=isNext?NEXT_MONTH_LABEL:MONTH_LABEL;
+  // Override map: stored in Firebase under 'holiday_overrides'
+  const overrides=window._holidayOverrides||{};
+
+  // Build table of days that have a holiday (base or override)
+  const holidayDays=[];
+  activeDays.forEach(d=>{
+    const sk=`${d.day}-${d.month}`;
+    const baseH=JEWISH_HOLIDAYS[sk]||null;
+    const ovr=overrides[sk]||null;
+    if(baseH||ovr){
+      holidayDays.push({d,sk,baseH,ovr,effective:ovr||baseH});
+    }
+  });
+
+  const typeOpts=['chag','erev','chol_moed','yom_haatzmaut','yom_haatzmaut_erev','tzom','minor','chanuka']
+    .map(t=>`<option value="${t}">${{chag:'🟣 חג',erev:'🟡 ערב חג',chol_moed:'🟤 חול המועד',yom_haatzmaut:'🔵 יום עצמאות',yom_haatzmaut_erev:'🟡 ערב יום עצמאות',tzom:'⚫ צום',minor:'🟢 מועד קל',chanuka:'🟡 חנוכה'}[t]||t}</option>`).join('');
+
+  const rows=holidayDays.map(({d,sk,baseH,ovr,effective})=>{
+    const isOverridden=!!ovr;
+    const rowBg=isOverridden?'rgba(245,158,11,.06)':'transparent';
+    return`<tr style="border-bottom:1px solid #1e2a40;background:${rowBg}">
+      <td style="padding:.5rem .6rem;font-size:.78rem;color:#94a3b8;white-space:nowrap">${d.label} ${HEB_DAYS[d.jsDay]}</td>
+      <td style="padding:.5rem .6rem">
+        <input id="hname-${sk}" type="text" value="${effective.name}"
+          style="background:#0f1623;color:#e2e8f0;border:1px solid #243048;border-radius:6px;padding:.25rem .5rem;font-family:Heebo,sans-serif;font-size:.78rem;width:100%;min-width:130px">
+      </td>
+      <td style="padding:.5rem .4rem">
+        <select id="htype-${sk}"
+          style="background:#0f1623;color:#e2e8f0;border:1px solid #243048;border-radius:6px;padding:.25rem .4rem;font-family:Heebo,sans-serif;font-size:.75rem">
+          ${typeOpts.replace(`value="${effective.type}"`,`value="${effective.type}" selected`)}
+        </select>
+      </td>
+      <td style="padding:.5rem .4rem;text-align:center;white-space:nowrap">
+        <button onclick="saveHolidayOverride('${sk}')" style="background:rgba(16,185,129,.12);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);border-radius:6px;padding:.2rem .5rem;font-size:.7rem;font-family:Heebo,sans-serif;cursor:pointer">💾</button>
+        ${isOverridden?`<button onclick="resetHolidayOverride('${sk}')" style="background:rgba(220,38,38,.1);color:#fca5a5;border:1px solid rgba(220,38,38,.3);border-radius:6px;padding:.2rem .4rem;font-size:.7rem;font-family:Heebo,sans-serif;cursor:pointer;margin-right:3px" title="חזור לברירת מחדל">↺</button>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Also allow adding a new holiday
+  const dayOpts=activeDays.map(d=>`<option value="${d.day}-${d.month}">${d.label} ${HEB_DAYS[d.jsDay]}</option>`).join('');
+
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;flex-wrap:wrap;gap:.4rem">
+      <div style="font-weight:900;font-size:.88rem;color:#e2e8f0">🗓 חגים ומועדים — ${activeLabel}</div>
+      ${CONS_MONTH!==SCHED_MONTH?`<button onclick="window._schedViewMonth=window._schedViewMonth==='next'?'curr':'next';renderMgrHolidays()" style="background:${isNext?'rgba(99,102,241,.2)':'rgba(99,102,241,.08)'};color:#a5b4fc;border:1px solid rgba(99,102,241,.35);border-radius:7px;padding:.25rem .6rem;font-size:.72rem;font-family:Heebo,sans-serif;cursor:pointer">${isNext?'🔙 '+MONTH_LABEL:'⏭ '+NEXT_MONTH_LABEL}</button>`:''}
+    </div>
+    <div style="font-size:.72rem;color:#64748b;margin-bottom:.75rem">השורות המסומנות בצהוב הן עריכות ידניות שדורסות את ברירת המחדל.</div>
+    <div style="overflow-x:auto;margin-bottom:1rem">
+      <table style="width:100%;border-collapse:collapse;min-width:400px">
+        <thead><tr style="border-bottom:2px solid #1e2a40">
+          <th style="text-align:right;padding:.35rem .6rem;font-size:.7rem;color:#64748b">תאריך</th>
+          <th style="text-align:right;padding:.35rem .6rem;font-size:.7rem;color:#64748b">שם</th>
+          <th style="text-align:right;padding:.35rem .4rem;font-size:.7rem;color:#64748b">סוג</th>
+          <th style="padding:.35rem .4rem;font-size:.7rem;color:#64748b;text-align:center">שמור</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div style="background:#0f1623;border:1px solid #1e2a40;border-radius:10px;padding:.75rem;margin-top:.5rem">
+      <div style="font-size:.75rem;font-weight:700;color:#a5b4fc;margin-bottom:.5rem">➕ הוסף חג/מועד</div>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center">
+        <select id="new-hday" style="background:#080c14;color:#e2e8f0;border:1px solid #243048;border-radius:7px;padding:.3rem .5rem;font-family:Heebo,sans-serif;font-size:.75rem">${dayOpts}</select>
+        <input id="new-hname" type="text" placeholder="שם החג" style="background:#080c14;color:#e2e8f0;border:1px solid #243048;border-radius:7px;padding:.3rem .5rem;font-family:Heebo,sans-serif;font-size:.75rem;width:130px">
+        <select id="new-htype" style="background:#080c14;color:#e2e8f0;border:1px solid #243048;border-radius:7px;padding:.3rem .4rem;font-family:Heebo,sans-serif;font-size:.75rem">${typeOpts}</select>
+        <button onclick="addHolidayOverride()" style="background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.35);border-radius:7px;padding:.3rem .7rem;font-family:Heebo,sans-serif;font-size:.75rem;cursor:pointer">הוסף</button>
+      </div>
+    </div>`;
+}
+
+function getHolidayOverrides(){return window._holidayOverrides||{};}
+function saveHolidayOverrides(ovr){
+  window._holidayOverrides=ovr;
+  window._fbSet('holiday_overrides',ovr);
+  // Rebuild effective holiday lookup
+  rebuildHolidayLookup();
+  toast('✅ נשמר');
+  renderMgrHolidays();
+}
+function rebuildHolidayLookup(){
+  // Merge base JEWISH_HOLIDAYS with overrides
+  const ovr=window._holidayOverrides||{};
+  Object.keys(ovr).forEach(sk=>{
+    if(ovr[sk]===null)delete window._effectiveHolidays[sk];
+    else window._effectiveHolidays[sk]=ovr[sk];
+  });
+}
+function saveHolidayOverride(sk){
+  const name=g('hname-'+sk)?.value?.trim();
+  const type=g('htype-'+sk)?.value;
+  if(!name){toast('נא להזין שם');return;}
+  const ovr={...getHolidayOverrides(),[sk]:{name,type}};
+  saveHolidayOverrides(ovr);
+}
+function resetHolidayOverride(sk){
+  if(!confirm('לאפס לברירת מחדל?'))return;
+  const ovr={...getHolidayOverrides()};
+  delete ovr[sk];
+  saveHolidayOverrides(ovr);
+}
+function addHolidayOverride(){
+  const sk=g('new-hday')?.value;
+  const name=g('new-hname')?.value?.trim();
+  const type=g('new-htype')?.value;
+  if(!sk||!name){toast('נא למלא שם ותאריך');return;}
+  const ovr={...getHolidayOverrides(),[sk]:{name,type}};
+  saveHolidayOverrides(ovr);
+}
+
+function toggleHolidayVerify(){
+  const el=g('holiday-verify-panel');
+  if(!el)return;
+  if(el.classList.contains('hidden')){
+    el.classList.remove('hidden');
+    renderHolidayVerify();
+  } else {
+    el.classList.add('hidden');
+  }
+}
+
+function renderHolidayVerify(){
+  const el=g('holiday-verify-panel');if(!el)return;
+  const isNext=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  const activeDays=isNext?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+  const activeLabel=isNext?NEXT_MONTH_LABEL:MONTH_LABEL;
+  const overrides=window._holidayOverrides||{};
+
+  // Collect all days that have a holiday (base or override)
+  const holidayDays=[];
+  activeDays.forEach(d=>{
+    const sk=`${d.day}-${d.month}`;
+    const baseH=JEWISH_HOLIDAYS[sk]||null;
+    const ovr=overrides[sk]||null;
+    if(baseH||ovr){
+      holidayDays.push({d,sk,baseH,ovr,eff:ovr||baseH});
+    }
+  });
+
+  // Also check for days marked null in overrides (deleted)
+  const deletedDays=Object.keys(overrides).filter(sk=>overrides[sk]===null).map(sk=>{
+    const [day,month]=sk.split('-').map(Number);
+    const baseH=JEWISH_HOLIDAYS[sk];
+    return{sk,day,month,baseH};
+  }).filter(x=>x.baseH&&activeDays.find(d=>d.day===x.day&&d.month===x.month));
+
+  const typeMap={chag:'🟣 חג',erev:'🟡 ערב חג',chol_moed:'🟤 חול המועד',yom_haatzmaut:'🔵 יום עצמאות',yom_haatzmaut_erev:'🟡 ערב יום עצמאות',tzom:'⚫ צום',minor:'🟢 מועד קל',chanuka:'🟡 חנוכה'};
+  const typeOpts=Object.entries(typeMap).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+
+  const rows=holidayDays.map(({d,sk,baseH,ovr,eff})=>{
+    const isOvr=!!ovr;
+    const bgRow=isOvr?'background:rgba(245,158,11,.07);':'';
+    return`<tr style="border-bottom:1px solid #1e2a40;${bgRow}">
+      <td style="padding:.45rem .55rem;font-size:.78rem;color:${isOvr?'#fcd34d':'#94a3b8'};white-space:nowrap">
+        ${d.label} ${HEB_DAYS[d.jsDay]}${isOvr?' ✏️':''}
+      </td>
+      <td style="padding:.45rem .5rem">
+        <input id="hvfy-name-${sk}" value="${eff.name}" type="text"
+          style="background:#080c14;color:#e2e8f0;border:1px solid #243048;border-radius:6px;padding:.25rem .45rem;font-family:Heebo,sans-serif;font-size:.78rem;width:130px">
+      </td>
+      <td style="padding:.45rem .4rem">
+        <select id="hvfy-type-${sk}" style="background:#080c14;color:#e2e8f0;border:1px solid #243048;border-radius:6px;padding:.25rem .35rem;font-family:Heebo,sans-serif;font-size:.73rem">
+          ${typeOpts.replace(`value="${eff.type}"`,`value="${eff.type}" selected`)}
+        </select>
+      </td>
+      <td style="padding:.45rem .35rem;white-space:nowrap">
+        <button onclick="hvfySave('${sk}')" style="background:rgba(16,185,129,.12);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);border-radius:5px;padding:.2rem .45rem;font-size:.68rem;font-family:Heebo,sans-serif;cursor:pointer">💾</button>
+        <button onclick="hvfyMove('${sk}')" style="background:rgba(37,99,235,.1);color:#93c5fd;border:1px solid rgba(37,99,235,.3);border-radius:5px;padding:.2rem .4rem;font-size:.68rem;font-family:Heebo,sans-serif;cursor:pointer;margin-right:3px" title="העבר לתאריך אחר">📅</button>
+        ${isOvr?`<button onclick="hvfyReset('${sk}')" style="background:rgba(220,38,38,.08);color:#fca5a5;border:1px solid rgba(220,38,38,.25);border-radius:5px;padding:.2rem .4rem;font-size:.68rem;font-family:Heebo,sans-serif;cursor:pointer;margin-right:3px" title="שחזר לברירת מחדל">↺</button>`:''}
+        <button onclick="hvfyDelete('${sk}')" style="background:rgba(220,38,38,.08);color:#fca5a5;border:1px solid rgba(220,38,38,.25);border-radius:5px;padding:.2rem .4rem;font-size:.68rem;font-family:Heebo,sans-serif;cursor:pointer" title="מחק מהסידור">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const deletedRows=deletedDays.map(({sk,baseH,day,month})=>`
+    <tr style="border-bottom:1px solid #1e2a40;background:rgba(220,38,38,.06)">
+      <td style="padding:.45rem .55rem;font-size:.78rem;color:#fca5a5">${day}/${month} <span style="font-size:.65rem">(נמחק)</span></td>
+      <td colspan="2" style="padding:.45rem .5rem;font-size:.78rem;color:#64748b">${baseH.name}</td>
+      <td style="padding:.45rem .35rem">
+        <button onclick="hvfyReset('${sk}')" style="background:rgba(16,185,129,.1);color:#6ee7b7;border:1px solid rgba(16,185,129,.25);border-radius:5px;padding:.2rem .45rem;font-size:.68rem;font-family:Heebo,sans-serif;cursor:pointer">↺ שחזר</button>
+      </td>
+    </tr>`).join('');
+
+  const dayOpts=activeDays.map(d=>`<option value="${d.day}-${d.month}">${d.label} ${HEB_DAYS[d.jsDay]}</option>`).join('');
+
+  el.innerHTML=`<div style="background:#0a0e1a;border:1px solid rgba(245,158,11,.3);border-radius:12px;padding:.75rem 1rem;margin-bottom:.75rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+      <div style="font-weight:900;font-size:.85rem;color:#fcd34d">🗓 אימות חגים — ${activeLabel}</div>
+      <button onclick="hvfyAddRow()" style="background:rgba(99,102,241,.12);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);border-radius:6px;padding:.25rem .55rem;font-size:.72rem;font-family:Heebo,sans-serif;cursor:pointer">➕ הוסף חג</button>
+    </div>
+    <div style="font-size:.68rem;color:#64748b;margin-bottom:.6rem">
+      ✏️ = נוסף/עודכן ידנית &nbsp;|&nbsp; 📅 = הזז לתאריך אחר &nbsp;|&nbsp; ↺ = שחזר לברירת מחדל &nbsp;|&nbsp; 🗑 = מחק מהסידור
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:380px">
+        <thead><tr style="border-bottom:2px solid #1e2a40">
+          <th style="text-align:right;padding:.3rem .55rem;font-size:.67rem;color:#64748b">תאריך</th>
+          <th style="text-align:right;padding:.3rem .5rem;font-size:.67rem;color:#64748b">שם החג</th>
+          <th style="text-align:right;padding:.3rem .4rem;font-size:.67rem;color:#64748b">סוג</th>
+          <th style="padding:.3rem .35rem;font-size:.67rem;color:#64748b;text-align:center">פעולות</th>
+        </tr></thead>
+        <tbody id="hvfy-tbody">${rows}${deletedRows}</tbody>
+      </table>
+    </div>
+    <div id="hvfy-add-row" class="hidden" style="margin-top:.6rem;background:#0f1623;border:1px solid #1e2a40;border-radius:9px;padding:.6rem">
+      <div style="font-size:.73rem;font-weight:700;color:#a5b4fc;margin-bottom:.4rem">➕ הוסף חג חדש</div>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center">
+        <select id="hvfy-new-day" style="background:#080c14;color:#e2e8f0;border:1px solid #243048;border-radius:7px;padding:.3rem .5rem;font-family:Heebo,sans-serif;font-size:.75rem">${dayOpts}</select>
+        <input id="hvfy-new-name" type="text" placeholder="שם החג"
+          style="background:#080c14;color:#e2e8f0;border:1px solid #243048;border-radius:7px;padding:.3rem .5rem;font-family:Heebo,sans-serif;font-size:.75rem;width:120px">
+        <select id="hvfy-new-type" style="background:#080c14;color:#e2e8f0;border:1px solid #243048;border-radius:7px;padding:.3rem .4rem;font-family:Heebo,sans-serif;font-size:.75rem">
+          ${typeOpts}
+        </select>
+        <button onclick="hvfyAddConfirm()" style="background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.35);border-radius:7px;padding:.3rem .7rem;font-family:Heebo,sans-serif;font-size:.75rem;cursor:pointer">הוסף</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Holiday verify actions ──
+function hvfySave(sk){
+  const name=g('hvfy-name-'+sk)?.value?.trim();
+  const type=g('hvfy-type-'+sk)?.value;
+  if(!name){toast('נא להזין שם');return;}
+  const ovr={...window._holidayOverrides||{},[sk]:{name,type}};
+  window._holidayOverrides=ovr;window._fbSet('holiday_overrides',ovr);
+  window._effectiveHolidays={...JEWISH_HOLIDAYS};
+  Object.keys(ovr).forEach(s=>{if(ovr[s]===null)delete window._effectiveHolidays[s];else window._effectiveHolidays[s]=ovr[s];});
+  toast('✅ נשמר');renderHolidayVerify();renderMgrSched();
+}
+function hvfyDelete(sk){
+  if(!confirm('למחוק חג זה מהסידור?'))return;
+  const ovr={...window._holidayOverrides||{},[sk]:null};
+  window._holidayOverrides=ovr;window._fbSet('holiday_overrides',ovr);
+  window._effectiveHolidays={...JEWISH_HOLIDAYS};
+  Object.keys(ovr).forEach(s=>{if(ovr[s]===null)delete window._effectiveHolidays[s];else window._effectiveHolidays[s]=ovr[s];});
+  toast('🗑 נמחק');renderHolidayVerify();renderMgrSched();
+}
+function hvfyReset(sk){
+  const ovr={...window._holidayOverrides||{}};
+  delete ovr[sk];
+  window._holidayOverrides=ovr;window._fbSet('holiday_overrides',ovr);
+  window._effectiveHolidays={...JEWISH_HOLIDAYS};
+  Object.keys(ovr).forEach(s=>{if(ovr[s]===null)delete window._effectiveHolidays[s];else window._effectiveHolidays[s]=ovr[s];});
+  toast('↺ שוחזר');renderHolidayVerify();renderMgrSched();
+}
+function hvfyMove(sk){
+  // Prompt for new date
+  const isNext=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  const activeDays=isNext?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+  const dayOpts=activeDays.map(d=>`<option value="${d.day}-${d.month}">${d.label} ${HEB_DAYS[d.jsDay]}</option>`).join('');
+  const eff=(window._effectiveHolidays||JEWISH_HOLIDAYS)[sk];
+  if(!eff){return;}
+  const modal=`<div style="font-size:.8rem;color:#e2e8f0;margin-bottom:.6rem">הזז "<b>${eff.name}</b>" לתאריך:</div>
+    <select id="hvfy-move-target" style="background:#080c14;color:#e2e8f0;border:1px solid #243048;border-radius:7px;padding:.35rem .5rem;font-family:Heebo,sans-serif;font-size:.82rem;width:100%">${dayOpts}</select>
+    <div style="display:flex;gap:.5rem;margin-top:.75rem">
+      <button onclick="hvfyMoveConfirm('${sk}')" style="flex:1;padding:.45rem;border-radius:8px;background:rgba(245,158,11,.15);color:#fcd34d;border:1px solid rgba(245,158,11,.3);font-family:Heebo,sans-serif;cursor:pointer">הזז</button>
+      <button onclick="closeModal()" style="flex:1;padding:.45rem;border-radius:8px;background:#1e2a40;color:#94a3b8;border:none;font-family:Heebo,sans-serif;cursor:pointer">ביטול</button>
+    </div>`;
+  g('modal-box').innerHTML=modal;g('modal').classList.add('active');
+}
+function hvfyMoveConfirm(oldSk){
+  const newSk=g('hvfy-move-target')?.value;
+  if(!newSk||newSk===oldSk){closeModal();return;}
+  const eff=(window._effectiveHolidays||JEWISH_HOLIDAYS)[oldSk];
+  if(!eff){closeModal();return;}
+  const ovr={...window._holidayOverrides||{}};
+  // Remove from old date, add to new date
+  ovr[oldSk]=null;
+  ovr[newSk]={name:eff.name,type:eff.type};
+  window._holidayOverrides=ovr;window._fbSet('holiday_overrides',ovr);
+  window._effectiveHolidays={...JEWISH_HOLIDAYS};
+  Object.keys(ovr).forEach(s=>{if(ovr[s]===null)delete window._effectiveHolidays[s];else window._effectiveHolidays[s]=ovr[s];});
+  closeModal();toast(`📅 הועבר`);renderHolidayVerify();renderMgrSched();
+}
+function hvfyAddRow(){
+  const r=g('hvfy-add-row');if(r)r.classList.toggle('hidden');
+}
+function hvfyAddConfirm(){
+  const sk=g('hvfy-new-day')?.value;
+  const name=g('hvfy-new-name')?.value?.trim();
+  const type=g('hvfy-new-type')?.value;
+  if(!sk||!name){toast('נא למלא שם ותאריך');return;}
+  const ovr={...window._holidayOverrides||{},[sk]:{name,type}};
+  window._holidayOverrides=ovr;window._fbSet('holiday_overrides',ovr);
+  window._effectiveHolidays={...JEWISH_HOLIDAYS};
+  Object.keys(ovr).forEach(s=>{if(ovr[s]===null)delete window._effectiveHolidays[s];else window._effectiveHolidays[s]=ovr[s];});
+  toast('✅ נוסף');renderHolidayVerify();renderMgrSched();
+}
+
 function renderMgrAdmin(){
   const ticker=window._ticker||[];
   const bdays=window._birthdays||{};
   let html=`
+  <div class="card" style="border:1px solid rgba(220,38,38,.3);background:rgba(220,38,38,.04)">
+    <div style="font-weight:900;color:#fca5a5;margin-bottom:.5rem">🗑 השמדת סידורים</div>
+    <div style="font-size:.75rem;color:#94a3b8;margin-bottom:.75rem">מחיקה בלתי הפיכה של סידור עבודה מהמערכת — כולל הסרה מהסידורים הקודמים. דורש סיסמת מנהל ראשי.</div>
+    <div style="display:flex;flex-direction:column;gap:.5rem">
+      ${[{label:'🏙 סידור ירושלים — '+MONTH_LABEL,key:'curr_j'},{label:'🌊 סידור חוף — '+MONTH_LABEL,key:'curr_c'},
+         ...(CONS_MONTH!==SCHED_MONTH?[{label:'🏙 סידור ירושלים — '+NEXT_MONTH_LABEL,key:'next_j'},{label:'🌊 סידור חוף — '+NEXT_MONTH_LABEL,key:'next_c'}]:[])
+      ].map(item=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.4rem .6rem;background:#0a0e1a;border:1px solid rgba(220,38,38,.2);border-radius:8px">
+        <span style="font-size:.8rem;color:#e2e8f0">${item.label}</span>
+        <button onclick="destroySched('${item.key}')" style="background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.4);border-radius:6px;padding:.25rem .65rem;font-family:Heebo,sans-serif;font-size:.75rem;cursor:pointer">🗑 השמד</button>
+      </div>`).join('')}
+    </div>
+  </div>
   <div class="card">
     <div style="font-weight:900;color:#93c5fd;margin-bottom:.75rem">📢 הודעות (טיקר)</div>
     <div id="admin-ticker-list">${ticker.map((m,i)=>`<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem 0;border-bottom:1px solid #1e2a40"><span style="flex:1;font-size:.82rem">${m.text||m}</span><button onclick="removeTicker(${i})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:.9rem">🗑</button></div>`).join('')||'<div style="color:#475569;font-size:.78rem">אין הודעות</div>'}</div>
@@ -1126,8 +2255,96 @@ function renderMgrAdmin(){
         </div>
       </div>`;
     }).join('')}
+  </div>
+  <div class="card" style="border:1px solid rgba(99,102,241,.3)">
+    <div style="font-weight:900;color:#a5b4fc;margin-bottom:.5rem">📤 ייצוא אילוצים</div>
+    <div style="font-size:.75rem;color:#94a3b8;margin-bottom:.75rem">ייצוא רשימת כל האילוצים שהוגשו עד כה — שני החמ"לים, עם פירוט מלא לכל עובד.</div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <button onclick="exportConstraints('next')" style="background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.35);border-radius:8px;padding:.4rem .9rem;font-family:Heebo,sans-serif;font-size:.8rem;cursor:pointer">📤 ייצא — ${NEXT_MONTH_LABEL}</button>
+      <button onclick="exportConstraints('curr')" style="background:rgba(99,102,241,.08);color:#8b9cf4;border:1px solid rgba(99,102,241,.2);border-radius:8px;padding:.4rem .9rem;font-family:Heebo,sans-serif;font-size:.8rem;cursor:pointer">📤 ייצא — ${MONTH_LABEL}</button>
+    </div>
   </div>`;
   g('mgr-panel-admin').innerHTML=html;
+}
+function exportConstraints(monthKey){
+  const isNext=monthKey==='next';
+  const label=isNext?NEXT_MONTH_LABEL:MONTH_LABEL;
+  const allC=isNext?(window._allC_next||window._allC||{}):(window._allC_curr||window._allC||{});
+  const choufC=get_choufC();
+  const shiftLabel={a:'משמרת א׳ (07:00-15:00)',b:'משמרת ב׳ (15:00-21:30)',c:'משמרת ג׳ (21:30-07:00)'};
+  const typeLabel={block:'❌ לא יכול',prefer:'✅ מבקש לעבוד'};
+  const groups=[
+    {title:'⭐ בש"ל ירושלים',workers:WORKERS_BASHAL,data:allC},
+    {title:'👮 קבע ירושלים',workers:WORKERS_KEVA,data:allC},
+    {title:'🎓 סטודנטים ירושלים',workers:WORKERS_STUDENT,data:allC},
+    {title:'🌊 בש"ל חוף',workers:CHOUF_BASHAL,data:choufC},
+    {title:'🎓 סטודנטים חוף',workers:CHOUF_STUDENT,data:choufC},
+  ];
+  let totalSubmitted=0,totalWorkers=0;
+  const groupsHtml=groups.map(({title,workers,data})=>{
+    const submitted=workers.filter(n=>data[n]?.submitted);
+    const notSubmitted=workers.filter(n=>!data[n]?.submitted);
+    totalWorkers+=workers.length;totalSubmitted+=submitted.length;
+    const submittedRows=submitted.map(name=>{
+      const cons=data[name]?.constraints||[];
+      const consList=cons.length?cons.map(cx=>`<tr><td style="padding:3px 8px;font-size:11px;color:#444">${cx.dayLabel||cx.day+'/'+cx.month} ${HEB_DAYS[cx.jsDay]||''}</td><td style="padding:3px 8px;font-size:11px">${shiftLabel[cx.shiftKey]||cx.shiftKey}</td><td style="padding:3px 8px;font-size:11px">${typeLabel[cx.type]||cx.type}</td></tr>`).join(''):'<tr><td colspan="3" style="padding:3px 8px;font-size:11px;color:#888">הגיש ללא אילוצים ספציפיים</td></tr>';
+      const submittedAt=data[name]?.submittedAt?new Date(data[name].submittedAt).toLocaleString('he-IL'):'';
+      return`<tr style="background:#f0fdf4"><td style="padding:5px 8px;font-weight:700;vertical-align:top;border-bottom:1px solid #ddd">${name}<br><span style="font-size:9px;color:#888">${submittedAt}</span></td>
+        <td style="padding:5px 8px;vertical-align:top;border-bottom:1px solid #ddd">
+          <table style="width:100%;border-collapse:collapse;border:1px solid #e9fbe9">
+            <tr style="background:#e9fbe9"><th style="padding:2px 6px;font-size:10px;text-align:right">תאריך</th><th style="padding:2px 6px;font-size:10px;text-align:right">משמרת</th><th style="padding:2px 6px;font-size:10px;text-align:right">סוג</th></tr>
+            ${consList}
+          </table>
+        </td></tr>`;
+    }).join('');
+    const notRows=notSubmitted.map(n=>`<tr><td style="padding:4px 8px;color:#888;border-bottom:1px solid #eee">${n}</td><td style="padding:4px 8px;border-bottom:1px solid #eee"><span style="background:#fef2f2;color:#991b1b;border-radius:4px;padding:1px 6px;font-size:10px">⏳ טרם הגיש</span></td></tr>`).join('');
+    return`<div style="margin-bottom:22px"><div style="background:#e0e7ff;padding:7px 12px;font-weight:700;font-size:13px;border-radius:6px 6px 0 0;border-bottom:2px solid #818cf8">${title} — ${submitted.length}/${workers.length} הגישו</div>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #ddd"><thead><tr style="background:#f1f5f9"><th style="padding:5px 8px;text-align:right;font-size:11px;width:130px">עובד</th><th style="padding:5px 8px;text-align:right;font-size:11px">אילוצים</th></tr></thead><tbody>${submittedRows}${notRows}</tbody></table></div>`;
+  }).join('');
+  const now=new Date().toLocaleString('he-IL');
+  const html=`<!DOCTYPE html><html dir="rtl" lang="he"><head><meta charset="UTF-8"><title>אילוצים — ${label}</title>
+<style>body{font-family:Arial,sans-serif;direction:rtl;color:#1a1a1a;max-width:940px;margin:0 auto;padding:20px;font-size:13px}h1{font-size:20px;margin-bottom:4px}.meta{color:#666;font-size:11px;margin-bottom:18px}.summary{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;margin-bottom:22px;display:flex;gap:24px;flex-wrap:wrap}.sn{font-size:22px;font-weight:700;color:#3730a3}.sl{font-size:10px;color:#666}@media print{button{display:none}@page{margin:1.5cm}}</style>
+</head><body>
+<h1>⬡ ייצוא אילוצים — ${label}</h1>
+<div class="meta">הופק ב-${now}</div>
+<div class="summary">
+  <div><div class="sn">${totalSubmitted}</div><div class="sl">הגישו</div></div>
+  <div><div class="sn">${totalWorkers-totalSubmitted}</div><div class="sl">טרם הגישו</div></div>
+  <div><div class="sn">${totalWorkers}</div><div class="sl">סה"כ עובדים</div></div>
+</div>
+${groupsHtml}
+<br><button onclick="window.print()" style="background:#3730a3;color:white;border:none;border-radius:6px;padding:8px 20px;font-size:13px;cursor:pointer">🖨️ הדפס / שמור PDF</button>
+</body></html>`;
+  const win=window.open('','_blank');win.document.write(html);win.document.close();
+}
+function destroySched(key){
+  const pw=prompt('הזן סיסמת מנהל ראשי להשמדת הסידור:');
+  if(pw===null)return;
+  if(pw!=='9211'){toast('❌ סיסמה שגויה');return;}
+  if(!confirm('⚠️ פעולה זו בלתי הפיכה! הסידור יימחק לצמיתות כולל מהסידורים הקודמים. להמשיך?'))return;
+
+  const isNext=key.startsWith('next');
+  const isChouf=key.endsWith('_c');
+  const month=isNext?CONS_MONTH:SCHED_MONTH;
+  const year=isNext?CONS_YEAR:CURRENT_YEAR;
+  const fbKey=isChouf?`chouf_schedule_${month}_${year}`:`schedule_${month}_${year}`;
+
+  // Delete from Firebase
+  window._fbSet(fbKey,null);
+
+  // Clear in-memory
+  if(!isNext&&!isChouf){window._schedule={};window._schedReady=false;window._schedOfficial=false;window._unfilledShifts=[];}
+  if(!isNext&&isChouf){window._choufSched={};window._choufReady=false;window._choufOfficial=false;}
+  if(isNext&&!isChouf){window._schedule_next=null;}
+  if(isNext&&isChouf){window._choufSched_next=null;}
+
+  // Remove from past schedules archive
+  const past=get_pastSchedules();
+  const pastKey=`${year}_${month}`;
+  if(past[pastKey]){delete past[pastKey];window._fbSet('past_schedules',past);}
+
+  toast('🗑 הסידור הושמד לצמיתות');
+  renderMgrAdmin();
 }
 function addTicker(){
   const inp=g('admin-ticker-input');if(!inp||!inp.value.trim())return;
@@ -1161,18 +2378,68 @@ function removeBday(mo,i){
 }
 function mgrReject(id){const allV=get_allV();saveV(allV.map(v=>v.id===id?{...v,status:'rejected'}:v));toast('❌ נדחה');renderMgrVacs();}
 
-let mgrSchedView='week',mgrSchedWeek=0;
+let mgrSchedView='month',mgrSchedWeek=0;
 function renderMgrSched(){
   const ready=get_schedReady(),official=get_schedOfficial();
   const officialBadge=official?`<span style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);padding:.2rem .55rem;border-radius:6px;font-size:.72rem;font-weight:700">✅ רשמי</span>`:'';
+  // Month switcher for schedule
+  const isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  // effectiveReady: for next month use _schedule_next existence, for current use normal ready flag
+  const effectiveReady=isNextMonth?(!!window._schedule_next&&Object.keys(window._schedule_next).length>0):ready;
+  const activeSchedDays=isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+  const activeMLabel=isNextMonth?NEXT_MONTH_LABEL:MONTH_LABEL;
+  const nextMonthBtn=CONS_MONTH!==SCHED_MONTH?`
+    <button class="btn" style="background:${isNextMonth?'rgba(99,102,241,.2)':'rgba(99,102,241,.08)'};color:#a5b4fc;border:1px solid rgba(99,102,241,.35);font-size:.78rem" onclick="toggleSchedMonth()">${isNextMonth?'🔙 '+MONTH_LABEL:'⏭ '+NEXT_MONTH_LABEL}</button>`:'';
   const btns=`<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;align-items:center">
-    <button class="btn btn-blue" style="padding:.55rem 1rem;font-size:.88rem" onclick="runGenerate()">⚡ צור סידור</button>
-    ${ready?`<button class="btn" style="background:#1e2a40;color:#94a3b8;font-size:.78rem" onclick="toggleSchedView()">${mgrSchedView==='week'?'🗓 חודשי':'📅 שבועי'}</button>`:''}
-    ${ready?`<button class="btn" style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);font-size:.78rem" onclick="makeOfficial()">${official?'🔄 עדכן רשמי':'📌 הגדר כרשמי'}</button>`:''}
-    ${ready?`<button class="btn" style="background:rgba(37,99,235,.15);color:#93c5fd;border:1px solid rgba(37,99,235,.4);font-size:.78rem" onclick="downloadPDF()">📄 הורד PDF</button><button class="btn" style="background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.4);font-size:.78rem" onclick="downloadImage('sched-output','סידור ירושלים')">🖼 הורד תמונה</button>`:''}
+    <div style="font-size:.78rem;font-weight:700;color:${isNextMonth?'#a5b4fc':'#93c5fd'};background:${isNextMonth?'rgba(99,102,241,.1)':'rgba(37,99,235,.1)'};border:1px solid ${isNextMonth?'rgba(99,102,241,.3)':'rgba(37,99,235,.3)'};padding:.25rem .6rem;border-radius:6px">${activeMLabel}</div>
+    ${nextMonthBtn}
+    <button class="btn btn-blue" style="padding:.55rem 1rem;font-size:.88rem" onclick="runGenerateForMonth()">⚡ צור סידור</button>
+    ${effectiveReady?`<button class="btn" style="background:#1e2a40;color:#94a3b8;font-size:.78rem" onclick="toggleSchedView()">${mgrSchedView==='week'?'🗓 חודשי':'📅 שבועי'}</button>`:''}
+    ${effectiveReady?`<button class="btn" style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);font-size:.78rem" onclick="makeOfficial()">${official?'🔄 עדכן רשמי':'📌 הגדר כרשמי'}</button>`:''}
+    ${effectiveReady?`<button class="btn" style="background:rgba(37,99,235,.15);color:#93c5fd;border:1px solid rgba(37,99,235,.4);font-size:.78rem" onclick="downloadPDF()">📄 הורד PDF</button><button class="btn" style="background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.4);font-size:.78rem" onclick="downloadImage('sched-output','סידור ירושלים')">🖼 הורד תמונה</button>`:''}
+    <button class="btn" style="background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.3);font-size:.78rem" onclick="toggleHolidayVerify()">🗓 אמת חגים</button>
     ${officialBadge}
+  </div>
+  <div id="holiday-verify-panel" class="hidden"></div>`;
+  // משמרות שלא אויישו
+  const unfilled=window._unfilledShifts||[];
+  const unfilledHTML=unfilled.length?`<div style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.35);border-radius:10px;padding:.75rem;margin-bottom:.75rem">
+    <div style="font-weight:900;color:#fca5a5;font-size:.82rem;margin-bottom:.4rem">⚠️ משמרות לאיוש ידני (${unfilled.length})</div>
+    ${unfilled.map(u=>{
+      const shLabel=u.shKey==='a'?'א׳ בוקר':u.shKey==='b'?'ב׳ ערב':'ג׳ לילה';
+      return`<div style="display:flex;align-items:center;gap:.5rem;padding:.25rem 0;border-bottom:1px solid rgba(220,38,38,.2);flex-wrap:wrap">
+        <span style="font-weight:700;color:#fca5a5;font-size:.78rem">${u.label} — ${shLabel}</span>
+        <span style="font-size:.68rem;color:#94a3b8">${u.reason}</span>
+        <button onclick="openManualFillModal('${u.day}-${u.month}','${u.shKey}')" style="background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3);padding:.15rem .5rem;border-radius:5px;font-size:.65rem;cursor:pointer;font-family:Heebo,sans-serif">✏️ שבץ ידנית</button>
+      </div>`;
+    }).join('')}
+  </div>`:'';
+  g('mgr-panel-sched').innerHTML=btns+unfilledHTML+`<div id="sched-output">${effectiveReady?buildSchedOutput():'<div style="text-align:center;color:#475569;padding:2rem">לחץ ⚡ צור סידור</div>'}</div>`;
+}
+function openManualFillModal(sk,shKey){
+  const shLabel=shKey==='a'?'א׳ בוקר':shKey==='b'?'ב׳ ערב':'ג׳ לילה';
+  const day=SCHEDULE_DAYS.find(d=>`${d.day}-${d.month}`===sk);
+  const allWorkers=[...ROSTER.map(r=>r.name)];
+  g('modal-box').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+    <div style="font-weight:900;font-size:.9rem">✏️ שיבוץ ידני — ${day?.label} ${shLabel}</div>
+    <button onclick="closeModal()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:1.3rem">✕</button>
+  </div>
+  <div style="font-size:.75rem;color:#94a3b8;margin-bottom:.5rem">בחר עובד לשיבוץ:</div>
+  <div style="display:flex;flex-direction:column;gap:.3rem;max-height:60vh;overflow-y:auto">
+    ${allWorkers.map(n=>{const dc=getDeskColor(n);return`<button onclick="manualFillSlot('${sk}','${shKey}','${n.replace(/'/g,"\\'")}','manual_mgr')" style="text-align:right;padding:.4rem .6rem;border-radius:7px;border:1px solid ${dc.border}40;background:#0f1623;color:#e2e8f0;cursor:pointer;font-family:Heebo,sans-serif"><span style="color:${dc.text};font-weight:700">${n}</span> <span style="font-size:.62rem;background:${dc.bg};color:${dc.text};padding:.1rem .35rem;border-radius:4px">${dc.label}</span></button>`;}).join('')}
   </div>`;
-  g('mgr-panel-sched').innerHTML=btns+`<div id="sched-output">${ready?buildSchedOutput():'<div style="text-align:center;color:#475569;padding:2rem">לחץ ⚡ צור סידור</div>'}</div>`;
+  g('modal').classList.add('show');
+}
+function manualFillSlot(sk,shKey,name,field){
+  const schedule=get_schedule();
+  // find next available field
+  let f=field;let i=1;
+  while((schedule[sk]||{})[`${shKey}_${f}`]){f=field+i;i++;}
+  const ns={...schedule,[sk]:{...(schedule[sk]||{}),[`${shKey}_${f}`]:name}};
+  saveS(ns,get_schedReady(),undefined,true);
+  // remove from unfilled list
+  window._unfilledShifts=(window._unfilledShifts||[]).filter(u=>!(u.day==sk.split('-')[0]&&u.month==sk.split('-')[1]&&u.shKey===shKey));
+  closeModal();toast(`✏️ ${name} שובץ`);renderMgrSched();
 }
 function makeOfficial(){
   const wasOfficial=get_schedOfficial();
@@ -1187,9 +2454,11 @@ function makeOfficial(){
 function downloadPDF(){
   const el=document.getElementById('sched-output');
   if(!el)return;
-  // open print dialog with schedule content
+  const _isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  const _label=_isNextMonth?NEXT_MONTH_LABEL:MONTH_LABEL;
+  const _official=_isNextMonth?false:get_schedOfficial();
   const win=window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>סידור ${MONTH_LABEL}</title>
+  win.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>סידור ${_label}</title>
   <style>
     body{font-family:Arial,sans-serif;direction:rtl;font-size:10px;color:#000;background:#fff}
     table{border-collapse:collapse;width:100%;margin-bottom:12px}
@@ -1200,24 +2469,26 @@ function downloadPDF(){
     .week-title{font-weight:bold;margin:8px 0 4px;font-size:11px}
     @media print{button{display:none}}
   </style></head><body>
-  <h2>⬡ הסידור הגלוי — ${MONTH_LABEL} ${get_schedOfficial()?'<span class="official">✅ רשמי</span>':''}</h2>
+  <h2>⬡ הסידור הגלוי — ${_label} ${_official?'<span class="official">✅ רשמי</span>':''}</h2>
   ${buildPDFTable()}
   <br><button onclick="window.print()">🖨️ הדפס / שמור PDF</button>
   </body></html>`);
   win.document.close();
 }
 function buildPDFTable(){
-  const schedule=get_schedule();const weeks=getWeeks();const shL={a:'א׳ 07:00-15:00',b:'ב׳ 15:00-21:30',c:'ג׳ 21:30-07:00'};
+  const _isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  const schedule=_isNextMonth?(window._schedule_next||{}):get_schedule();
+  const days=_isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+  const weeks=getWeeks(days);
+  const shL={a:'א׳ 07:00-15:00',b:'ב׳ 15:00-21:30',c:'ג׳ 21:30-07:00'};
   return weeks.map((wk,wi)=>{
     const headers=wk.map(d=>`<th>${HEB_DAYS[d.jsDay]}<br>${d.label}${d.holiday?'<br>'+d.holiday.name:''}</th>`).join('');
     const rows=SHIFTS_K.map(sh=>{
       const cells=wk.map(d=>{
         const sk=`${d.day}-${d.month}`;const slot=schedule[sk]||{};
         const names=[];
-        // keva + achmash
         if(slot[`${sh.key}_keva`])names.push('<b>פיקוד: </b>'+slot[`${sh.key}_keva`]);
         if(slot[`${sh.key}_achmash`])names.push('<b>אחמ"ש: </b>'+slot[`${sh.key}_achmash`]);
-        // all dynamic fields
         Object.entries(slot).forEach(([k,v])=>{
           if(!v)return;
           if(!k.startsWith(sh.key+'_'))return;
@@ -1232,10 +2503,13 @@ function buildPDFTable(){
   }).join('');
 }
 function buildSchedOutput(){
-  const weeks=getWeeks();
-  if(mgrSchedView==='month')return weeks.map((wk,i)=>`<div style="margin-bottom:1rem"><div style="font-size:.68rem;color:#64748b;font-weight:700;margin-bottom:.3rem">שבוע ${i+1}</div>${buildWeekTable(wk)}</div>`).join('');
+  const _isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  const _viewDays=_isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+  const _viewSched=_isNextMonth?(window._schedule_next||{}):get_schedule();
+  const weeks=getWeeks(_viewDays);
+  if(mgrSchedView==='month')return weeks.map((wk,i)=>`<div style="margin-bottom:1rem"><div style="font-size:.68rem;color:#64748b;font-weight:700;margin-bottom:.3rem">שבוע ${i+1}</div>${buildWeekTable(wk,_viewSched)}</div>`).join('');
   const wk=weeks[mgrSchedWeek]||[];
-  return`<div style="display:flex;gap:.4rem;align-items:center;margin-bottom:.5rem"><button class="btn" style="background:#1e2a40;color:#94a3b8;padding:.3rem .6rem" onclick="changeWeek(-1)" ${mgrSchedWeek===0?'disabled':''}>‹</button><span style="flex:1;text-align:center;font-weight:700;font-size:.82rem">${wk[0]?.label}–${wk[wk.length-1]?.label}</span><button class="btn" style="background:#1e2a40;color:#94a3b8;padding:.3rem .6rem" onclick="changeWeek(1)" ${mgrSchedWeek>=weeks.length-1?'disabled':''}>›</button></div>${buildWeekTable(wk)}`;
+  return`<div style="display:flex;gap:.4rem;align-items:center;margin-bottom:.5rem"><button class="btn" style="background:#1e2a40;color:#94a3b8;padding:.3rem .6rem" onclick="changeWeek(-1)" ${mgrSchedWeek===0?'disabled':''}>‹</button><span style="flex:1;text-align:center;font-weight:700;font-size:.82rem">${wk[0]?.label}–${wk[wk.length-1]?.label}</span><button class="btn" style="background:#1e2a40;color:#94a3b8;padding:.3rem .6rem" onclick="changeWeek(1)" ${mgrSchedWeek>=weeks.length-1?'disabled':''}>›</button></div>${buildWeekTable(wk,_viewSched)}`;
 }
 
 function getDeskColor(name){
@@ -1257,8 +2531,8 @@ function getSpecialNote(name,jsDay,shKey){
   return null;
 }
 
-function buildWeekTable(week){
-  const schedule=get_schedule();
+function buildWeekTable(week,schedOverride){
+  const schedule=schedOverride||get_schedule();
   const cellHTML=(sk,shKey,field)=>{
     const slot=schedule[sk]||{};const name=slot[`${shKey}_${field}`];
     const isAch=field==='achmash';const empty=!name;
@@ -1267,10 +2541,23 @@ function buildWeekTable(week){
     const note=name?getSpecialNote(name,dayObj?.jsDay??-1,shKey):null;
     let bg,border,labelEl='';
     if(isAch){bg=empty?'rgba(220,38,38,.08)':'rgba(16,185,129,.06)';border=empty?'rgba(220,38,38,.5)':'rgba(16,185,129,.4)';labelEl=`<div class="cell-label" style="color:${empty?'#fca5a5':'#10b981'}">אחמ"ש${empty?' ⚠️':''}</div>`;}
-    else if(field==='keva'||field.endsWith('_keva')){bg='rgba(245,158,11,.1)';border='#f59e0b';labelEl=`<div class="cell-label" style="color:#fcd34d">פיקוד</div>`;}
+    else if(field==='keva'||field==='keva2'||field.endsWith('_keva')){
+      const isExtra=field==='keva2';
+      bg='rgba(245,158,11,.1)';border='#f59e0b';
+      labelEl=`<div class="cell-label" style="color:#fcd34d">${isExtra?'קבע נוסף':'פיקוד'}</div>`;
+    }
     else if(dc&&name){bg=dc.bg;border=dc.border;labelEl=`<div class="cell-label" style="color:${dc.text}">${dc.label}</div>`;}
     else{bg='transparent';border='rgba(100,116,139,.2)';}
-    return`<div class="cell-inner" style="background:${bg};border-color:${border}" onclick="openCellModal('${sk}','${shKey}_${field}')">${labelEl}<div style="color:${dc?dc.text:empty?'#374151':'#e2e8f0'}">${name||''}</div>${note?`<div style="font-size:.44rem;color:#fcd34d;font-weight:700">${note}</div>`:''}</div>`;
+    // Check vacation/sick status for this worker on this day
+    let statusTag='';
+    if(name){
+      const allV2=get_allV();const allS2=get_allSick();
+      if(allV2.some(v=>v.status==='approved'&&v.worker===name&&v.days?.some(vd=>vd.day===dayObj?.day&&vd.month===dayObj?.month)))
+        statusTag=`<div style="font-size:.42rem;background:rgba(16,185,129,.2);color:#6ee7b7;border-radius:3px;padding:0 2px">🏖חופש</div>`;
+      else if(allS2.some(s=>!s.resolved&&s.worker===name))
+        statusTag=`<div style="font-size:.42rem;background:rgba(220,38,38,.2);color:#fca5a5;border-radius:3px;padding:0 2px">🤒מחלה</div>`;
+    }
+    return`<div class="cell-inner" style="background:${bg};border-color:${border}" onclick="openCellModal('${sk}','${shKey}_${field}')">${labelEl}<div style="color:${dc?dc.text:empty?'#374151':'#e2e8f0'}">${name||''}</div>${statusTag}${note?`<div style="font-size:.44rem;color:#fcd34d;font-weight:700">${note}</div>`:''}</div>`;
   };
   // build ordered cell list per day per shift: keva first, then achmash, then desks
   const orderedCells=(sk,shKey,d)=>{
@@ -1285,11 +2572,12 @@ function buildWeekTable(week){
     });
     return html;
   };
-  const headers=week.map(d=>{const h=d.holiday;return`<th style="min-width:72px;background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.06)':d.isWeekend?'rgba(245,158,11,.04)':'#080c14'}"><div style="font-weight:800;color:${h?HOLIDAY_TEXT[h.type]||'#c4b5fd':d.isWeekend?'#fcd34d':'#e2e8f0'};font-size:.68rem">${HEB_DAYS[d.jsDay]}</div><div style="font-size:.55rem;color:${h?HOLIDAY_TEXT[h.type]:'#64748b'}">${d.label}</div>${h?`<div style="font-size:.48rem;color:${HOLIDAY_TEXT[h.type]||'#c4b5fd'}">${h.name}</div>`:''}</th>`;}).join('');
-  const rows=SHIFTS_K.map(sh=>`<tr><td style="background:#080c14;position:sticky;right:0;z-index:1;white-space:nowrap;padding:.35rem .4rem;min-width:68px"><div style="font-weight:700;color:#e2e8f0;font-size:.68rem">משמרת ${sh.label}</div><div style="font-size:.52rem;color:#64748b">${sh.time}</div></td>${week.map(d=>{const sk=`${d.day}-${d.month}`;const h=d.holiday;let cells='';if(d.isWeekend){if(d.isFri||(d.isSat&&sh.key!=='c')){if(sh.key==='a'||sh.key==='b')cells+=cellHTML(sk,sh.key,'keva');cells+=DESKS.map(desk=>cellHTML(sk,sh.key,desk+'_stu')).join('');}else if(d.isSat&&sh.key==='c')cells+=DESKS.map(desk=>cellHTML(sk,sh.key,desk)).join('');}else{if(sh.key==='a'||sh.key==='b'){cells+=cellHTML(sk,sh.key,'keva');cells+=cellHTML(sk,sh.key,'achmash');}cells+=DESKS.map(desk=>cellHTML(sk,sh.key,desk)+cellHTML(sk,sh.key,desk+'_stu')).join('');}return`<td style="background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.04)':d.isWeekend?'rgba(245,158,11,.02)':'transparent'};min-width:72px">${cells}</td>`;}).join('')}</tr>`).join('');
+  const headers=week.map(d=>{const h=d.holiday;return`<th style="min-width:76px;background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.06)':d.isWeekend?'rgba(245,158,11,.04)':'#080c14'}"><div style="font-weight:800;color:${h?HOLIDAY_TEXT[h.type]||'#c4b5fd':d.isWeekend?'#fcd34d':'#e2e8f0'};font-size:.68rem">${HEB_DAYS[d.jsDay]}</div><div style="font-size:.55rem;color:${h?HOLIDAY_TEXT[h.type]:'#64748b'}">${d.label}</div><div style="font-size:.48rem;color:${h?HOLIDAY_TEXT[h.type]||'#c4b5fd':'#475569'}">${d.hebrewDate||''}</div>${h?`<div style="font-size:.48rem;color:${HOLIDAY_TEXT[h.type]||'#c4b5fd'}">${h.name}</div>`:''}</th>`;}).join('');
+  const rows=SHIFTS_K.map(sh=>`<tr><td style="background:#080c14;position:sticky;right:0;z-index:1;white-space:nowrap;padding:.35rem .4rem;min-width:68px"><div style="font-weight:700;color:#e2e8f0;font-size:.68rem">משמרת ${sh.label}</div><div style="font-size:.52rem;color:#64748b">${sh.time}</div></td>${week.map(d=>{const sk=`${d.day}-${d.month}`;const h=d.holiday;let cells='';if(d.isWeekend){if(d.isFri||(d.isSat&&sh.key!=='c')){if(sh.key==='a'||sh.key==='b')cells+=cellHTML(sk,sh.key,'keva');cells+=DESKS.map(desk=>cellHTML(sk,sh.key,desk+'_stu')).join('');}else if(d.isSat&&sh.key==='c'){cells+=cellHTML(sk,sh.key,'p1');cells+=cellHTML(sk,sh.key,'p2');}}else{if(sh.key==='a'||sh.key==='b'){cells+=cellHTML(sk,sh.key,'keva');if((schedule[sk]||{})[sh.key+'_keva2'])cells+=cellHTML(sk,sh.key,'keva2');cells+=cellHTML(sk,sh.key,'achmash');cells+=DESKS.map(desk=>cellHTML(sk,sh.key,desk)+cellHTML(sk,sh.key,desk+'_stu')).join('');let fi2=1;while((schedule[sk]||{})[`${sh.key}_fill${fi2}`]){cells+=cellHTML(sk,sh.key,`fill${fi2}`);fi2++;}}else{cells+=cellHTML(sk,sh.key,'p1');cells+=cellHTML(sk,sh.key,'p2');}}return`<td style="background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.04)':d.isWeekend?'rgba(245,158,11,.02)':'transparent'};min-width:72px">${cells}</td>`;}).join('')}</tr>`).join('');
   return`<div class="week-table-wrap"><table><thead><tr><th style="background:#080c14;position:sticky;right:0;z-index:3;min-width:68px;border:none"></th>${headers}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 function toggleSchedView(){mgrSchedView=mgrSchedView==='week'?'month':'week';renderMgrSched();}
+function toggleSchedMonth(){window._schedViewMonth=(window._schedViewMonth==='next'?'curr':'next');mgrSchedWeek=0;renderMgrSched();}
 function changeWeek(d){mgrSchedWeek=Math.max(0,Math.min(getWeeks().length-1,mgrSchedWeek+d));renderMgrSched();}
 function openCellModal(sk,field){
   const schedule=get_schedule();const shKey=field.split('_')[0];const day=SCHEDULE_DAYS.find(d=>`${d.day}-${d.month}`===sk);const current=(schedule[sk]||{})[field];
@@ -1304,123 +2592,379 @@ g('modal').addEventListener('click',e=>{if(e.target===g('modal'))closeModal();})
 
 // ══════ SCHEDULING ENGINE ══════
 function canAssign(name,day,month,shKey,usedToday,monthC,wkC,lastS,stuH,sunOff){
-  const allC=get_allC(),allV=get_allV();
+  const allC=window._isNextMonthSchedule?(window._allC_next||window._allC||{}):((window._allC_curr&&Object.keys(window._allC_curr).length?window._allC_curr:get_allC())),allV=get_allV();
   const w=ROSTER.find(r=>r.name===name);if(!w||usedToday.has(name))return false;
   const yr=SCHEDULE_DAYS[0]?.year||new Date().getFullYear(),jd=new Date(yr,month-1,day).getDay(),isSun=jd===0;
-  const _dObj=SCHEDULE_DAYS.find(d=>d.day===day&&d.month===month);
+  const _activeDaysCA=window._activeSchedDays||SCHEDULE_DAYS;
+  const _dObj=_activeDaysCA.find(d=>d.day===day&&d.month===month)||SCHEDULE_DAYS.find(d=>d.day===day&&d.month===month);
   const isFri=_dObj?_dObj.isFri:(jd===5);
   const isSat=_dObj?_dObj.isSat:(jd===6);
+  // Always use live getHoliday() so manual overrides (holiday verify) take effect immediately
+  const hol=getHoliday(day,month);
+  const isChagDay=isChagSat(hol);
+  const isErevChag=isChagFri(hol);
+  const isLikeSat=isSat||isChagDay;
+  const isLikeFri=isFri||isErevChag;
   if(allV.some(v=>v.status==='approved'&&v.worker===name&&v.days?.some(d=>d.day===day&&d.month===month)))return false;
-  if((allC[name]?.constraints||[]).some(c=>c.day===day&&c.month===month&&c.shiftKey===shKey&&c.type==='block'))return false;
-  // no א after ג (consecutive)
+  if((allC[name]?.constraints||[]).some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey===shKey&&cx.type==='block'))return false;
+  // no א after ג (morning after night) — check both lastS AND previous day in sched
   if(shKey==='a'&&lastS[name]==='c')return false;
+  // Also check: did worker work ג' YESTERDAY? (lastS might not reflect if multiple shifts)
+  if(shKey==='a'||shKey==='b'){
+    const _activeDaysCA2=window._activeSchedDays||SCHEDULE_DAYS;
+    const todayIdx=_activeDaysCA2.findIndex(d=>d.day===day&&d.month===month);
+    if(todayIdx>0){
+      const prevDay=_activeDaysCA2[todayIdx-1];
+      const prevSk=`${prevDay.day}-${prevDay.month}`;
+      const prevSlot=window._currentSched?.[prevSk]||{};
+      const workedNightPrev=Object.entries(prevSlot).some(([k,v])=>v===name&&k.startsWith('c_'));
+      if(workedNightPrev&&shKey==='a')return false;// can't do morning after night
+    }
+  }
   // no ג after ג
   if(shKey==='c'&&lastS[name]==='c')return false;
-  // Sunday off if worked Saturday night (sat night = 6th shift, gets sun free)
+  // Sunday off if worked Saturday/chag night
   if(isSun&&sunOff&&sunOff[name])return false;
   // ראשון: בנות שירות מסוימות — בוקר בלבד
   if(SUN_MORNING_ONLY.includes(name)&&isSun&&(shKey==='b'||shKey==='c'))return false;
   if(w.pop==='keva'&&shKey==='c')return false;
-  // שירה ח אסורה לבד בלילה — אבל זה נאכף ב-runGenerate (לא כאן)
-  if(w.pop==='bashal'){if(isFri)return false;if(isSat&&(shKey==='a'||shKey==='b'))return false;}
-  if(w.pop==='student'&&isSat&&shKey==='c')return false;
-  if(isSat&&shKey==='c'){if(w.pop!=='bashal')return false;if(NO_SAT_NIGHT.includes(name))return false;}
+  // בש"ל: לא בשישי/ערב חג, לא א/ב בשבת/חג
+  if(w.pop==='bashal'){
+    if(isLikeFri)return false;
+    if(isLikeSat&&(shKey==='a'||shKey==='b'))return false;
+  }
+  // סטודנט: לא ג' בשבת/חג
+  if(w.pop==='student'&&isLikeSat&&shKey==='c')return false;
+  // ג' בשבת/חג — רק בש"ל (צאת שבת/חג)
+  if(isLikeSat&&shKey==='c'){if(w.pop!=='bashal')return false;if(NO_SAT_NIGHT.includes(name))return false;}
   // 5 shifts/week cap for bashal and keva
   if((w.pop==='bashal'||w.pop==='keva')&&(wkC[name]||0)>=5)return false;
+  // בש"ל: מקסימום משמרת לילה אחת בשבוע (ראשון-שבת)
+  if(w.pop==='bashal'&&shKey==='c'&&((window._nightWkC||{})[name]||0)>=1)return false;
+  // שוויון לילות חודשי: מקסימום = ceil(לילות_בחודש / כמות_בשל) + 1
+  if(w.pop==='bashal'&&shKey==='c'){
+    const _nc=window._nightCounts||{};
+    const nightDaysInMonth=SCHEDULE_DAYS.filter(d=>!d.isFri&&!isChagFri(d.holiday)).length;
+    const eligCount=WORKERS_BASHAL.length||1;
+    const maxNights=Math.ceil(nightDaysInMonth/eligCount)+1;
+    if((_nc[name]||0)>=maxNights)return false;
+  }
+  // קבע: מקסימום סוף שבוע (שישי+שבת) אחד בחודש, אלא אם ביקש יותר
+  if(w.pop==='keva'&&(isLikeFri||isLikeSat)){
+    const wantsMore=(allC[name]?.constraints||[]).some(cx=>cx.type==='prefer'&&new Date(yr,cx.month-1,cx.day).getDay()>=5);
+    if(!wantsMore&&((window._kevWkendC||{})[name]||0)>=1)return false;
+  }
   if(w.pop==='student'&&!get_allC()[name]?.submitted)return false;
-  if(w.pop==='student'){const h=(stuH[name]||0)+(SHIFT_HOURS[shKey]||8);if(h>120)return false;}
+  if(w.pop==='student'){const h2=(stuH[name]||0)+(SHIFT_HOURS[shKey]||8);if(h2>120)return false;}
   return true;
 }
 function scoreW(name,day,month,shKey,monthC){
   const allC=get_allC();const w=ROSTER.find(r=>r.name===name);
-  let s=monthC[name]||0;
-  if((allC[name]?.constraints||[]).some(c=>c.day===day&&c.month===month&&c.shiftKey===shKey&&c.type==='prefer'))s-=3;
-  if(w?.pop==='student'){const yr=SCHEDULE_DAYS[0]?.year||new Date().getFullYear(),jd=new Date(yr,month-1,day).getDay();if(jd===5)s-=8;if(jd===6)s-=8;}
-  return s+(Math.random()-.5)*.4;
+  const yr=SCHEDULE_DAYS[0]?.year||new Date().getFullYear();
+  const jd=new Date(yr,month-1,day).getDay();
+  // Primary: fewer total shifts = higher priority
+  let s=(monthC[name]||0)*10;
+  // Per-shift-type equality
+  const shiftTypeCounts=window._shiftTypeCounts||{};
+  s+=(shiftTypeCounts[`${name}_${shKey}`]||0)*8;
+  // Sunday morning equality — all bashal (not keva)
+  if(jd===0&&shKey==='a'&&w?.pop==='bashal'){
+    s+=(( window._sunMornCounts||{})[name]||0)*6;
+  }
+  // Thursday per-shift equality — all bashal (not keva)
+  // Each shift on Thursday (a/b/c) tracked separately
+  if(jd===4&&w?.pop==='bashal'){
+    const thuKey=`${name}_thu_${shKey}`;
+    s+=((window._thuShiftCounts||{})[thuKey]||0)*8;
+  }
+  // Night shift equality — penalize both total nights AND sat nights
+  if(shKey==='c'){
+    s+=((window._nightCounts||{})[name]||0)*8;
+    // Extra penalty for sat nights (to spread them equally)
+    const _jdForSat=new Date(yr,month-1,day).getDay();
+    if(_jdForSat===6)s+=((window._satNightCounts||{})[name]||0)*10;
+  }
+  // Bonus for requested shift
+  if((allC[name]?.constraints||[]).some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey===shKey&&cx.type==='prefer'))s-=15;
+  // Students: strong bonus for weekends
+  if(w?.pop==='student'&&(jd===5||jd===6))s-=20;
+  return s+(Math.random()-.5)*0.5;
+}
+function runGenerateForMonth(){
+  // Generate schedule for the currently viewed month (current or next)
+  const isNext=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  if(isNext){
+    // Temporarily swap SCHEDULE_DAYS to next month, generate, restore
+    window._savedSchedDays=SCHEDULE_DAYS;
+    window._activeSchedDays=NEXT_MONTH_DAYS;
+    window._activeSchedKey='schedule_'+CONS_MONTH+'_'+CONS_YEAR;
+    window._activeConsKey='constraints_'+CONS_MONTH+'_'+CONS_YEAR;
+    window._isNextMonthSchedule=true;
+    runGenerate();
+  } else {
+    window._isNextMonthSchedule=false;
+    window._activeSchedDays=null;
+    runGenerate();
+  }
 }
 function runGenerate(){
-  const monthC={},wkC={},lastS={},stuH={},sunOff={};const sched={};
-  SCHEDULE_DAYS.forEach(({day,month,isWeekend,isFri,isSat,jsDay})=>{
+  const DESK_ORDER=['plili','paha','sadatz'];
+  // ══ כללי לילה ══
+  // NIGHT_ALONE: נועה/ליאן/יוסף/עמית — עובדים לבד, לא יכולים עם אחרים
+  // NIGHT_NEED_COMPANION: חנה/שירה ח/שירה נ/תהילה/נורית — חייבות עם עוד מישהו
+  // יוסף: לבד לחלוטין, אסור עם אף אחד
+  const unfilledShifts=[];// משמרות שלא הצלחנו לאייש
+  window._nightWkC={};window._kevWkendC={};
+  window._shiftTypeCounts={};window._sunMornCounts={};window._thuShiftCounts={};window._nightCounts={};window._satNightCounts={};
+  const monthC={},wkC={},lastS={},stuH={},sunOff={},kevWkCarry={};const sched={};
+  const _activeDays=window._activeSchedDays||SCHEDULE_DAYS;
+  window._currentSched=sched;// expose to canAssign for previous-day check
+  _activeDays.forEach(({day,month,isWeekend,isFri,isSat,jsDay})=>{
     const sk=`${day}-${month}`;sched[sk]={};const usedToday=new Set();
-    // reset weekly counter on Sunday
-    if(jsDay===0){Object.keys(wkC).forEach(n=>wkC[n]=0);Object.keys(sunOff).forEach(n=>delete sunOff[n]);}
+    const dObj=_activeDays.find(d=>d.day===day&&d.month===month);
+    const hol=dObj?.holiday||null;
+    const isLikeSat=isSat||isChagSat(hol);
+    const isLikeFri=isFri||isChagFri(hol);
+    const isLikeWeekend=isLikeSat||isLikeFri;
+    if(jsDay===0){Object.keys(wkC).forEach(n=>wkC[n]=0);Object.keys(sunOff).forEach(n=>delete sunOff[n]);Object.keys(window._nightWkC||{}).forEach(n=>window._nightWkC[n]=0);// קבע שעבד סופ"ש — מתחיל השבוע עם ספירה מועברת
+Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[n];});}
     const elig=(filter,shKey)=>ROSTER.filter(r=>filter(r)&&canAssign(r.name,day,month,shKey,usedToday,monthC,wkC,lastS,stuH,sunOff)).sort((a,b)=>scoreW(a.name,day,month,shKey,monthC)-scoreW(b.name,day,month,shKey,monthC));
     const assign=(name,field,shKey,isSatNight)=>{
       if(!name)return;
-      sched[sk][`${shKey}_${field}`]=name;
-      usedToday.add(name);
-      monthC[name]=(monthC[name]||0)+1;
-      wkC[name]=(wkC[name]||0)+1;
-      lastS[name]=shKey;
+      sched[sk][`${shKey}_${field}`]=name;usedToday.add(name);
+      monthC[name]=(monthC[name]||0)+1;wkC[name]=(wkC[name]||0)+1;lastS[name]=shKey;
+      if(shKey==='c'&&POP_MAP[name]==='bashal'){window._nightWkC=window._nightWkC||{};window._nightWkC[name]=(window._nightWkC[name]||0)+1;}
+      if((isLikeFri||isLikeSat)&&POP_MAP[name]==='keva'){window._kevWkendC=window._kevWkendC||{};window._kevWkendC[name]=(window._kevWkendC[name]||0)+1;kevWkCarry[name]=(kevWkCarry[name]||0)+1;}
+      // Track per-type counts for equality scoring
+      const _stc=window._shiftTypeCounts;_stc[`${name}_${shKey}`]=(_stc[`${name}_${shKey}`]||0)+1;
+      if(shKey==='c'){const _nc=window._nightCounts;_nc[name]=(_nc[name]||0)+1;}
+      const _jd=new Date(SCHEDULE_DAYS[0]?.year||new Date().getFullYear(),month-1,day).getDay();
+      if(_jd===0&&shKey==='a'){const _sc=window._sunMornCounts;_sc[name]=(_sc[name]||0)+1;}
+      if(_jd===4){window._thuShiftCounts=window._thuShiftCounts||{};const _tKey=`${name}_thu_${shKey}`;window._thuShiftCounts[_tKey]=(window._thuShiftCounts[_tKey]||0)+1;}
       if(POP_MAP[name]==='student')stuH[name]=(stuH[name]||0)+(SHIFT_HOURS[shKey]||8);
-      // sat night = 6th shift -> get Sunday off (week resets to 4)
-      if(isSatNight){sunOff[name]=true;wkC[name]=Math.max(0,(wkC[name]||1)-1);}
+      if(isSatNight){sunOff[name]=true;wkC[name]=Math.max(0,(wkC[name]||1)-1);window._satNightCounts=window._satNightCounts||{};window._satNightCounts[name]=(window._satNightCounts[name]||0)+1;}
     };
+    const markUnfilled=(shKey,reason)=>{unfilledShifts.push({day,month,label:dObj?.label||`${day}/${month}`,shKey,reason});};
+
     SHIFTS_K.forEach(sh=>{
-      if(isWeekend){
-        if(isFri){
-          const kp=elig(w=>w.pop==='keva',sh.key);if(kp.length)assign(kp[0].name,'keva',sh.key);
-          DESKS.forEach(desk=>{const p=elig(w=>w.desk===desk&&w.pop==='student',sh.key);if(p.length)assign(p[0].name,desk+'_stu',sh.key);});
-        } else if(isSat&&sh.key==='c'){
-          DESKS.forEach(desk=>{
-            const p=elig(w=>w.desk===desk&&w.pop==='bashal'&&!NO_SAT_NIGHT.includes(w.name),sh.key);
-            if(!p.length)return;
-            assign(p[0].name,desk,sh.key,true);
-            // NIGHT_2 — צריך שני אנשים
-            if(NIGHT_2.includes(p[0].name)){const p2=elig(w=>w.desk===desk&&w.pop==='bashal'&&w.name!==p[0].name,sh.key);if(p2.length)assign(p2[0].name,desk+'_extra',sh.key,true);}
-            // שירה ח — חייבת ליווי שאינו יוסף/עידו/שמואל
-            if(p[0].name==='שירה ח'&&!sched[sk][`c_${desk}_extra`]){
-              const comp=elig(w=>w.desk===desk&&w.pop==='bashal'&&w.name!=='שירה ח'&&!SHIRA_NIGHT_COMPANION_EXCLUDE.includes(w.name),sh.key);
-              if(comp.length)assign(comp[0].name,desk+'_extra',sh.key,true);
+      // ══ סוף שבוע / חג (שישי, ערב חג, שבת, חג) ══
+      if(isLikeWeekend){
+        if(isLikeFri){
+          // שישי/ערב חג: סטודנטים ראשונים, קבע כעדיפות שניה
+          if(sh.key==='a'||sh.key==='b'){
+            // סטודנטים — מיין לפי מספר סופ"ש (שוויון)
+            const stuWeekendC={};SCHEDULE_DAYS.forEach(d=>{if(!d.realWeekend&&!isChagSat(d.holiday)&&!isChagFri(d.holiday))return;const slot2=sched[`${d.day}-${d.month}`]||{};Object.values(slot2).forEach(v=>{if(v&&WORKERS_STUDENT.includes(v))stuWeekendC[v]=(stuWeekendC[v]||0)+1;});});
+            DESK_ORDER.forEach(desk=>{
+              const p=elig(w=>w.desk===desk&&w.pop==='student',sh.key).sort((a,b)=>(stuWeekendC[a.name]||0)-(stuWeekendC[b.name]||0));
+              if(p.length)assign(p[0].name,desk+'_stu',sh.key);
+            });
+            // אין פיקוד בשישי/שבת/חג
+            // לא מדווחים על "חסר" בסופ"ש — מספיק סטודנט אחד
+          }
+          // אין ג' בשישי
+        } else if(isLikeSat){
+          if(sh.key==='a'||sh.key==='b'){
+            if(isYomHaatzmaut(hol)){
+              // יום העצמאות: פיקוד אחד + סטודנט אחד בכל משמרת
+              const kp=elig(w=>w.pop==='keva',sh.key);
+              if(kp.length)assign(kp[0].name,'keva',sh.key);
+              const sp=elig(w=>w.pop==='student',sh.key);
+              if(sp.length)assign(sp[0].name,'stu',sh.key);
+            } else {
+            // שבת/חג: סטודנטים בלבד — אין פיקוד
+            const stuWeekendC2={};_activeDays.forEach(d=>{if(!d.realWeekend&&!isChagSat(d.holiday)&&!isChagFri(d.holiday))return;const slot2=sched[`${d.day}-${d.month}`]||{};Object.values(slot2).forEach(v=>{if(v&&WORKERS_STUDENT.includes(v))stuWeekendC2[v]=(stuWeekendC2[v]||0)+1;});});
+            DESK_ORDER.forEach(desk=>{
+              const p=elig(w=>w.desk===desk&&w.pop==='student',sh.key).sort((a,b)=>(stuWeekendC2[a.name]||0)-(stuWeekendC2[b.name]||0));
+              if(p.length)assign(p[0].name,desk+'_stu',sh.key);
+            });
+            // אין פיקוד בשבת/חג
             }
-          });
-        } else {
-          const kp=elig(w=>w.pop==='keva',sh.key);if(kp.length)assign(kp[0].name,'keva',sh.key);
-          DESKS.forEach(desk=>{const p=elig(w=>w.desk===desk&&w.pop==='student',sh.key);if(p.length)assign(p[0].name,desk+'_stu',sh.key);});
+            // לא מדווחים על "חסר" בשבת — מספיק סטודנט אחד
+          } else if(sh.key==='c'){
+            // צאת שבת/חג/יום העצמאות — שירות לאומי (בש"ל), מקס 2 אנשים
+            const _snc=window._satNightCounts||{};
+            // For sat night: temporarily bypass weekly night cap to ensure assignment
+            const satEligFull=ROSTER.filter(r=>{
+              if(r.pop!=='bashal')return false;
+              if(NO_SAT_NIGHT.includes(r.name))return false;
+              if(usedToday.has(r.name))return false;
+              // אסור לילה אחרי לילה
+              if(lastS[r.name]==='c')return false;
+              // מקסימום לילה אחד בשבוע (כולל שבת ג')
+              if((window._nightWkC||{})[r.name]>=1)return false;
+              const allC2=get_allC();
+              if((allC2[r.name]?.constraints||[]).some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey===sh.key&&cx.type==='block'))return false;
+              const allV2=get_allV();
+              if(allV2.some(v=>v.status==='approved'&&v.worker===r.name&&v.days?.some(vd=>vd.day===day&&vd.month===month)))return false;
+              if((wkC[r.name]||0)>=5)return false;
+              return true;
+            }).sort((a,b)=>(_snc[a.name]||0)-(_snc[b.name]||0));
+            const satPool=satEligFull;
+            if(!satPool.length){markUnfilled(sh.key,'אין בש"ל זמין לצאת שבת');return;}
+            // רוטציה שוויונית: בוחר לפי מי עבד הכי פחות מוצ"שים
+            // satPool כבר ממוין לפי _satNightCounts
+            const first=satPool[0];
+            if(NIGHT_ALONE.includes(first.name)){
+              // עובד לבד
+              assign(first.name,'p1',sh.key,true);
+            } else if(NIGHT_NEED_COMPANION.includes(first.name)){
+              // צריכה ליווי — מחפשים מלווה אחרת שצריכה ליווי
+              const comp=satPool.slice(1).filter(w=>NIGHT_NEED_COMPANION.includes(w.name));
+              if(comp.length){
+                assign(first.name,'p1',sh.key,true);
+                assign(comp[0].name,'p2',sh.key,true);
+              } else {
+                // אין מלווה — נסה NIGHT_ALONE במקום
+                const alt=satPool.find(w=>NIGHT_ALONE.includes(w.name));
+                if(alt)assign(alt.name,'p1',sh.key,true);
+                else{assign(first.name,'p1',sh.key,true);markUnfilled(sh.key,`${first.name} חייבת ליווי`);}
+              }
+            } else {
+              assign(first.name,'p1',sh.key,true);
+            }
+          }
         }
       } else {
-        // סדר שיבוץ: פיקוד, בש"ל (לפי דסק: פלילי, פח"ע, סד"צ), סטודנטים, אחמ"ש
-        const DESK_ORDER=['plili','paha','sadatz'];
+        // ══ ימי חול (ראשון–חמישי) ══
         if(sh.key==='a'||sh.key==='b'){
-          // 1. פיקוד
-          const kp=elig(w=>w.pop==='keva',sh.key);if(kp.length)assign(kp[0].name,'keva',sh.key);
-          // 2. בש"ל לפי סדר דסקים
-          DESK_ORDER.forEach(desk=>{const p=elig(w=>w.desk===desk&&w.pop==='bashal',sh.key);if(p.length)assign(p[0].name,desk,sh.key);});
+          // 1. פיקוד — משמרת א': עד 2 קבע; משמרת ב': קבע אחד בלבד
+          const kp=elig(w=>w.pop==='keva',sh.key);
+          if(kp.length){
+            assign(kp[0].name,'keva',sh.key);
+            // קבע נוסף — רק במשמרת א' (בוקר)
+            if(sh.key==='a'&&kp.length>1)assign(kp[1].name,'keva2',sh.key);
+          }
+          // 2. בש"ל לפי סדר דסקים: פלילי→פח"ע→סד"צ
+          DESK_ORDER.forEach(desk=>{
+            const p=elig(w=>w.desk===desk&&w.pop==='bashal',sh.key);
+            if(p.length)assign(p[0].name,desk,sh.key);
+            // No markUnfilled per desk - post-processing will fill gaps
+          });
           // 3. סטודנטים
           DESK_ORDER.forEach(desk=>{const p=elig(w=>w.desk===desk&&w.pop==='student',sh.key);if(p.length)assign(p[0].name,desk+'_stu',sh.key);});
-          // 4. אחמ"ש — מתוך מי שכבר שובץ
-          const isElig=n=>ACHMASH.includes(n)||POP_MAP[n]==='student';
-          const inShift=Object.entries(sched[sk]).filter(([k,v])=>v&&k.startsWith(sh.key+'_')&&!k.includes('achmash')).map(([,v])=>v);
-          const cands=inShift.filter(isElig);
+          // 4. אחמ"ש — מתוך מי שכבר שובץ, לא פיקוד
+          // אם אין מועמד מרשימת ACHMASH — הפיקוד הופך לאחמ"ש ומוסר מתפקיד "פיקוד"
+          const inShift=Object.entries(sched[sk]).filter(([k,v])=>v&&k.startsWith(sh.key+'_')&&!k.includes('achmash')&&!k.includes('keva')).map(([,v])=>v);
+          const cands=inShift.filter(n=>ACHMASH.includes(n));
           const counts={};Object.values(sched).forEach(slot=>Object.entries(slot||{}).forEach(([k,v])=>{if(k.includes('achmash')&&v)counts[v]=(counts[v]||0)+1;}));
-          if(cands.length){cands.sort((a,b)=>(counts[a]||0)-(counts[b]||0));sched[sk][`${sh.key}_achmash`]=cands[0];}
-          else{const ki=inShift.find(n=>POP_MAP[n]==='keva');sched[sk][`${sh.key}_achmash`]=ki||null;}
+          if(cands.length){
+            cands.sort((a,b)=>(counts[a]||0)-(counts[b]||0));
+            sched[sk][`${sh.key}_achmash`]=cands[0];
+          } else {
+            // אין אחמ"ש — פיקוד הופך לאחמ"ש
+            const kevaName=sched[sk][`${sh.key}_keva`];
+            if(kevaName){
+              sched[sk][`${sh.key}_achmash`]=kevaName;
+              delete sched[sk][`${sh.key}_keva`];
+              if(sched[sk][`${sh.key}_keva2`]){
+                sched[sk][`${sh.key}_keva`]=sched[sk][`${sh.key}_keva2`];
+                delete sched[sk][`${sh.key}_keva2`];
+              }
+            }
+          }
         } else {
-          // משמרת ג׳ — בש"ל לפי סדר דסקים
-          DESK_ORDER.forEach(desk=>{const p=elig(w=>w.desk===desk&&w.pop==='bashal',sh.key);if(p.length)assign(p[0].name,desk,sh.key);});
-          // סטודנטים
-          DESK_ORDER.forEach(desk=>{const p=elig(w=>w.desk===desk&&w.pop==='student',sh.key);if(p.length)assign(p[0].name,desk+'_stu',sh.key);});
-          // NIGHT_2 — צריך שני אנשים (usedToday מבטיח אין כפילות)
-          DESK_ORDER.forEach(desk=>{
-            const n1=sched[sk][`c_${desk}`];
-            if(n1&&NIGHT_2.includes(n1)&&!sched[sk][`c_${desk}_extra`]){
-              const p2=elig(w=>w.desk===desk&&w.pop==='bashal'&&w.name!==n1,sh.key);
-              if(p2.length)assign(p2[0].name,desk+'_extra',sh.key);
+          // ══ משמרת ג׳ — כללי לילה ══
+          // מקס 2 אנשים בלילה
+          // NIGHT_ALONE (נועה/ליאן/יוסף/עמית) — לבד בלבד, לא יכולים עם אחרים
+          // NIGHT_NEED_COMPANION (חנה/שירה ח/שירה נ/תהילה/נורית/לאה) — חייבות עם עוד אחד
+          // שאר הבש"ל — יכולים לבד או עם מישהו
+          // אין חובה לנציג מכל דסק
+          // בוחרים עובד אחד לכל המשמרת (לא per-desk)
+          const nightPool=elig(w=>(w.pop==='bashal'||w.pop==='student'),sh.key);
+          // Sort night pool by night count (fewest nights first = equality)
+          const _nc2=window._nightCounts||{};const _snc2=window._satNightCounts||{};
+          nightPool.sort((a,b)=>(_nc2[a.name]||0)-(_nc2[b.name]||0)||(_snc2[a.name]||0)-(_snc2[b.name]||0)||(monthC[a.name]||0)-(monthC[b.name]||0));
+          if(!nightPool.length){
+            markUnfilled(sh.key,'אין עובד זמין ללילה');
+          } else {
+            // Night assignment strategy:
+            // Priority 1: pair two NIGHT_NEED_COMPANION workers together
+            // Priority 2: assign NIGHT_ALONE worker alone
+            // Priority 3: assign other bashal alone
+            const needComp=nightPool.filter(w=>NIGHT_NEED_COMPANION.includes(w.name));
+            const canAlone=nightPool.filter(w=>NIGHT_ALONE.includes(w.name));
+            const neutral=nightPool.filter(w=>!NIGHT_NEED_COMPANION.includes(w.name)&&!NIGHT_ALONE.includes(w.name));
+
+            if(needComp.length>=2){
+              // שתי עובדות שצריכות ליווי — מצמדות ביחד
+              assign(needComp[0].name,'p1',sh.key);
+              assign(needComp[1].name,'p2',sh.key);
+            } else if(needComp.length===1){
+              const first=needComp[0];
+              // מלווה = neutral בלבד (לא NIGHT_ALONE — הם עובדים לבד!)
+              const compPool=[...neutral,...needComp.slice(1)];
+              if(compPool.length){
+                assign(first.name,'p1',sh.key);
+                assign(compPool[0].name,'p2',sh.key);
+              } else {
+                // אין מלווה ניטרלי — מדלגים על NIGHT_NEED_COMPANION ומשבצים NIGHT_ALONE לבד
+                if(canAlone.length){
+                  assign(canAlone[0].name,'p1',sh.key);
+                } else {
+                  // אין ברירה — משבצים לבד
+                  assign(first.name,'p1',sh.key);
+                  markUnfilled(sh.key,`${first.name} חייבת ליווי — אין מלווה זמין`);
+                }
+              }
+            } else if(neutral.length){
+              assign(neutral[0].name,'p1',sh.key);
+            } else if(canAlone.length){
+              assign(canAlone[0].name,'p1',sh.key);
+            } else {
+              markUnfilled(sh.key,'אין עובד זמין ללילה');
             }
-          });
-          // שירה ח — חייבת ליווי בלילה
-          DESK_ORDER.forEach(desk=>{
-            const n1=sched[sk][`c_${desk}`];
-            if(n1==='שירה ח'&&!sched[sk][`c_${desk}_extra`]){
-              const companion=elig(w=>w.desk===desk&&w.pop==='bashal'&&w.name!=='שירה ח'&&!SHIRA_NIGHT_COMPANION_EXCLUDE.includes(w.name),sh.key);
-              if(companion.length)assign(companion[0].name,desk+'_extra',sh.key);
-            }
-          });
+          }
         }
       }
     });
   });
-  saveS(sched,true,false,false);toast('✅ סידור נוצר!');renderMgrSched();
+  // ══ Post-processing: ensure all bashal have 5 shifts/week ══
+  getWeeks(_activeDays).forEach((wk,wi)=>{
+    const wkDays=wk.filter(d=>d.jsDay>=0&&d.jsDay<=4&&!isChagSat(d.holiday)&&!isChagFri(d.holiday));
+    WORKERS_BASHAL.forEach(name=>{
+      let cnt=0;
+      wk.forEach(d=>{const sk2=`${d.day}-${d.month}`;if(Object.values(sched[sk2]||{}).includes(name))cnt++;});
+      if(cnt>=5)return;
+      const need=5-cnt;let filled=0;
+      for(const d of wkDays){
+        if(filled>=need)break;
+        const sk2=`${d.day}-${d.month}`;
+        if(Object.values(sched[sk2]||{}).includes(name))continue;
+        for(const shKey of ['a','b','c']){
+          if(filled>=need)break;
+          if(!canAssign(name,d.day,d.month,shKey,new Set(Object.values(sched[sk2]||{}).filter(Boolean)),monthC,wkC,lastS,stuH,sunOff))continue;
+          let fi=1;while(sched[sk2][`${shKey}_fill${fi}`])fi++;
+          sched[sk2][`${shKey}_fill${fi}`]=name;
+          monthC[name]=(monthC[name]||0)+1;wkC[name]=(wkC[name]||0)+1;lastS[name]=shKey;
+          if(shKey==='c'){window._nightCounts=window._nightCounts||{};window._nightCounts[name]=(window._nightCounts[name]||0)+1;}
+          filled++;break;
+        }
+      }
+    });
+  });
+
+  const _wasNextMonth=window._isNextMonthSchedule;
+  if(_wasNextMonth){
+    // Save next month schedule
+    window._schedule_next=sched;
+    window._fbSet(window._activeSchedKey||'schedule_'+CONS_MONTH+'_'+CONS_YEAR,{schedule:sched,schedReady:true,official:false}).then(()=>setSyncing(false));
+    setSyncing(true);
+    const key2=`${CONS_YEAR}_${CONS_MONTH}`;
+    const past2=get_pastSchedules();past2[key2]={schedule:sched,schedReady:true,month:CONS_MONTH,year:CONS_YEAR,label:NEXT_MONTH_LABEL};
+    window._fbSet('past_schedules',past2).catch(()=>{});
+    window._activeSchedDays=null;window._isNextMonthSchedule=false;
+  } else {
+    saveS(sched,true,false,false);
+  }
+  // שמור משמרות חסרות
+  window._unfilledShifts=unfilledShifts;
+  if(!_wasNextMonth)window._schedViewMonth='curr';
+  if(unfilledShifts.length){
+    toast(`✅ סידור נוצר — ${unfilledShifts.length} משמרות לאיוש ידני`);
+  } else {
+    toast('✅ סידור נוצר!');
+  }
+  renderMgrSched();
 }
 
 // ══════ חמ"ל חוף SCHEDULING ENGINE ══════
@@ -1433,11 +2977,18 @@ function saveChoufS(s,r,official,warn){
   window._choufSched=s;window._choufReady=r;
   if(official!==undefined)window._choufOfficial=official;
   setSyncing(true);
-  window._fbSet('chouf_schedule',{schedule:s,schedReady:r,official:window._choufOfficial||false}).then(()=>setSyncing(false));
+  if(window._isNextChoufSchedule){
+    window._choufSched_next=s;
+    window._fbSet('chouf_schedule_'+CONS_MONTH+'_'+CONS_YEAR,{schedule:s,schedReady:r,official:false}).then(()=>setSyncing(false));
+    window._choufActiveSchedDays=null;window._isNextChoufSchedule=false;
+    setSyncing(true);
+  } else {
+    window._fbSet('chouf_schedule_'+SCHED_MONTH+'_'+CURRENT_YEAR,{schedule:s,schedReady:r,official:window._choufOfficial||false}).then(()=>setSyncing(false));
+  }
 }
 function saveChoufC(d){
   window._choufC=d;setSyncing(true);
-  window._fbSet('chouf_constraints',d).then(()=>setSyncing(false));
+  window._fbSet('chouf_constraints_'+CONS_MONTH+'_'+CONS_YEAR,d).then(()=>setSyncing(false));
 }
 
 function canAssignChouf(name,day,month,shKey,usedToday,monthC,wkC,lastS,stuH,weekendC){
@@ -1462,27 +3013,35 @@ function canAssignChouf(name,day,month,shKey,usedToday,monthC,wkC,lastS,stuH,wee
   if(w.pop==='student'){const h=(stuH[name]||0)+(SHIFT_HOURS[shKey]||8);if(h>120)return false;}
   return true;
 }
-function scoreChouf(name,day,month,shKey,monthC,shiftTypeC){
+function scoreChouf(name,day,month,shKey,monthC,shiftTypeC,currentDayAssigned){
   const allC=get_choufC();
   shiftTypeC=shiftTypeC||{a:{},b:{}};
-  let s=monthC[name]||0;
-  // balance a and b: prefer whoever has fewer of this type
-  if(shKey==='a'||shKey==='b'){
-    const aCount=shiftTypeC['a'][name]||0;
-    const bCount=shiftTypeC['b'][name]||0;
-    if(shKey==='a'&&aCount>bCount)s+=2;  // too many a's, deprioritize
-    if(shKey==='b'&&bCount>aCount)s+=2;  // too many b's, deprioritize
+  let s=(monthC[name]||0)*8;
+  // Strong a/b balance
+  const aCount=shiftTypeC['a'][name]||0;
+  const bCount=shiftTypeC['b'][name]||0;
+  if(shKey==='a')s+=(aCount-bCount)*12;
+  if(shKey==='b')s+=(bCount-aCount)*12;
+  // Pair separation penalty: if partner already assigned to this shift today, penalize
+  if(currentDayAssigned){
+    CHOUF_SEPARATE_PAIRS.forEach(([a,b])=>{
+      const partner=name===a?b:name===b?a:null;
+      if(partner&&currentDayAssigned.has(partner))s+=20;// strong penalty to avoid same shift
+    });
   }
-  if((allC[name]?.constraints||[]).some(c=>c.day===day&&c.month===month&&c.shiftKey===shKey&&c.type==='prefer'))s-=3;
-  return s+(Math.random()-.5)*.4;
+  if((allC[name]?.constraints||[]).some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey===shKey&&cx.type==='prefer'))s-=10;
+  return s+(Math.random()-.5)*.3;
 }
 function runGenerateChouf(){
   const yr=SCHEDULE_DAYS[0]?.year||new Date().getFullYear();
   const allC=get_choufC();
   const allV=get_allV();
   const sched={};
-  SCHEDULE_DAYS.forEach(d=>sched[`${d.day}-${d.month}`]={});
+  const _choufActiveDays=window._choufActiveSchedDays||SCHEDULE_DAYS;
+  _choufActiveDays.forEach(d=>sched[`${d.day}-${d.month}`]={});
   const ACHMASH_CHOUF=['מנאר',"ע'די"];
+// זוגות שעדיף להפריד בין משמרות (לא באותה משמרת)
+const CHOUF_SEPARATE_PAIRS=[["מנאר","ע'די"],["דאנה","יאנה"]];
 
   const isBlocked=(name,day,month,shKey)=>{
     if(allV.some(v=>v.status==='approved'&&v.worker===name&&v.days?.some(dd=>dd.day===day&&dd.month===month)))return true;
@@ -1493,7 +3052,7 @@ function runGenerateChouf(){
   // ── STEP 1: Assign weekends (2 per worker, shift a only) ──
   const wePairs=[];
   let lastFri=null;
-  SCHEDULE_DAYS.forEach(d=>{
+  _choufActiveDays.forEach(d=>{
     if(d.jsDay===5)lastFri=d;
     else if(d.jsDay===6&&lastFri){wePairs.push({fri:lastFri,sat:d});lastFri=null;}
   });
@@ -1527,7 +3086,7 @@ function runGenerateChouf(){
   });
 
   // ── STEP 2: Count weekend shifts per worker per week ──
-  const weeks=getWeeks();
+  const weeks=getWeeks(_choufActiveDays);
   const weekShiftCount=weeks.map(wk=>{
     const cnt={};
     CHOUF_BASHAL.forEach(n=>{
@@ -1539,80 +3098,124 @@ function runGenerateChouf(){
   });
 
   // ── STEP 3: Weekday shifts (Sun-Thu), target 5/week ──
-  // Track a/b balance per worker
+  // Each worker gets ONE shift per day (a or b), balanced equally over the month
   const shiftTypeCount={};
   CHOUF_BASHAL.forEach(n=>shiftTypeCount[n]={a:0,b:0});
-  // Count weekend 'a' shifts in balance
+  const monthC={};
+  // Count weekend 'a' shifts already assigned
   wePairs.forEach(({fri,sat},wi)=>{
-    CHOUF_BASHAL.filter(n=>workerWeekends[n].has(wi)).forEach(n=>shiftTypeCount[n].a+=2);
+    CHOUF_BASHAL.filter(n=>workerWeekends[n].has(wi)).forEach(n=>{
+      shiftTypeCount[n].a+=2;
+      monthC[n]=(monthC[n]||0)+2;
+    });
   });
 
   weeks.forEach((wk,wi)=>{
     const wkDays=wk.filter(d=>d.jsDay>=0&&d.jsDay<=4);
-    // Process each shift: assign workers who still need shifts this week
-    // Prefer 'a' (morning) — but assign 'b' too to balance
-    ['a','b'].forEach(shKey=>{
-      wkDays.forEach(d=>{
-        const sk=`${d.day}-${d.month}`;
-        const alreadyToday=new Set(Object.values(sched[sk]).filter(Boolean));
-        const eligible=CHOUF_BASHAL.filter(n=>{
-          if((weekShiftCount[wi][n]||0)>=5)return false;
-          if(alreadyToday.has(n))return false;
-          if(isBlocked(n,d.day,d.month,shKey))return false;
-          return true;
-        }).sort((a,b)=>{
-          const wDiff=(weekShiftCount[wi][a]||0)-(weekShiftCount[wi][b]||0);
-          if(wDiff!==0)return wDiff;
-          // balance a/b: for shift 'a', prefer those with fewer 'a' relative to 'b'
-          const balA=shiftTypeCount[a][shKey]-shiftTypeCount[a][shKey==='a'?'b':'a'];
-          const balB=shiftTypeCount[b][shKey]-shiftTypeCount[b][shKey==='a'?'b':'a'];
-          return balA-balB;
-        });
-        // Assign ALL eligible workers to this shift (everyone who needs a shift gets one)
-        eligible.forEach((n,i)=>{
-          sched[sk][`${shKey}_b${i+1}`]=n;
-          weekShiftCount[wi][n]=(weekShiftCount[wi][n]||0)+1;
-          shiftTypeCount[n][shKey]++;
-          alreadyToday.add(n);
-        });
-        // Mark achmash for this shift
-        const achInShift=eligible.filter(n=>ACHMASH_CHOUF.includes(n));
-        if(achInShift.length)sched[sk][`${shKey}_achmash`]=achInShift[Math.floor(Math.random()*achInShift.length)];
+    // For each day, decide which workers need 'a' vs 'b' based on balance
+    wkDays.forEach(d=>{
+      const sk=`${d.day}-${d.month}`;
+      if(!sched[sk])sched[sk]={};
+      // Workers eligible today (not already working, not blocked, under 5/week)
+      const available=CHOUF_BASHAL.filter(n=>{
+        if((weekShiftCount[wi][n]||0)>=5)return false;
+        // Not already assigned today in ANY shift
+        const alreadyAssigned=Object.values(sched[sk]).some(v=>v===n);
+        if(alreadyAssigned)return false;
+        return true;
+      });
+      if(!available.length)return;
+
+      // Split: workers with more 'a' than 'b' → assign to 'b', others → 'a'
+      // Sort by total monthly shifts (fewest first) for equality
+      // Build set of names already assigned today to other workers' shifts
+      const assignedToShiftA=new Set(Object.entries(sched[sk]).filter(([k,v])=>k.startsWith('a_')&&!k.endsWith('_achmash')&&v).map(([,v])=>v));
+      const assignedToShiftB=new Set(Object.entries(sched[sk]).filter(([k,v])=>k.startsWith('b_')&&!k.endsWith('_achmash')&&v).map(([,v])=>v));
+      available.sort((a,b)=>(monthC[a]||0)-(monthC[b]||0));
+
+      // Determine who goes to 'b': need min 2, prefer ~half
+      const wantB=available.filter(n=>{
+        const aCount=shiftTypeCount[n].a;
+        const bCount=shiftTypeCount[n].b;
+        return (aCount-bCount)>=1&&!isBlocked(n,d.day,d.month,'b');
+      });
+      const wantA=available.filter(n=>!wantB.includes(n)&&!isBlocked(n,d.day,d.month,'a'));
+      const canB=available.filter(n=>!isBlocked(n,d.day,d.month,'b'));
+      const canA=available.filter(n=>!isBlocked(n,d.day,d.month,'a'));
+
+      // Sort wantB and canB by scoreChouf with separation
+      const sortByScore=(arr,shKey2,assignedSet)=>arr.sort((a,b)=>scoreChouf(a,d.day,d.month,shKey2,monthC,shiftTypeCount,assignedSet)-scoreChouf(b,d.day,d.month,shKey2,monthC,shiftTypeCount,assignedSet));
+      const wantBSorted=sortByScore([...wantB],'b',assignedToShiftB);
+      const canBSorted=sortByScore([...canB],'b',assignedToShiftB);
+      // Ensure min 2 on 'b', max 2 preferred
+      let bWorkers=[...wantBSorted].slice(0,2);
+      if(bWorkers.length<2){
+        for(const n of canBSorted){
+          if(bWorkers.length>=2)break;
+          if(!bWorkers.includes(n)&&!isBlocked(n,d.day,d.month,'b'))bWorkers.push(n);
+        }
+      }
+      bWorkers=bWorkers.slice(0,2);
+      const bSet=new Set(bWorkers);
+      const aWorkers=sortByScore(available.filter(n=>!bSet.has(n)&&!isBlocked(n,d.day,d.month,'a')),'a',assignedToShiftA);
+
+      // Assign 'b'
+      bWorkers.forEach((n,i)=>{
+        sched[sk][`b_b${i+1}`]=n;
+        weekShiftCount[wi][n]=(weekShiftCount[wi][n]||0)+1;
+        shiftTypeCount[n].b++;
+        monthC[n]=(monthC[n]||0)+1;
+      });
+      // Assign 'a'
+      aWorkers.forEach((n,i)=>{
+        sched[sk][`a_b${i+1}`]=n;
+        weekShiftCount[wi][n]=(weekShiftCount[wi][n]||0)+1;
+        shiftTypeCount[n].a++;
+        monthC[n]=(monthC[n]||0)+1;
+      });
+      // Achmash
+      const allToday=[...bWorkers,...aWorkers];
+      ['a','b'].forEach(shKey=>{
+        const inSh=allToday.filter(n=>Object.entries(sched[sk]).some(([k,v])=>v===n&&k.startsWith(shKey+'_')));
+        const ach=inSh.find(n=>ACHMASH_CHOUF.includes(n));
+        if(ach)sched[sk][`${shKey}_achmash`]=ach;
       });
     });
   });
 
-  // ── STEP 4: Enforce min 2 bashal per weekday shift ──
-  // If a shift has only 1 bashal, add another from available workers
+  // ── STEP 4: Ensure min 2 on shift 'b' each weekday ──
   weeks.forEach((wk,wi)=>{
     const wkDays=wk.filter(d=>d.jsDay>=0&&d.jsDay<=4);
     wkDays.forEach(d=>{
       const sk=`${d.day}-${d.month}`;
-      ['a','b'].forEach(shKey=>{
-        const inShift=Object.entries(sched[sk]).filter(([k,v])=>k.startsWith(shKey+'_b')&&v).map(([,v])=>v);
-        if(inShift.length===1){
-          const alreadyToday=new Set(Object.values(sched[sk]).filter(Boolean));
-          const extra=CHOUF_BASHAL.filter(n=>!alreadyToday.has(n)&&!isBlocked(n,d.day,d.month,shKey))
-            .sort((a,b)=>(weekShiftCount[wi][a]||0)-(weekShiftCount[wi][b]||0));
-          if(extra.length){
-            const n=extra[0];
-            let i=1;while(sched[sk][`${shKey}_b${i}`])i++;
-            sched[sk][`${shKey}_b${i}`]=n;
-            weekShiftCount[wi][n]=(weekShiftCount[wi][n]||0)+1;
-            shiftTypeCount[n][shKey]++;
-            alreadyToday.add(n);
-            // update achmash if new worker qualifies
-            if(ACHMASH_CHOUF.includes(n)&&!sched[sk][`${shKey}_achmash`])sched[sk][`${shKey}_achmash`]=n;
-          }
-        }
-      });
+      const bInShift=Object.entries(sched[sk]).filter(([k,v])=>k.startsWith('b_b')&&v&&k!=='b_achmash').map(([,v])=>v);
+      if(bInShift.length<2){
+        // already includes ALL workers today (a and b shifts)
+        const already=new Set(Object.values(sched[sk]).filter(v=>typeof v==='string'&&v));
+        const extra=CHOUF_BASHAL.filter(n=>{
+          if(already.has(n))return false;// not already working today in ANY shift
+          if(isBlocked(n,d.day,d.month,'b'))return false;
+          if((weekShiftCount[wi][n]||0)>=5)return false;
+          return true;
+        }).sort((a,b)=>(shiftTypeCount[a].b-shiftTypeCount[a].a)-(shiftTypeCount[b].b-shiftTypeCount[b].a));
+        const needed=2-bInShift.length;
+        extra.slice(0,needed).forEach(n=>{
+          let i=1;while(sched[sk][`b_b${i}`])i++;
+          sched[sk][`b_b${i}`]=n;
+          weekShiftCount[wi][n]=(weekShiftCount[wi][n]||0)+1;
+          shiftTypeCount[n].b++;
+          monthC[n]=(monthC[n]||0)+1;
+          if(ACHMASH_CHOUF.includes(n)&&!sched[sk]['b_achmash'])sched[sk]['b_achmash']=n;
+        });
+      }
     });
   });
 
   // ── STEP 5: Students — only requested shifts ──
   const stuH={};
-  SCHEDULE_DAYS.forEach(d=>{
+  _choufActiveDays.forEach(d=>{
     const sk=`${d.day}-${d.month}`;
+    if(!sched[sk])return;
     const shKeys=d.jsDay>=5?['a']:['a','b'];
     shKeys.forEach(shKey=>{
       const sp=CHOUF_STUDENT.filter(n=>{
@@ -1630,30 +3233,36 @@ function runGenerateChouf(){
 
   let under=0;
   weeks.forEach((wk,wi)=>{CHOUF_BASHAL.forEach(n=>{if((weekShiftCount[wi][n]||0)<5)under++;});});
+  const _wasNextChouf=window._isNextChoufSchedule;
   saveChoufS(sched,true,false,false);
+  // Keep view on the month that was just generated
+  if(!_wasNextChouf)window._choufViewMonth='curr';
   toast(under>0?`✅ סידור חוף נוצר (${under} חוסרים)`:'✅ סידור חוף נוצר!');
   renderMgrSchedChouf();
 }
 
-function buildChoufWeekTable(week){
-  const schedule=get_choufSched();
+function buildChoufWeekTable(week,schedOverride){
+  const schedule=schedOverride||get_choufSched();
   const shLabels={a:'א׳ 07:00–15:00',b:'ב׳ 15:00–21:30',c:'ג׳ 21:30–07:00'};
   // render all workers in a slot dynamically
   const renderSlot=(sk,shKey)=>{
     const slot=schedule[sk]||{};
-    // collect all assigned workers for this shift
+    // collect workers — exclude achmash key (shown separately) to avoid duplicates
+    const seenNames=new Set();
     const workers=Object.entries(slot)
-      .filter(([k])=>k.startsWith(shKey+'_')&&!k.endsWith('_stu'))
+      .filter(([k])=>k.startsWith(shKey+'_')&&!k.endsWith('_stu')&&!k.endsWith('_achmash'))
       .map(([k,v])=>({field:k.replace(shKey+'_',''),name:v}))
-      .filter(x=>x.name);
+      .filter(x=>x.name&&!seenNames.has(x.name)&&seenNames.add(x.name));
     const stu=slot[`${shKey}_stu`];
+    const achmash=slot[`${shKey}_achmash`];
     let html='';
     workers.forEach(({field,name})=>{
       const isChoufB=CHOUF_BASHAL.includes(name);
       const bg=isChoufB?'rgba(16,185,129,.12)':'rgba(139,92,246,.12)';
       const border=isChoufB?'#10b981':'#7c3aed';
       const textColor=isChoufB?'#6ee7b7':'#c4b5fd';
-      html+=`<div class="cell-inner" style="background:${bg};border-color:${border}" onclick="openChoufCellModal('${sk}','${shKey}_${field}')"><div class="cell-label" style="color:${textColor}">${isChoufB?'בש"ל':'קבע'}</div><div style="color:${textColor};font-size:.7rem">${name}</div></div>`;
+      const isAch=name===achmash;
+      html+=`<div class="cell-inner" style="background:${bg};border-color:${border}" onclick="openChoufCellModal('${sk}','${shKey}_${field}')"><div class="cell-label" style="color:${textColor}">${isChoufB?'בש"ל':'קבע'}${isAch?' 🔑':''}</div><div style="color:${textColor};font-size:.7rem">${name}</div></div>`;
     });
     if(stu){
       html+=`<div class="cell-inner" style="background:rgba(139,92,246,.12);border-color:#7c3aed" onclick="openChoufCellModal('${sk}','${shKey}_stu')"><div class="cell-label" style="color:#c4b5fd">סטודנט</div><div style="color:#c4b5fd;font-size:.7rem">${stu}</div></div>`;
@@ -1667,25 +3276,46 @@ function buildChoufWeekTable(week){
   return`<div class="week-table-wrap"><table><thead><tr><th style="background:#080c14;position:sticky;right:0;z-index:3;min-width:60px;border:none"></th>${headers}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
-let mgrChoufView='week',mgrChoufWeek=0;
+let mgrChoufView='month',mgrChoufWeek=0;
 function renderMgrSchedChouf(){
   const ready=get_choufReady(),official=get_choufOfficial();
+  const isNextChouf=window._choufViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  const activeLabelChouf=isNextChouf?NEXT_MONTH_LABEL:MONTH_LABEL;
   const officialBadge=official?`<span style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);padding:.2rem .55rem;border-radius:6px;font-size:.72rem;font-weight:700">✅ רשמי</span>`:'';
+  const nextChoufBtn=CONS_MONTH!==SCHED_MONTH?`<button class="btn" style="background:${isNextChouf?'rgba(99,102,241,.2)':'rgba(99,102,241,.08)'};color:#a5b4fc;border:1px solid rgba(99,102,241,.35);font-size:.78rem" onclick="toggleChoufMonth()">${isNextChouf?'🔙 '+MONTH_LABEL:'⏭ '+NEXT_MONTH_LABEL}</button>`:'';
   const btns=`<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;align-items:center">
-    <button class="btn" style="background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.4);font-size:.88rem;padding:.55rem 1rem" onclick="runGenerateChouf()">⚡ צור סידור חוף</button>
+    <div style="font-size:.78rem;font-weight:700;color:${isNextChouf?'#a5b4fc':'#6ee7b7'};background:${isNextChouf?'rgba(99,102,241,.1)':'rgba(16,185,129,.1)'};border:1px solid ${isNextChouf?'rgba(99,102,241,.3)':'rgba(16,185,129,.3)'};padding:.25rem .6rem;border-radius:6px">${activeLabelChouf}</div>
+    ${nextChoufBtn}
+    <button class="btn" style="background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.4);font-size:.88rem;padding:.55rem 1rem" onclick="runGenerateChoufForMonth()">⚡ צור סידור חוף</button>
     ${ready?`<button class="btn" style="background:#1e2a40;color:#94a3b8;font-size:.78rem" onclick="toggleChoufView()">${mgrChoufView==='week'?'🗓 חודשי':'📅 שבועי'}</button>`:''}
     ${ready?`<button class="btn" style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);font-size:.78rem" onclick="makeChoufOfficial()">${official?'🔄 עדכן רשמי':'📌 הגדר כרשמי'}</button>`:''}
     ${ready?`<button class="btn" style="background:rgba(37,99,235,.15);color:#93c5fd;border:1px solid rgba(37,99,235,.4);font-size:.78rem" onclick="downloadChoufPDF()">📄 הורד PDF</button><button class="btn" style="background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.4);font-size:.78rem" onclick="downloadImage('chouf-sched-output','סידור חוף')">🖼 הורד תמונה</button>`:''}
     ${officialBadge}
   </div>`;
-  const weeks=getWeeks();
+  const _choufViewDays=isNextChouf?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+  const _choufViewSched=isNextChouf?(window._choufSched_next||{}):get_choufSched();
+  const weeks=getWeeks(_choufViewDays);
   let output='';
-  if(!ready){output='<div style="text-align:center;color:#475569;padding:2rem">לחץ ⚡ צור סידור חוף</div>';}
-  else if(mgrChoufView==='month'){output=weeks.map((wk,i)=>`<div style="margin-bottom:1rem"><div style="font-size:.68rem;color:#64748b;margin-bottom:.3rem">שבוע ${i+1}</div>${buildChoufWeekTable(wk)}</div>`).join('');}
-  else{const wk=weeks[mgrChoufWeek]||[];output=`<div style="display:flex;gap:.4rem;align-items:center;margin-bottom:.5rem"><button class="btn" style="background:#1e2a40;color:#94a3b8;padding:.3rem .6rem" onclick="changeChoufWeek(-1)" ${mgrChoufWeek===0?'disabled':''}>‹</button><span style="flex:1;text-align:center;font-weight:700;font-size:.82rem">${wk[0]?.label}–${wk[wk.length-1]?.label}</span><button class="btn" style="background:#1e2a40;color:#94a3b8;padding:.3rem .6rem" onclick="changeChoufWeek(1)" ${mgrChoufWeek>=weeks.length-1?'disabled':''}>›</button></div>${buildChoufWeekTable(wk)}`;}
+  if(!ready&&!isNextChouf){output='<div style="text-align:center;color:#475569;padding:2rem">לחץ ⚡ צור סידור חוף</div>';}
+  else if(isNextChouf&&!window._choufSched_next&&Object.keys(_choufViewSched).length===0){output='<div style="text-align:center;color:#475569;padding:2rem">לחץ ⚡ צור סידור חוף ל'+NEXT_MONTH_LABEL+'</div>';}
+  else if(mgrChoufView==='month'){output=weeks.map((wk,i)=>`<div style="margin-bottom:1rem"><div style="font-size:.68rem;color:#64748b;margin-bottom:.3rem">שבוע ${i+1}</div>${buildChoufWeekTable(wk,_choufViewSched)}</div>`).join('');}
+  else{const wk=weeks[mgrChoufWeek]||[];output=`<div style="display:flex;gap:.4rem;align-items:center;margin-bottom:.5rem"><button class="btn" style="background:#1e2a40;color:#94a3b8;padding:.3rem .6rem" onclick="changeChoufWeek(-1)" ${mgrChoufWeek===0?'disabled':''}>‹</button><span style="flex:1;text-align:center;font-weight:700;font-size:.82rem">${wk[0]?.label}–${wk[wk.length-1]?.label}</span><button class="btn" style="background:#1e2a40;color:#94a3b8;padding:.3rem .6rem" onclick="changeChoufWeek(1)" ${mgrChoufWeek>=weeks.length-1?'disabled':''}>›</button></div>${buildChoufWeekTable(wk,_choufViewSched)}`;}
   g('mgr-panel-chouf').innerHTML=btns+`<div id="chouf-sched-output">${output}</div>`;
 }
 function toggleChoufView(){mgrChoufView=mgrChoufView==='week'?'month':'week';renderMgrSchedChouf();}
+function toggleChoufMonth(){window._choufViewMonth=(window._choufViewMonth==='next'?'curr':'next');mgrChoufWeek=0;renderMgrSchedChouf();}
+function runGenerateChoufForMonth(){
+  const isNext=window._choufViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  if(isNext){
+    window._choufActiveSchedDays=NEXT_MONTH_DAYS;
+    window._isNextChoufSchedule=true;
+    runGenerateChouf();
+  } else {
+    window._choufActiveSchedDays=null;
+    window._isNextChoufSchedule=false;
+    runGenerateChouf();
+  }
+}
 function changeChoufWeek(d){mgrChoufWeek=Math.max(0,Math.min(getWeeks().length-1,mgrChoufWeek+d));renderMgrSchedChouf();}
 function makeChoufOfficial(){
   const wasOfficial=get_choufOfficial();
@@ -1763,15 +3393,27 @@ function downloadImage(elId,title){
 }
 function _doCapture(el,title){
   const orig=el.style.cssText;
+  // Temporarily expand to show full content without overflow clipping
+  const origOverflow=el.style.overflow;
+  const origWidth=el.style.width;
   el.style.background='#0a0e1a';
-  html2canvas(el,{backgroundColor:'#0a0e1a',scale:2,useCORS:true,logging:false}).then(canvas=>{
+  el.style.overflow='visible';
+  el.style.width='max-content';
+  // Also expand any week-table-wrap inside
+  const wraps=el.querySelectorAll('.week-table-wrap');
+  const wrapStyles=[];
+  wraps.forEach(w=>{wrapStyles.push(w.style.overflowX);w.style.overflowX='visible';});
+  html2canvas(el,{backgroundColor:'#0a0e1a',scale:2,useCORS:true,logging:false,scrollX:0,scrollY:0,windowWidth:el.scrollWidth+100,windowHeight:el.scrollHeight+100}).then(canvas=>{
     el.style.cssText=orig;
+    el.style.overflow=origOverflow;
+    el.style.width=origWidth;
+    wraps.forEach((w,i)=>{w.style.overflowX=wrapStyles[i];});
     const a=document.createElement('a');
     a.download=`${title}_${MONTH_LABEL}.png`;
     a.href=canvas.toDataURL('image/png');
     a.click();
     toast('🖼 תמונה הורדה!');
-  }).catch(()=>{el.style.cssText=orig;toast('❌ שגיאה בהורדת תמונה');});
+  }).catch(e=>{el.style.cssText=orig;console.error(e);toast('❌ שגיאה בהורדת תמונה');});
 }
 
 function buildCombinedView(){
