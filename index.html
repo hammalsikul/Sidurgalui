@@ -155,6 +155,7 @@ select option{background:#0f1623;color:#e2e8f0}
     <div id="vac-rejected-banner" class="info-red hidden">❌ בקשה אחת או יותר נדחתה</div>
     <div id="vac-form-wrap" class="hidden">
       <div class="card">
+        <div id="vac-month-toggle"></div>
         <div style="font-weight:700;font-size:.82rem;margin-bottom:.6rem" id="vac-form-title">➕ בקשה חדשה</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem">
           <div><div style="font-size:.68rem;color:#64748b;margin-bottom:.2rem">מתאריך</div><select class="sel" id="vac-from"></select></div>
@@ -610,7 +611,7 @@ function g(id){return document.getElementById(id);}
 function show(id){const el=g(id);if(el)el.classList.remove('hidden');}
 function hide(id){const el=g(id);if(el)el.classList.add('hidden');}
 function mkTag(text,bg,color,border){return`<span class="tag" style="background:${bg};color:${color};border:1px solid ${border}">${text}</span>`;}
-function dayOptsHTML(){return SCHEDULE_DAYS.map(d=>{const h=d.holiday;return`<option value="${d.day}-${d.month}">${d.label} ${HEB_DAYS[d.jsDay]}${h?' — '+h.name:''}</option>`;}).join('');}
+function dayOptsHTML(days){days=days||SCHEDULE_DAYS;return days.map(d=>{const h=d.holiday;return`<option value="${d.day}-${d.month}">${d.label} ${HEB_DAYS[d.jsDay]}${h?' — '+h.name:''}</option>`;}).join('');}
 function workerSelHTML(id,onchange,showDesk,includeChouf){
   const grps=[
     {l:'⭐ בשל — ירושלים',list:WORKERS_BASHAL,getShort:n=>DESK_MAP[n]||'בשל'},
@@ -757,17 +758,26 @@ function renderBirthdays(){
 // ══════ VACATION ══════
 let vacWorker='',vacReason='',vacEditId=null;
 function initVac(){
-  g('vac-month').textContent=MONTH_LABEL;
-  g('vac-worker-wrap').innerHTML=workerSelHTML('vac-worker','vacWorkerChange()',true,true);
-  g('vac-from').innerHTML='<option value="">בחר...</option>'+dayOptsHTML();
-  g('vac-to').innerHTML='<option value="">בחר...</option>'+dayOptsHTML();
-  // Build reason buttons - each with proper onclick
-  g('vac-reasons').innerHTML=VACATION_REASONS.map(r=>{
-    const safeId='vrb_'+r.replace(/[^א-תa-zA-Z0-9]/g,'_');
-    return`<button type="button" class="reason-btn" id="${safeId}" onclick="vacPickReason(this,'${r.replace(/'/g,"\\'")}')">${r}</button>`;
-  }).join('');
-  vacWorker='';vacReason='';vacEditId=null;
-  hide('vac-form-wrap');hide('vac-approved-banner');hide('vac-rejected-banner');hide('vac-form-warn');hide('vac-cancel-btn');hide('vac-my-list-card');g('vac-note').value='';
+  // Default: show next month dates if after 15th, else current
+  if(!window._vacMonth) window._vacMonth = (CONS_MONTH!==SCHED_MONTH)?'next':'curr';
+  const vacDays = window._vacMonth==='next' ? NEXT_MONTH_DAYS : SCHEDULE_DAYS;
+  const vacLabel = window._vacMonth==='next' ? NEXT_MONTH_LABEL : MONTH_LABEL;
+  g('vac-month').textContent = vacLabel;
+  g('vac-worker-wrap').innerHTML = workerSelHTML('vac-worker','vacWorkerChange()',true,true);
+  // Month toggle button
+  const toggleEl = g('vac-month-toggle');
+  if(toggleEl){
+    if(CONS_MONTH!==SCHED_MONTH){
+      toggleEl.innerHTML = `<div style="display:flex;gap:.4rem;align-items:center;margin-bottom:.6rem;flex-wrap:wrap">
+        <div style="font-size:.78rem;font-weight:700;color:${window._vacMonth==='next'?'#a5b4fc':'#93c5fd'};background:${window._vacMonth==='next'?'rgba(99,102,241,.1)':'rgba(37,99,235,.1)'};border:1px solid ${window._vacMonth==='next'?'rgba(99,102,241,.3)':'rgba(37,99,235,.3)'};padding:.22rem .55rem;border-radius:6px">📅 ${vacLabel}</div>
+        <button onclick="window._vacMonth=window._vacMonth==='next'?'curr':'next';initVac()" style="background:${window._vacMonth==='next'?'rgba(99,102,241,.2)':'rgba(99,102,241,.08)'};color:#a5b4fc;border:1px solid rgba(99,102,241,.35);border-radius:7px;padding:.25rem .6rem;font-size:.75rem;font-family:Heebo,sans-serif;cursor:pointer">${window._vacMonth==='next'?'🔙 '+MONTH_LABEL:'⏭ '+NEXT_MONTH_LABEL}</button>
+      </div>`;
+    } else {
+      toggleEl.innerHTML = '';
+    }
+  }
+  g('vac-from').innerHTML = '<option value="">בחר...</option>' + dayOptsHTML(vacDays);
+  g('vac-to').innerHTML   = '<option value="">בחר...</option>' + dayOptsHTML(vacDays);
 }
 function vacWorkerChange(){
   vacWorker=g('vac-worker').value;vacEditId=null;vacReason='';g('vac-note').value='';
@@ -956,7 +966,7 @@ function toggleSlot(day,month,sh){
   const allC=get_allC();const wData=allC[window._empWorker]||{constraints:[],submitted:false};const cons=[...wData.constraints||[]];
   const idx=cons.findIndex(c=>c.day===day&&c.month===month&&c.shiftKey===sh&&c.type==='prefer');
   if(idx>=0)cons.splice(idx,1);
-  else{const dObj=SCHEDULE_DAYS.find(d=>d.day===day&&d.month===month);cons.push({day,month,dayLabel:dObj.label,jsDay:dObj.jsDay,shiftKey:sh,type:'prefer',isWeekend:true});}
+  else{const _actDays=NEXT_MONTH_DAYS||SCHEDULE_DAYS;const dObj=_actDays.find(d=>d.day===day&&d.month===month)||SCHEDULE_DAYS.find(d=>d.day===day&&d.month===month);cons.push({day,month,dayLabel:dObj?.label||day+'/'+month,jsDay:dObj?.jsDay||0,shiftKey:sh,type:'prefer',isWeekend:true});}
   saveC({...allC,[window._empWorker]:{...wData,constraints:cons,submitted:false}});
   renderConsPanel();
 }
@@ -968,8 +978,8 @@ function addCons(){
   const dayVal=dayEl.value,sh=shEl.value,type=typeEl?typeEl.value:'block';
   const[d,m]=dayVal.split('-').map(Number);
   if(cons.find(c=>c.day===d&&c.month===m&&c.shiftKey===sh)){toast('⚠️ כבר קיים');return;}
-  const dObj=SCHEDULE_DAYS.find(x=>x.day===d&&x.month===m);
-  cons.push({day:d,month:m,dayLabel:dObj.label,jsDay:dObj.jsDay,shiftKey:sh,type,isWeekend:false});
+  const _actDays2=NEXT_MONTH_DAYS||SCHEDULE_DAYS;const dObj=_actDays2.find(x=>x.day===d&&x.month===m)||SCHEDULE_DAYS.find(x=>x.day===d&&x.month===m);
+  cons.push({day:d,month:m,dayLabel:dObj?.label||d+'/'+m,jsDay:dObj?.jsDay||0,shiftKey:sh,type,isWeekend:false});
   saveC({...allC,[window._empWorker]:{...wData,constraints:cons,submitted:false}});
   renderConsPanel(); // Stay on page, re-render
 }
@@ -1268,6 +1278,14 @@ function renderMgrCombined(){
     </div>
     ${bothReady?buildCombinedView():'<div style="text-align:center;color:#475569;padding:2rem">צור תחילה סידורים לשני החמ"לים</div>'}`;
 }
+function buildConsApproveBtn(sub,st,n,ci,isChouf){
+  if(!sub)return '';
+  if(st==='pending'||!st){
+    return '<button data-n="'+n+'" data-ci="'+ci+'" data-ic="'+isChouf+'" onclick="mgrApproveByEl(this)" style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.3);padding:.15rem .4rem;border-radius:5px;font-size:.62rem;cursor:pointer;font-family:Heebo,sans-serif">✅ אשר</button>'
+      +' <button data-n="'+n+'" data-ci="'+ci+'" data-ic="'+isChouf+'" data-reject="1" onclick="mgrApproveByEl(this)" style="background:rgba(220,38,38,.12);color:#fca5a5;border:1px solid rgba(220,38,38,.25);padding:.15rem .4rem;border-radius:5px;font-size:.62rem;cursor:pointer;font-family:Heebo,sans-serif">❌ דחה</button>';
+  }
+  return '<button data-n="'+n+'" data-ci="'+ci+'" data-ic="'+isChouf+'" data-reset="1" onclick="mgrApproveByEl(this)" style="background:rgba(100,116,139,.1);color:#94a3b8;border:1px solid rgba(100,116,139,.3);padding:.15rem .4rem;border-radius:5px;font-size:.58rem;cursor:pointer;font-family:Heebo,sans-serif">↺ אפס</button>';
+}
 function renderMgrCons(){
   const allC=get_allC();const choufC=get_choufC();const shL={a:'א׳',b:'ב׳',c:'ג׳'};
   // Month context banner
@@ -1315,8 +1333,7 @@ function renderMgrCons(){
             ${mkTag(shL[cx.shiftKey],'rgba(37,99,235,.1)','#93c5fd','rgba(37,99,235,.25)')}
             ${mkTag(cx.type==='block'?'❌ חסום':'✅ מועדף',cx.type==='block'?'rgba(220,38,38,.1)':'rgba(5,150,105,.1)',cx.type==='block'?'#fca5a5':'#6ee7b7',cx.type==='block'?'rgba(220,38,38,.25)':'rgba(5,150,105,.25)')}
             <span style="background:${stBg};color:${stColor};border:1px solid ${stColor}40;padding:.1rem .4rem;border-radius:5px;font-size:.62rem;font-weight:700">${stLabel}</span>
-            ${sub&&st==='pending'?`<button onclick="mgrApproveCon('${n}',${ci},${isChouf})" style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.3);padding:.15rem .4rem;border-radius:5px;font-size:.62rem;cursor:pointer;font-family:Heebo,sans-serif">✅ אשר</button>
-            <button onclick="mgrRejectCon('${n}',${ci},${isChouf})" style="background:rgba(220,38,38,.12);color:#fca5a5;border:1px solid rgba(220,38,38,.25);padding:.15rem .4rem;border-radius:5px;font-size:.62rem;cursor:pointer;font-family:Heebo,sans-serif">❌ דחה</button>`:''}
+            ${buildConsApproveBtn(sub,st,n,ci,isChouf)}
           </div>`;
         }).join('')}
       </div>`;
@@ -1324,22 +1341,24 @@ function renderMgrCons(){
   </div>`).join('');
   g('mgr-panel-cons').innerHTML=monthBanner+html;
 }
-function mgrApproveCon(name,idx,isChouf){
+function mgrApproveByEl(btn){
+  const name=btn.dataset.n;
+  const ci=parseInt(btn.dataset.ci);
+  const isChouf=btn.dataset.ic==='true';
+  const action=btn.dataset.reset?'reset':btn.dataset.reject?'reject':'approve';
+  mgrApproveCon(name,ci,isChouf,action);
+}
+function mgrApproveCon(name,idx,isChouf,action){
   const allC=isChouf?get_choufC():get_allC();
   const wd={...allC[name]};const cons=[...wd.constraints||[]];
-  cons[idx]={...cons[idx],approvalStatus:'approved'};
+  const newStatus=action==='reset'?'pending':action==='reject'?'rejected':'approved';
+  cons[idx]={...cons[idx],approvalStatus:newStatus};
   wd.constraints=cons;
   isChouf?saveChoufC({...allC,[name]:wd}):saveC({...allC,[name]:wd});
-  toast('✅ אילוץ אושר');renderMgrCons();
+  const msg=action==='reset'?'↺ אופס':action==='reject'?'❌ נדחה':'✅ אושר';
+  toast(msg);renderMgrCons();
 }
-function mgrRejectCon(name,idx,isChouf){
-  const allC=isChouf?get_choufC():get_allC();
-  const wd={...allC[name]};const cons=[...wd.constraints||[]];
-  cons[idx]={...cons[idx],approvalStatus:'rejected'};
-  wd.constraints=cons;
-  isChouf?saveChoufC({...allC,[name]:wd}):saveC({...allC,[name]:wd});
-  toast('❌ אילוץ נדחה');renderMgrCons();
-}
+
 function mgrDeleteCons(name,isChouf){
   if(!confirm(`למחוק את כל האילוצים של ${name} ולהחזיר למילוי מחדש?`))return;
   const allC=isChouf?get_choufC():get_allC();
