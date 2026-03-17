@@ -807,10 +807,12 @@ function vacPickReason(btn,r){
 function vacSubmit(){
   if(!vacWorker||!g('vac-from').value||!g('vac-to').value||!vacReason){toast('⚠️ יש לבחור שם, תאריכים וסיבה');return;}
   const from=g('vac-from').value,to=g('vac-to').value;
-  const fi=SCHEDULE_DAYS.findIndex(d=>`${d.day}-${d.month}`===from),ti=SCHEDULE_DAYS.findIndex(d=>`${d.day}-${d.month}`===to);
+  // Use the active month's days (current or next) — not always SCHEDULE_DAYS
+  const _vacDays=window._vacMonth==='next'?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+  const fi=_vacDays.findIndex(d=>`${d.day}-${d.month}`===from),ti=_vacDays.findIndex(d=>`${d.day}-${d.month}`===to);
   if(fi<0||ti<0||ti<fi){toast('⚠️ תאריכים לא תקינים');return;}
-  const days=SCHEDULE_DAYS.slice(fi,ti+1).map(d=>({day:d.day,month:d.month}));
-  const entry={id:vacEditId||Date.now(),worker:vacWorker,pop:POP_MAP[vacWorker]||CHOUF_POP_MAP[vacWorker]||'bashal',from:SCHEDULE_DAYS[fi],to:SCHEDULE_DAYS[ti],days,reason:vacReason,note:g('vac-note').value,status:'pending',submittedAt:new Date().toLocaleDateString('he-IL'),needsForm:REASONS_NEED_FORM.includes(vacReason)};
+  const days=_vacDays.slice(fi,ti+1).map(d=>({day:d.day,month:d.month}));
+  const entry={id:vacEditId||Date.now(),worker:vacWorker,pop:POP_MAP[vacWorker]||CHOUF_POP_MAP[vacWorker]||'bashal',from:_vacDays[fi],to:_vacDays[ti],days,reason:vacReason,note:g('vac-note').value,status:'pending',submittedAt:new Date().toLocaleDateString('he-IL'),needsForm:REASONS_NEED_FORM.includes(vacReason)};
   const allV=get_allV();
   saveV(vacEditId?allV.map(v=>v.id===vacEditId?entry:v):[...allV,entry]);
   toast(vacEditId?'✅ בקשה עודכנה':'✅ בקשה נשלחה');
