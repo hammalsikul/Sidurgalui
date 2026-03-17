@@ -778,6 +778,14 @@ function initVac(){
   }
   g('vac-from').innerHTML = '<option value="">בחר...</option>' + dayOptsHTML(vacDays);
   g('vac-to').innerHTML   = '<option value="">בחר...</option>' + dayOptsHTML(vacDays);
+  // Build reason buttons
+  const reasonsEl = g('vac-reasons');
+  if(reasonsEl){
+    reasonsEl.innerHTML = VACATION_REASONS.map(r=>{
+      const safeId='vrb_'+r.replace(/[^\u05d0-\u05ea\w]/g,'_');
+      return`<button type="button" class="reason-btn" id="${safeId}" onclick="vacPickReason(this,'${r.replace(/'/g,"\\'")}')">${r}</button>`;
+    }).join('');
+  }
 }
 function vacWorkerChange(){
   vacWorker=g('vac-worker').value;vacEditId=null;vacReason='';g('vac-note').value='';
