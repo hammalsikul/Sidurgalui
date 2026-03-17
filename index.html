@@ -87,7 +87,7 @@ select option{background:#0f1623;color:#e2e8f0}
     </div>
     <div id="home-alert-banner" class="alert-banner hidden">⚠️ <span id="home-alert-text"></span></div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:1rem">
-      <div class="card" style="text-align:center;padding:.75rem .5rem;margin-bottom:0"><div>📋</div><div style="font-size:1.3rem;font-weight:900;color:#93c5fd" id="home-stat-c">0/17</div><div style="font-size:.62rem;color:#64748b">הגישו</div><div style="font-size:.6rem;color:#a5b4fc;font-weight:700;margin-top:2px" id="home-cons-label"></div></div>
+      <div class="card" style="text-align:center;padding:.75rem .5rem;margin-bottom:0"><div>📋</div><div style="font-size:1.3rem;font-weight:900;color:#93c5fd" id="home-stat-c">0/17</div><div style="font-size:.62rem;color:#64748b">הגישו</div><div style="font-size:.58rem;color:#64748b;margin-top:3px" id="home-stat-c-split"></div><div style="font-size:.6rem;color:#a5b4fc;font-weight:700;margin-top:2px" id="home-cons-label"></div></div>
       <div class="card" style="text-align:center;padding:.75rem .5rem;margin-bottom:0"><div>🏖</div><div style="font-size:1.3rem;font-weight:900;color:#6ee7b7" id="home-stat-v">0</div><div style="font-size:.62rem;color:#64748b">חופשות</div></div>
       <div class="card" style="text-align:center;padding:.75rem .5rem;margin-bottom:0"><div>⏳</div><div style="font-size:1.3rem;font-weight:900;color:#fcd34d" id="home-stat-p">0</div><div style="font-size:.62rem;color:#64748b">ממתינות</div></div>
     </div>
@@ -701,6 +701,7 @@ window._renderHome = function(){
   if(g('home-cons-month'))g('home-cons-month').textContent=MONTH_LABEL;
   renderTicker();renderBirthdays();
   g('home-stat-c').textContent=`${sub}/${total}`;
+  if(g('home-stat-c-split'))g('home-stat-c-split').innerHTML=`<span style="color:#93c5fd">🏙 ${subJ}/${totalJ}</span>&nbsp;&nbsp;<span style="color:#6ee7b7">🌊 ${subCh}/${totalCh}</span>`;
   g('home-stat-v').textContent=allV.length;
   g('home-stat-p').textContent=pend;
   g('home-prog').style.width=(total?sub/total*100:0)+'%';
