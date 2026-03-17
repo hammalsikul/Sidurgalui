@@ -1329,9 +1329,15 @@ function renderMgrCons(){
           <span style="font-weight:700;font-size:.85rem">${n}</span>
           <div style="display:flex;gap:.3rem;align-items:center;flex-wrap:wrap">
             ${mkTag(sub?'✅ הוגש':'⏳ טרם',sub?'rgba(5,150,105,.1)':'rgba(100,116,139,.1)',sub?'#6ee7b7':'#64748b',sub?'rgba(5,150,105,.3)':'rgba(100,116,139,.3)')}
+            ${sub&&cons.length>0?`<button data-n="${n}" data-ic="${isChouf}" onclick="mgrApproveAllCons(this)" style="background:rgba(5,150,105,.12);color:#6ee7b7;border:1px solid rgba(5,150,105,.3);padding:.2rem .5rem;border-radius:6px;font-size:.65rem;cursor:pointer;font-family:Heebo,sans-serif">✅ אשר הכל</button>`:''}
             <button onclick="mgrDeleteCons('${n.replace(/'/g,"\\'")}',${isChouf})" style="background:rgba(220,38,38,.12);color:#fca5a5;border:1px solid rgba(220,38,38,.3);padding:.2rem .5rem;border-radius:6px;font-size:.65rem;cursor:pointer;font-family:Heebo,sans-serif">🗑 מחק והחזר למילוי</button>
           </div>
         </div>
+        ${cons.length===0&&sub?`<div style="display:flex;align-items:center;gap:.4rem;padding:.3rem 0;border-bottom:1px solid #0f1623;flex-wrap:wrap">
+            <span style="font-size:.75rem;color:#94a3b8">הוגש ללא אילוצים ספציפיים</span>
+            <button data-n="${n}" data-ic="${isChouf}" onclick="mgrApproveAllCons(this)" style="background:rgba(5,150,105,.12);color:#6ee7b7;border:1px solid rgba(5,150,105,.3);padding:.15rem .5rem;border-radius:5px;font-size:.62rem;cursor:pointer;font-family:Heebo,sans-serif">✅ אשר הגשה</button>
+            <button data-n="${n}" data-ic="${isChouf}" data-reject="1" onclick="mgrApproveAllCons(this)" style="background:rgba(220,38,38,.1);color:#fca5a5;border:1px solid rgba(220,38,38,.25);padding:.15rem .5rem;border-radius:5px;font-size:.62rem;cursor:pointer;font-family:Heebo,sans-serif">❌ דחה הגשה</button>
+          </div>`:''}
         ${cons.map((cx,ci)=>{
           const st=cx.approvalStatus||'pending';
           const stColor=st==='approved'?'#6ee7b7':st==='rejected'?'#fca5a5':'#fcd34d';
@@ -1369,6 +1375,19 @@ function mgrApproveCon(name,idx,isChouf,action){
   toast(msg);renderMgrCons();
 }
 
+function mgrApproveAllCons(btn){
+  const name=btn.dataset.n;
+  const isChouf=btn.dataset.ic==='true';
+  const isReject=!!btn.dataset.reject;
+  const allC=isChouf?get_choufC():get_allC();
+  const wd={...allC[name]};const cons=[...wd.constraints||[]];
+  const newStatus=isReject?'rejected':'approved';
+  wd.constraints=cons.map(cx=>({...cx,approvalStatus:newStatus}));
+  // If no constraints, mark the submission itself
+  if(cons.length===0) wd.submissionStatus=newStatus;
+  isChouf?saveChoufC({...allC,[name]:wd}):saveC({...allC,[name]:wd});
+  toast(isReject?'❌ הגשת '+name+' נדחתה':'✅ הגשת '+name+' אושרה');renderMgrCons();
+}
 function mgrDeleteCons(name,isChouf){
   if(!confirm(`למחוק את כל האילוצים של ${name} ולהחזיר למילוי מחדש?`))return;
   const allC=isChouf?get_choufC():get_allC();
