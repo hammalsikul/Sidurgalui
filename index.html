@@ -88,8 +88,8 @@ select option{background:#0f1623;color:#e2e8f0}
     <div id="home-alert-banner" class="alert-banner hidden">⚠️ <span id="home-alert-text"></span></div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:1rem">
       <div class="card" style="text-align:center;padding:.75rem .5rem;margin-bottom:0"><div>📋</div><div style="font-size:1.3rem;font-weight:900;color:#93c5fd" id="home-stat-c">0/17</div><div style="font-size:.62rem;color:#64748b">הגישו</div><div style="font-size:.58rem;color:#64748b;margin-top:3px" id="home-stat-c-split"></div><div style="font-size:.6rem;color:#a5b4fc;font-weight:700;margin-top:2px" id="home-cons-label"></div></div>
-      <div class="card" style="text-align:center;padding:.75rem .5rem;margin-bottom:0"><div>🏖</div><div style="font-size:1.3rem;font-weight:900;color:#6ee7b7" id="home-stat-v">0</div><div style="font-size:.62rem;color:#64748b">חופשות</div></div>
-      <div class="card" style="text-align:center;padding:.75rem .5rem;margin-bottom:0"><div>⏳</div><div style="font-size:1.3rem;font-weight:900;color:#fcd34d" id="home-stat-p">0</div><div style="font-size:.62rem;color:#64748b">ממתינות</div></div>
+      <div class="card" style="text-align:center;padding:.75rem .5rem;margin-bottom:0"><div>🏖</div><div style="font-size:1.3rem;font-weight:900;color:#6ee7b7" id="home-stat-v">0</div><div style="font-size:.62rem;color:#64748b">התבקשו</div><div style="font-size:.58rem;color:#64748b;margin-top:3px" id="home-stat-v-approved"></div></div>
+      <div class="card" style="text-align:center;padding:.75rem .5rem;margin-bottom:0"><div>✅</div><div style="font-size:1.3rem;font-weight:900;color:#6ee7b7" id="home-stat-p">0%</div><div style="font-size:.62rem;color:#64748b">אילוצים אושרו</div><div style="font-size:.58rem;color:#64748b;margin-top:3px" id="home-stat-p-detail"></div></div>
     </div>
     <div id="home-sick-banner" class="hidden" onclick="nav('sick')" style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.35);border-radius:10px;padding:.65rem .9rem;margin-bottom:.75rem;font-size:.8rem;color:#fca5a5;font-weight:700;cursor:pointer"></div>
     <button onclick="showMahMatzav()" style="width:100%;padding:.65rem;border-radius:10px;background:linear-gradient(135deg,rgba(16,185,129,.15),rgba(16,185,129,.08));border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-family:Heebo,sans-serif;font-size:.88rem;font-weight:900;cursor:pointer;margin-bottom:.65rem">🔍 מה מצב?</button>
@@ -691,9 +691,16 @@ window._renderHome = function(){
   const totalJ=ALL_WORKERS.length;
   const totalCh=CHOUF_ALL.length;
   const sub=subJ+subCh,total=totalJ+totalCh;
-  const pend=allV.filter(v=>v.status==='pending').length;
-  const decided=allV.filter(v=>v.status==='approved'||v.status==='rejected').length;
+  const vacApproved=allV.filter(v=>v.status==='approved').length;
+  const vacPending=allV.filter(v=>v.status==='pending').length;
   const activeSick=allSick.filter(r=>!r.resolved).length;
+  // Constraints approval %
+  const allConsJ=[...Object.values(allC)].flatMap(w=>w.constraints||[]);
+  const allConsCh=[...Object.values(choufC)].flatMap(w=>w.constraints||[]);
+  const allConsAll=[...allConsJ,...allConsCh];
+  const consApproved=allConsAll.filter(cx=>cx.approvalStatus==='approved').length;
+  const consTotal=allConsAll.length;
+  const consPct=consTotal>0?Math.round(consApproved/consTotal*100):0;
   g('home-month').textContent=MONTH_LABEL+' | חמ"ל ירושלים + חוף';
   // Show which month constraints are being collected
   const consLabel=CONS_MONTH!==SCHED_MONTH?`אילוצים ל${NEXT_MONTH_LABEL}`:MONTH_LABEL;
@@ -703,7 +710,9 @@ window._renderHome = function(){
   g('home-stat-c').textContent=`${sub}/${total}`;
   if(g('home-stat-c-split'))g('home-stat-c-split').innerHTML=`<span style="color:#93c5fd">🏙 ${subJ}/${totalJ}</span>&nbsp;&nbsp;<span style="color:#6ee7b7">🌊 ${subCh}/${totalCh}</span>`;
   g('home-stat-v').textContent=allV.length;
-  g('home-stat-p').textContent=pend;
+  if(g('home-stat-v-approved'))g('home-stat-v-approved').innerHTML=vacApproved>0?`<span style="color:#6ee7b7">✅ ${vacApproved} אושרו</span>`:(vacPending>0?`<span style="color:#fcd34d">⏳ ${vacPending} ממתינות</span>`:'');
+  g('home-stat-p').textContent=consPct+'%';
+  if(g('home-stat-p-detail'))g('home-stat-p-detail').innerHTML=consTotal>0?`<span style="color:#64748b">${consApproved}/${consTotal} אילוצים</span>`:'<span style="color:#475569">טרם הוגשו</span>';
   g('home-prog').style.width=(total?sub/total*100:0)+'%';
   const today_d=new Date().getDate();
   // Jerusalem avatars
