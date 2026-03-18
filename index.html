@@ -2861,7 +2861,8 @@ function buildPDFTable(){
           if(!v)return;
           if(!k.startsWith(sh.key+'_'))return;
           if(k===`${sh.key}_keva`||k===`${sh.key}_achmash`)return;
-          names.push(v);
+          const desk=DESK_MAP[v]||'';
+          names.push(desk?`${v} (${desk})`:v);
         });
         return`<td style="font-size:8px;text-align:right">${names.join('<br>')||'—'}</td>`;
       }).join('');
