@@ -3232,7 +3232,14 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
           const cands=inShift.filter(n=>ACHMASH.includes(n));
           const counts={};Object.values(sched).forEach(slot=>Object.entries(slot||{}).forEach(([k,v])=>{if(k.includes('achmash')&&v)counts[v]=(counts[v]||0)+1;}));
           if(cands.length){
-            cands.sort((a,b)=>(counts[a]||0)-(counts[b]||0));
+            // עמית gets priority as achmash (dedicated achmash role)
+            const ACHMASH_PRIORITY=['עמית'];
+            cands.sort((a,b)=>{
+              const pa=ACHMASH_PRIORITY.includes(a)?-1:0;
+              const pb=ACHMASH_PRIORITY.includes(b)?-1:0;
+              if(pa!==pb)return pa-pb;
+              return(counts[a]||0)-(counts[b]||0);
+            });
             sched[sk][`${sh.key}_achmash`]=cands[0];
           } else {
             // אין אחמ"ש — פיקוד הופך לאחמ"ש
