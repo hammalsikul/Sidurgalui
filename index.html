@@ -767,8 +767,8 @@ window._renderHome = function(){
   const vacPending=allV.filter(v=>v.status==='pending').length;
   const activeSick=allSick.filter(r=>!r.resolved).length;
   // Constraints approval %
-  const allConsJ=[...Object.values(allC)].flatMap(w=>w.constraints||[]);
-  const allConsCh=[...Object.values(choufC)].flatMap(w=>w.constraints||[]);
+  const allConsJ=[...Object.values(allC)].filter(w=>w.submitted).flatMap(w=>w.constraints||[]);
+  const allConsCh=[...Object.values(choufC)].filter(w=>w.submitted).flatMap(w=>w.constraints||[]);
   const allConsAll=[...allConsJ,...allConsCh];
   const consApproved=allConsAll.filter(cx=>cx.approvalStatus==='approved').length;
   const consTotal=allConsAll.length;
