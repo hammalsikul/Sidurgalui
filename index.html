@@ -393,6 +393,11 @@ function checkLoaded() {
 }
 // Listen on current month schedule
 window._fbListen('schedule_'+SCHED_MONTH+'_'+CURRENT_YEAR, v => { const s=v||{}; window._schedule=s.schedule||{}; window._schedReady=s.schedReady||false; window._schedOfficial=s.official||false; loaded.s=true; checkLoaded(); });
+// Load previous month schedule for cross-month carry check
+const _PREV_SCHED_MONTH=SCHED_MONTH===1?12:SCHED_MONTH-1;
+const _PREV_SCHED_YEAR=SCHED_MONTH===1?CURRENT_YEAR-1:CURRENT_YEAR;
+window._fbListen('schedule_'+_PREV_SCHED_MONTH+'_'+_PREV_SCHED_YEAR, v => { window._prevMonthSched=(v||{}).schedule||{}; });
+
 // Listen on constraints for BOTH months
 window._fbListen('constraints_'+SCHED_MONTH+'_'+CURRENT_YEAR, v => { window._allC_curr=v||{}; if(CONS_MONTH===SCHED_MONTH)window._allC=window._allC_curr; if(window._appReady&&window._currentPage==='home')renderHome(); });
 window._fbListen('constraints_'+CONS_MONTH+'_'+CONS_YEAR, v => { window._allC_next=v||{}; window._allC=CONS_MONTH===SCHED_MONTH?window._allC_curr:window._allC_next; loaded.c=true; checkLoaded(); if(window._appReady&&window._currentPage==='home')renderHome(); });
@@ -2916,6 +2921,22 @@ function canAssign(name,day,month,shKey,usedToday,monthC,wkC,lastS,stuH,sunOff){
       const prevSlot=window._currentSched?.[prevSk]||{};
       const workedNightPrev=Object.entries(prevSlot).some(([k,v])=>v===name&&k.startsWith('c_'));
       if(workedNightPrev&&shKey==='a')return false;// can't do morning after night
+    } else if(todayIdx===0){
+      // First day of schedule — check previous month's last schedule
+      const prevSched=window._isNextMonthSchedule?(get_schedule()):(window._prevMonthSched||{});
+      if(prevSched&&Object.keys(prevSched).length>0){
+        // Find the last day in prevSched
+        const prevKeys=Object.keys(prevSched).sort((a,b)=>{
+          const [ad,am]=a.split('-').map(Number);const [bd,bm]=b.split('-').map(Number);
+          return(am*100+ad)-(bm*100+bd);
+        });
+        const lastKey=prevKeys[prevKeys.length-1];
+        if(lastKey){
+          const prevSlot=prevSched[lastKey]||{};
+          const workedNightPrev=Object.entries(prevSlot).some(([k,v])=>v===name&&k.startsWith('c_'));
+          if(workedNightPrev&&shKey==='a')return false;
+        }
+      }
     }
   }
   // no ג after ג
