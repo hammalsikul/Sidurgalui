@@ -1033,7 +1033,7 @@ function renderConsPanel(){
     html+=`<div style="margin-bottom:.6rem"><div style="font-size:.68rem;color:#fcd34d;margin-bottom:.3rem">שישי — לפחות 2</div>${slotRows(friDays,['a','b','c'])}</div>`;
     html+=`<div style="margin-bottom:.75rem"><div style="font-size:.68rem;color:#fcd34d;margin-bottom:.3rem">שבת — לפחות 2 (ללא ג׳)</div>${slotRows(satDays,['a','b'])}</div>`;
     html+=`<div style="font-weight:700;color:#a78bfa;font-size:.8rem;margin-bottom:.4rem">➕ ימי חול (אופציונלי)</div>`;
-    html+=`<div style="display:flex;gap:.4rem;margin-bottom:.5rem;flex-wrap:wrap"><select class="sel" id="cons-day" style="flex:1;margin-bottom:0">${wdDays.map(d=>`<option value="${d.day}-${d.month}">${d.label} ${HEB_DAYS[d.jsDay]}${d.holiday?' — '+d.holiday.name:''}</option>`).join('')}</select><select class="sel" id="cons-sh" style="width:90px;margin-bottom:0"><option value="a">א׳</option><option value="b">ב׳</option><option value="c">ג׳</option></select><button class="btn" style="background:#8b5cf6;color:white;padding:.4rem .7rem" onclick="addCons()">➕</button></div>`;
+    html+=`<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:.35rem;align-items:center;margin-bottom:.5rem;flex-wrap:wrap"><select class="sel" id="cons-day" style="margin-bottom:0">${wdDays.map(d=>`<option value="${d.day}-${d.month}">${d.label} ${HEB_DAYS[d.jsDay]}${d.holiday?' — '+d.holiday.name:''}</option>`).join('')}</select><select class="sel" id="cons-sh" style="width:75px;margin-bottom:0"><option value="a">א׳</option><option value="b">ב׳</option><option value="c">ג׳</option></select><select class="sel" id="cons-type" style="width:150px;margin-bottom:0"><option value="prefer">✅ מבקש לעבוד</option><option value="block">❌ לא יכול</option></select><button class="btn" style="background:#8b5cf6;color:white;padding:.4rem .6rem" onclick="addCons()">➕</button></div>`;
   } else if(pop==='keva'){
     html+=`<div style="font-weight:700;color:#fcd34d;font-size:.8rem;margin-bottom:.5rem">⭐ סוף שבוע (חובה)</div>`;
     html+=`<div style="margin-bottom:.5rem"><div style="font-size:.68rem;color:#fcd34d;margin-bottom:.3rem">שישי — בחר/י 1</div>${slotRows(friDays,['a','b','c'])}</div>`;
@@ -1096,7 +1096,7 @@ function addCons(){
   if(cons.length>=MAX_C&&pop!=='keva'){toast(`❌ מכסה של ${MAX_C}`);return;}
   const dayEl=g('cons-day');const shEl=g('cons-sh');const typeEl=g('cons-type');
   if(!dayEl||!shEl){return;}
-  const dayVal=dayEl.value,sh=shEl.value,type=typeEl?typeEl.value:'block';
+  const dayVal=dayEl.value,sh=shEl.value,type=typeEl?typeEl.value:(pop==='student'?'prefer':'block');
   const[d,m]=dayVal.split('-').map(Number);
   if(cons.find(c=>c.day===d&&c.month===m&&c.shiftKey===sh)){toast('⚠️ כבר קיים');return;}
   const _actDays2=NEXT_MONTH_DAYS||SCHEDULE_DAYS;const dObj=_actDays2.find(x=>x.day===d&&x.month===m)||SCHEDULE_DAYS.find(x=>x.day===d&&x.month===m);
