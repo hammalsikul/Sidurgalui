@@ -141,6 +141,11 @@ select option{background:#0f1623;color:#e2e8f0}
         <button class="big-btn" style="background:linear-gradient(135deg,#dc262620,#dc262610);border:1px solid #dc262640" onclick="nav('sick')"><div style="font-size:1.5rem;margin-bottom:.25rem">🤒</div><div style="font-weight:800;font-size:.9rem">דיווח מחלה</div><div style="font-size:.68rem;opacity:.7">דיווח בזמן אמת</div></button>
         <button class="big-btn" style="background:linear-gradient(135deg,#0891b220,#0891b210);border:1px solid #0891b240" onclick="nav('past')"><div style="font-size:1.5rem;margin-bottom:.25rem">🗂</div><div style="font-weight:800;font-size:.9rem">סידורים קודמים</div><div style="font-size:.68rem;opacity:.7">ארכיון חודשים</div></button>
         <button class="big-btn" style="background:linear-gradient(135deg,#0d948820,#0d948810);border:1px solid #0d948840" onclick="nav('xreport')"><div style="font-size:1.5rem;margin-bottom:.25rem">📊</div><div style="font-weight:800;font-size:.9rem">דו"ח איקסים</div><div style="font-size:.68rem;opacity:.7">משמרות לפי חודש</div></button>
+        <div class="big-btn" style="background:linear-gradient(135deg,#78350f20,#78350f10);border:1px solid rgba(245,158,11,.3);cursor:default;text-align:right;padding:.65rem .75rem" id="home-duty-card">
+          <div style="font-size:.62rem;color:#f59e0b;font-weight:700;margin-bottom:.3rem">🎖 מפקד תורן</div>
+          <div id="home-duty-j" style="font-size:.75rem;color:#e2e8f0;margin-bottom:.2rem"><span style="color:#93c5fd;font-size:.6rem">🏙</span> <span style="color:#64748b">—</span></div>
+          <div id="home-duty-c" style="font-size:.75rem;color:#e2e8f0"><span style="color:#6ee7b7;font-size:.6rem">🌊</span> <span style="color:#64748b">—</span></div>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
         <div style="position:relative">
@@ -254,6 +259,7 @@ select option{background:#0f1623;color:#e2e8f0}
           <button class="btn" id="mgr-tab-xrep-btn" onclick="setMgrTab('xrep')" style="border:1px solid #243048;font-size:.75rem">📊 דו"ח איקסים</button>
           <button class="btn" id="mgr-tab-chat-btn" onclick="setMgrTab('chat')" style="border:1px solid #243048;font-size:.75rem">💬 צ'אטים <span id="mgr-chat-badge" class="hidden" style="background:#f59e0b;color:#000;border-radius:50%;padding:0 .35rem;font-size:.65rem;font-weight:900">●</span></button>
           <button class="btn" id="mgr-tab-holidays-btn" onclick="setMgrTab('holidays')" style="border:1px solid #243048;font-size:.75rem">🗓 חגים</button>
+<button class="btn" id="mgr-tab-duty-btn" onclick="setMgrTab('duty')" style="border:1px solid #243048;font-size:.75rem">🎖 מפקד תורן</button>
 <button class="btn" id="mgr-tab-admin-btn" onclick="setMgrTab('admin')" style="border:1px solid #243048;font-size:.75rem">⚙️ ניהול</button>
         </div>
       </div>
@@ -266,6 +272,7 @@ select option{background:#0f1623;color:#e2e8f0}
       <div id="mgr-panel-xrep" class="hidden"></div>
       <div id="mgr-panel-chat" class="hidden"></div>
       <div id="mgr-panel-holidays" class="hidden"></div>
+<div id="mgr-panel-duty" class="hidden"></div>
 <div id="mgr-panel-admin" class="hidden"></div>
     </div>
   </div>
@@ -416,6 +423,10 @@ window._fbListen('holiday_overrides', v => {
     if(h)window._effectiveHolidays[sk]=h;
     else delete window._effectiveHolidays[sk];
   });
+});
+window._fbListen('duty_officer', v => {
+  window._dutyOfficer=v||{j:null,c:null};
+  if(window._appReady) renderDutyCard();
 });
 window._fbListen('chats', v => {
   window._chats=v||{};
@@ -813,6 +824,7 @@ window._renderHome = function(){
   if(g('home-cons-month'))g('home-cons-month').textContent=MONTH_LABEL;
   renderTicker();renderBirthdays();
   renderOfficialSchedCard();
+  renderDutyCard();
   g('home-stat-c').textContent=`${sub}/${total}`;
   if(g('home-stat-c-split'))g('home-stat-c-split').innerHTML=`<span style="color:#93c5fd">🏙 ${subJ}/${totalJ}</span>&nbsp;&nbsp;<span style="color:#6ee7b7">🌊 ${subCh}/${totalCh}</span>`;
   g('home-stat-v').textContent=allV.length;
@@ -1379,7 +1391,7 @@ function mgrLogin(){if(g('mgr-pw').value===MGR_PW){window._mgrAuthed=true;hide('
 function renderMgrPanel(){const allSick=get_allSick();const active=allSick.filter(r=>!r.resolved);g('mgr-sick-banner').innerHTML=active.length?`<div style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.35);border-radius:10px;padding:.65rem;margin-bottom:.75rem;font-size:.78rem;color:#fca5a5">🚨 מחלה: ${active.map(r=>r.worker).join(', ')}</div>`:'';setMgrTab(mgrTab);}
 function setMgrTab(t){
   mgrTab=t;
-  ['cons','vacs','sched','chouf','combined','justice','xrep','chat','holidays','admin'].forEach(x=>{
+  ['cons','vacs','sched','chouf','combined','justice','xrep','chat','holidays','duty','admin'].forEach(x=>{
     const btn=g('mgr-tab-'+x+'-btn');if(!btn)return;
     btn.style.background=x===t?'#1e3a5f':'#1e2a40';
     btn.style.color=x===t?'#93c5fd':'#64748b';
@@ -1395,6 +1407,7 @@ function setMgrTab(t){
   else if(t==='xrep')renderMgrXReport();
   else if(t==='chat')renderMgrChat();
   else if(t==='holidays')renderMgrHolidays();
+  else if(t==='duty')renderMgrDuty();
   else renderMgrAdmin();
 }
 function renderMgrCombined(){
@@ -2505,6 +2518,49 @@ function hvfyAddConfirm(){
   toast('✅ נוסף');renderHolidayVerify();renderMgrSched();
 }
 
+
+function renderDutyCard(){
+  const duty=window._dutyOfficer||{j:null,c:null};
+  const jEl=g('home-duty-j');const cEl=g('home-duty-c');
+  if(jEl)jEl.innerHTML=`<span style="color:#93c5fd;font-size:.6rem">🏙</span> <span style="font-weight:700;color:${duty.j?'#e2e8f0':'#475569'}">${duty.j||'לא הוגדר'}</span>`;
+  if(cEl)cEl.innerHTML=`<span style="color:#6ee7b7;font-size:.6rem">🌊</span> <span style="font-weight:700;color:${duty.c?'#e2e8f0':'#475569'}">${duty.c||'לא הוגדר'}</span>`;
+}
+
+function renderMgrDuty(){
+  const el=g('mgr-panel-duty');if(!el)return;
+  const duty=window._dutyOfficer||{j:null,c:null};
+  const makeSelect=(site,field,current,workers)=>`
+    <div class="card" style="margin-bottom:.65rem">
+      <div style="font-weight:900;font-size:.85rem;color:${field==='j'?'#93c5fd':'#6ee7b7'};margin-bottom:.5rem">${site}</div>
+      <div style="font-size:.75rem;color:#94a3b8;margin-bottom:.6rem">בחר/י את המפקד התורן כעת:</div>
+      <select id="duty-sel-${field}" class="sel" style="margin-bottom:.6rem" onchange="saveDutyOfficer('${field}',this.value)">
+        <option value="">— לא הוגדר —</option>
+        ${workers.map(w=>`<option value="${w}" ${current===w?'selected':''}>${w}</option>`).join('')}
+      </select>
+      <div style="display:flex;align-items:center;gap:.5rem;padding:.5rem .7rem;background:${current?'rgba(5,150,105,.1)':'rgba(100,116,139,.08)'};border:1px solid ${current?'rgba(5,150,105,.3)':'rgba(100,116,139,.2)'};border-radius:8px">
+        <span style="font-size:1.1rem">🎖</span>
+        <div>
+          <div style="font-size:.65rem;color:#64748b">מפקד תורן כעת</div>
+          <div style="font-weight:700;font-size:.88rem;color:${current?'#e2e8f0':'#475569'}">${current||'לא הוגדר'}</div>
+        </div>
+      </div>
+    </div>`;
+  el.innerHTML=`
+    <div style="font-weight:900;font-size:.9rem;color:#e2e8f0;margin-bottom:.75rem">🎖 מפקד תורן</div>
+    <div style="font-size:.72rem;color:#64748b;margin-bottom:.75rem">בחר/י מי המפקד התורן בכל חמ"ל — יוצג לכל העובדים במסך הבית.</div>
+    ${makeSelect('🏙 חמ"ל ירושלים','j',duty.j,WORKERS_KEVA)}
+    ${makeSelect('🌊 חמ"ל חוף','c',duty.c,[...WORKERS_KEVA,'רן חדד','נתנאל פינטו'])}
+  `;
+}
+
+function saveDutyOfficer(field,value){
+  const duty={...(window._dutyOfficer||{j:null,c:null}),[field]:value||null};
+  window._dutyOfficer=duty;
+  window._fbSet('duty_officer',duty);
+  renderDutyCard();
+  renderMgrDuty();
+  toast(value?`✅ מפקד תורן עודכן: ${value}`:'🔄 מפקד תורן נוקה');
+}
 function renderMgrAdmin(){
   const ticker=window._ticker||[];
   const bdays=window._birthdays||{};
