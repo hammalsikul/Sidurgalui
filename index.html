@@ -94,6 +94,8 @@ select option{background:#0f1623;color:#e2e8f0}
     <div id="home-sick-banner" class="hidden" onclick="nav('sick')" style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.35);border-radius:10px;padding:.65rem .9rem;margin-bottom:.75rem;font-size:.8rem;color:#fca5a5;font-weight:700;cursor:pointer"></div>
     <button onclick="showMahMatzav()" style="width:100%;padding:.65rem;border-radius:10px;background:linear-gradient(135deg,rgba(16,185,129,.15),rgba(16,185,129,.08));border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-family:Heebo,sans-serif;font-size:.88rem;font-weight:900;cursor:pointer;margin-bottom:.65rem">🔍 מה מצב?</button>
     <div id="mah-matzav-panel" class="hidden"></div>
+    <!-- OFFICIAL SCHEDULE CARD -->
+    <div id="home-official-sched-card" class="hidden" style="margin-bottom:.65rem"></div>
     <div style="display:flex;flex-direction:column;gap:.65rem">
       <div style="position:relative">
         <button class="big-btn" style="background:linear-gradient(135deg,#2563eb20,#2563eb10);border:1px solid #2563eb40" onclick="nav('emp')">
@@ -600,9 +602,13 @@ function saveS(s,r,official,warnIfOfficial){
   window._schedule=s;window._schedReady=r;
   if(official!==undefined)window._schedOfficial=official;
   setSyncing(true);
-  const key=`${SCHEDULE_DAYS[0]?.year}_${SCHEDULE_DAYS[0]?.month}`;
-  const past=get_pastSchedules();past[key]={schedule:s,schedReady:r,month:SCHEDULE_DAYS[0]?.month,year:SCHEDULE_DAYS[0]?.year,label:MONTH_LABEL};
-  window._fbSet('past_schedules',past).catch(()=>{});
+  // Save to past_schedules ONLY when marking official
+  if(official===true){
+    const key=`${SCHEDULE_DAYS[0]?.year}_${SCHEDULE_DAYS[0]?.month}`;
+    const past=get_pastSchedules();
+    past[key]={schedule:s,schedReady:r,month:SCHEDULE_DAYS[0]?.month,year:SCHEDULE_DAYS[0]?.year,label:MONTH_LABEL,official:true};
+    window._fbSet('past_schedules',past).catch(()=>{});
+  }
   window._fbSet('schedule_'+SCHED_MONTH+'_'+CURRENT_YEAR,{schedule:s,schedReady:r,official:window._schedOfficial||false}).then(()=>setSyncing(false));
 }
 function saveSick(d){window._allSick=d;setSyncing(true);window._fbSet('sick',d).then(()=>setSyncing(false));}
@@ -707,6 +713,7 @@ window._renderHome = function(){
   if(g('home-cons-label'))g('home-cons-label').textContent=consLabel;
   if(g('home-cons-month'))g('home-cons-month').textContent=MONTH_LABEL;
   renderTicker();renderBirthdays();
+  renderOfficialSchedCard();
   g('home-stat-c').textContent=`${sub}/${total}`;
   if(g('home-stat-c-split'))g('home-stat-c-split').innerHTML=`<span style="color:#93c5fd">🏙 ${subJ}/${totalJ}</span>&nbsp;&nbsp;<span style="color:#6ee7b7">🌊 ${subCh}/${totalCh}</span>`;
   g('home-stat-v').textContent=allV.length;
@@ -2500,12 +2507,27 @@ function manualFillSlot(sk,shKey,name,field){
   closeModal();toast(`✏️ ${name} שובץ`);renderMgrSched();
 }
 function makeOfficial(){
-  const wasOfficial=get_schedOfficial();
+  const isNextView=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  const sched=isNextView?(window._schedule_next||get_schedule()):get_schedule();
+  const wasOfficial=isNextView?window._nextSchedOfficial:get_schedOfficial();
+  const mLabel=isNextView?NEXT_MONTH_LABEL:MONTH_LABEL;
   const msg=wasOfficial
-    ?'⚠️ הסידור כבר רשמי.\nהגדרה מחדש תחליף את הגרסה הרשמית הקיימת.\nלהמשיך?'
-    :'להגדיר סידור זה כרשמי?\nלאחר מכן כל שינוי ידני יציג אזהרה.';
+    ?`⚠️ הסידור של ${mLabel} כבר רשמי.\nהגדרה מחדש תחליף את הגרסה הרשמית הקיימת.\nלהמשיך?`
+    :`להגדיר את סידור ${mLabel} כרשמי?\nלאחר מכן כל שינוי ידני יציג אזהרה.`;
   if(!confirm(msg))return;
-  saveS(get_schedule(),true,true,false);
+  if(isNextView){
+    // Save next month as official
+    window._nextSchedOfficial=true;
+    window._fbSet(window._activeSchedKey||'schedule_'+CONS_MONTH+'_'+CONS_YEAR,{schedule:sched,schedReady:true,official:true}).then(()=>setSyncing(false));
+    // Save to past_schedules NOW (only when official)
+    const key=`${CONS_YEAR}_${CONS_MONTH}`;
+    const past=get_pastSchedules();
+    past[key]={schedule:sched,schedReady:true,month:CONS_MONTH,year:CONS_YEAR,label:NEXT_MONTH_LABEL,official:true};
+    window._fbSet('past_schedules',past).catch(()=>{});
+    window._pastSchedules=past;
+  } else {
+    saveS(sched,true,true,false);
+  }
   toast(wasOfficial?'🔄 סידור רשמי עודכן!':'📌 הסידור הוגדר כרשמי!');
   renderMgrSched();
 }
@@ -3007,9 +3029,7 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
     window._schedule_next=sched;
     window._fbSet(window._activeSchedKey||'schedule_'+CONS_MONTH+'_'+CONS_YEAR,{schedule:sched,schedReady:true,official:false}).then(()=>setSyncing(false));
     setSyncing(true);
-    const key2=`${CONS_YEAR}_${CONS_MONTH}`;
-    const past2=get_pastSchedules();past2[key2]={schedule:sched,schedReady:true,month:CONS_MONTH,year:CONS_YEAR,label:NEXT_MONTH_LABEL};
-    window._fbSet('past_schedules',past2).catch(()=>{});
+    // Do NOT save to past_schedules here — only when makeOfficial() is called
     window._activeSchedDays=null;window._isNextMonthSchedule=false;
   } else {
     saveS(sched,true,false,false);
@@ -3538,11 +3558,64 @@ function resolveSick(id){saveSick(get_allSick().map(r=>r.id===id?{...r,resolved:
 
 // ══════ PAST SCHEDULES ══════
 let pastViewKey=null;
+function renderOfficialSchedCard(){
+  const el=g('home-official-sched-card');if(!el)return;
+  // Check current month official schedule
+  const sched=window._schedule||{};
+  const isOfficial=window._schedOfficial||false;
+  const past=get_pastSchedules();
+  // Also check if current month is in past as official
+  const currKey=`${CURRENT_YEAR}_${SCHED_MONTH}`;
+  const currPast=past[currKey];
+  const effectiveSched=isOfficial?sched:(currPast?.official?currPast.schedule:null);
+  const effectiveOfficial=isOfficial||(currPast?.official||false);
+  if(!effectiveOfficial||!effectiveSched||!Object.keys(effectiveSched).length){
+    el.classList.add('hidden');return;
+  }
+  el.classList.remove('hidden');
+  // Build a compact daily view for current/next few days
+  const today=new Date();
+  const todayKey=`${today.getDate()}-${today.getMonth()+1}`;
+  // Find today's slot
+  const shiftNames={a:'א׳ בוקר (07:00-15:00)',b:'ב׳ ערב (15:00-21:30)',c:'ג׳ לילה (21:30-07:00)'};
+  const shiftKeys=['a','b','c'];
+  // Show 3 days: yesterday, today, tomorrow
+  const days3=[-1,0,1].map(offset=>{
+    const d=new Date(today);d.setDate(today.getDate()+offset);
+    return{day:d.getDate(),month:d.getMonth()+1,offset};
+  });
+  const dayRows=days3.map(({day,month,offset})=>{
+    const sk=`${day}-${month}`;
+    const slot=effectiveSched[sk]||{};
+    const label=offset===-1?'אתמול':offset===0?'היום':'מחר';
+    const labelColor=offset===0?'#fcd34d':'#94a3b8';
+    const shifts=shiftKeys.map(sh=>{
+      const entries=Object.entries(slot).filter(([k,v])=>v&&k.startsWith(sh+'_'));
+      if(!entries.length)return'';
+      const workers=entries.map(([,v])=>v).join(', ');
+      return`<div style="font-size:.7rem;margin-bottom:2px"><span style="color:#64748b;font-size:.62rem">${shiftNames[sh]}:</span> <span style="color:#e2e8f0;font-weight:600">${workers}</span></div>`;
+    }).join('');
+    if(!shifts)return'';
+    return`<div style="border-bottom:1px solid #1e2a40;padding:.4rem 0"><div style="font-size:.72rem;font-weight:700;color:${labelColor};margin-bottom:3px">${label} — ${day}/${month}</div>${shifts}</div>`;
+  }).join('');
+
+  el.innerHTML=`<div class="card" style="background:linear-gradient(135deg,rgba(5,150,105,.1),rgba(5,150,105,.05));border:2px solid rgba(5,150,105,.4);cursor:pointer" onclick="nav('past')">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+      <div style="font-weight:900;font-size:.88rem;color:#6ee7b7">📅 סידור העבודה הרשמי — ${MONTH_LABEL}</div>
+      <span style="font-size:.65rem;color:#6ee7b7;background:rgba(5,150,105,.15);border:1px solid rgba(5,150,105,.3);border-radius:5px;padding:.15rem .4rem">✅ רשמי</span>
+    </div>
+    ${dayRows||'<div style="font-size:.75rem;color:#64748b">לחץ לצפייה בסידור המלא</div>'}
+    <div style="text-align:center;font-size:.65rem;color:#475569;margin-top:.4rem">לחץ לסידור המלא →</div>
+  </div>`;
+}
+
 function initPast(){
-  const past=get_pastSchedules();const keys=Object.keys(past).sort().reverse();
-  if(!keys.length){g('past-content').innerHTML='<div class="card" style="text-align:center;color:#64748b;padding:2rem">אין סידורים שמורים עדיין</div>';return;}
+  const past=get_pastSchedules();
+  // Show only official schedules
+  const keys=Object.keys(past).filter(k=>past[k].official).sort().reverse();
+  if(!keys.length){g('past-content').innerHTML='<div class="card" style="text-align:center;color:#64748b;padding:2rem">אין סידורים רשמיים שמורים עדיין</div>';return;}
   if(pastViewKey&&past[pastViewKey]){renderPastSched(pastViewKey);return;}
-  g('past-content').innerHTML=keys.map(k=>{const p=past[k];return`<div class="card" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="renderPastSched('${k}')"><div><div style="font-weight:700">${p.label||k}</div><div style="font-size:.7rem;color:#64748b">${Object.keys(p.schedule||{}).length} ימים</div></div><span style="color:#93c5fd">← צפייה</span></div>`;}).join('');
+  g('past-content').innerHTML=keys.map(k=>{const p=past[k];return`<div class="card" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="renderPastSched('${k}')"><div><div style="font-weight:700">${p.label||k} <span style="font-size:.65rem;color:#6ee7b7;font-weight:700">✅ רשמי</span></div><div style="font-size:.7rem;color:#64748b">${Object.keys(p.schedule||{}).length} ימים</div></div><span style="color:#93c5fd">← צפייה</span></div>`;}).join('');
 }
 function renderPastSched(key){
   pastViewKey=key;const past=get_pastSchedules();const p=past[key];if(!p)return;
