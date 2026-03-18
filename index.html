@@ -114,13 +114,20 @@ select option{background:#0f1623;color:#e2e8f0}
         <button class="big-btn" style="background:linear-gradient(135deg,#0891b220,#0891b210);border:1px solid #0891b240" onclick="nav('past')"><div style="font-size:1.5rem;margin-bottom:.25rem">🗂</div><div style="font-weight:800;font-size:.9rem">סידורים קודמים</div><div style="font-size:.68rem;opacity:.7">ארכיון חודשים</div></button>
         <button class="big-btn" style="background:linear-gradient(135deg,#0d948820,#0d948810);border:1px solid #0d948840" onclick="nav('xreport')"><div style="font-size:1.5rem;margin-bottom:.25rem">📊</div><div style="font-weight:800;font-size:.9rem">דו"ח איקסים</div><div style="font-size:.68rem;opacity:.7">משמרות לפי חודש</div></button>
       </div>
-      <div style="position:relative">
-        <button class="big-btn" style="background:linear-gradient(135deg,#f59e0b20,#f59e0b10);border:1px solid #f59e0b40;width:100%" onclick="nav('chat')">
-          <div style="font-size:1.5rem;margin-bottom:.25rem">💬</div>
-          <div style="font-weight:800;font-size:.9rem">צ'אט עם הפיקוד</div>
-          <div style="font-size:.68rem;opacity:.7">שלחו הודעה למפקד</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
+        <div style="position:relative">
+          <button class="big-btn" style="background:linear-gradient(135deg,#f59e0b20,#f59e0b10);border:1px solid #f59e0b40;width:100%" onclick="nav('chat')">
+            <div style="font-size:1.5rem;margin-bottom:.25rem">💬</div>
+            <div style="font-weight:800;font-size:.9rem">צ'אט עם הפיקוד</div>
+            <div style="font-size:.68rem;opacity:.7">שלחו הודעה למפקד</div>
+          </button>
+          <div id="home-chat-badge" class="hidden" style="position:absolute;top:8px;left:8px;background:#f59e0b;color:white;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:900">●</div>
+        </div>
+        <button class="big-btn" style="background:linear-gradient(135deg,#6366f120,#6366f110);border:1px solid #6366f140;width:100%" onclick="nav('bot')">
+          <div style="font-size:1.5rem;margin-bottom:.25rem">🤖</div>
+          <div style="font-weight:800;font-size:.9rem">עוזר חכם</div>
+          <div style="font-size:.68rem;opacity:.7">שאלות על המערכת</div>
         </button>
-        <div id="home-chat-badge" class="hidden" style="position:absolute;top:8px;left:8px;background:#f59e0b;color:white;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:900">●</div>
       </div>
     </div>
     <!-- HELP LINKS -->
@@ -257,6 +264,29 @@ select option{background:#0f1623;color:#e2e8f0}
     </div>
     <div id="chat-worker-wrap" style="margin-bottom:.75rem"></div>
     <div id="chat-content"></div>
+  </div>
+</div>
+
+<!-- CHATBOT PAGE -->
+<div class="page" id="page-bot">
+  <div class="wrap">
+    <div class="header"><button class="btn btn-ghost" onclick="nav('home')">← חזרה</button><div><h1>🤖 עוזר חכם</h1></div></div>
+    <div id="bot-id-wrap" class="card" style="margin-bottom:.75rem">
+      <div style="font-size:.8rem;font-weight:700;color:#a5b4fc;margin-bottom:.5rem">👋 שלום! אני העוזר החכם של הסידור הגלוי.</div>
+      <div style="font-size:.75rem;color:#94a3b8;margin-bottom:.6rem">בחר את שמך כדי שאוכל לתת לך מענה מותאם אישית:</div>
+      <div id="bot-worker-sel-wrap"></div>
+      <button onclick="botStart()" class="btn btn-blue" style="width:100%;margin-top:.5rem;padding:.55rem">🚀 התחל שיחה</button>
+    </div>
+    <div id="bot-chat-wrap" class="hidden">
+      <div id="bot-messages" style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:.75rem;max-height:65vh;overflow-y:auto;padding:.25rem 0"></div>
+      <div style="display:flex;gap:.4rem;align-items:flex-end">
+        <textarea id="bot-input" placeholder="שאל שאלה על המערכת..." rows="2"
+          style="flex:1;background:#0f1623;color:#e2e8f0;border:1px solid #243048;border-radius:10px;padding:.5rem .7rem;font-family:Heebo,sans-serif;font-size:.82rem;resize:none;outline:none"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();botSend();}"></textarea>
+        <button onclick="botSend()" class="btn btn-blue" style="padding:.5rem .8rem">שלח</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.5rem" id="bot-suggestions"></div>
+    </div>
   </div>
 </div>
 
@@ -681,6 +711,7 @@ function nav(page){
   else if(page==='mgr')initMgr();
   else if(page==='sick')initSick();
   else if(page==='past')initPast();
+  else if(page==='bot')initBot();
   else if(page==='xreport')initXReportPub();
 }
 
@@ -3749,6 +3780,152 @@ function renderPastSched(key){
   }).join('');
   g('past-content').innerHTML=html;
 }
+
+// ══════════════════════ CHATBOT ══════════════════════
+let _botWorker=null,_botPop=null,_botHistory=[];
+
+const BOT_SYSTEM = (name,pop,popLabel,maxCons,isChouf)=>`אתה עוזר חכם של מערכת "הסידור הגלוי" — מערכת לניהול משמרות לחמ"ל.
+אתה עונה בעברית בלבד. אתה ידידותי, תמציתי וברור. אל תמציא מידע שלא נמסר לך.
+
+פרטי העובד שמולך:
+- שם: ${name}
+- סוג: ${popLabel}
+- חמ"ל: ${isChouf?'חוף':'ירושלים'}
+- מכסת אילוצים: ${pop==='student'?'אין מכסה (חייב לפחות 2 שישי + 2 שבת + 80 שעות)':pop==='keva'?'חסימות ימי חול בלבד (חייב לבחור גם שישי ושבת אחד לפחות)':`עד ${maxCons} אילוצים`}
+
+כללים שצריך לדעת לפי סוג עובד:
+${pop==='bashal'?`- מקסימום ${maxCons} אילוצים (חסימות/העדפות) לחודש
+- אילוצים ל: ימי חול + סוף שבוע
+- לא ניתן להגיש ביום שישי/ערב חג אם נקבע "לא בשישי"
+- הגשת אילוצים: בין ה-15 ל-22 לחודש`
+:pop==='student'?`- חייב לסמן לפחות 2 שישי ו-2 שבת
+- חייב לצבור לפחות 80 שעות
+- אין מכסת אילוצים
+- הגשת אילוצים: בין ה-15 ל-22 לחודש`
+:pop==='keva'?`- חייב לבחור לפחות שישי אחד ושבת אחד
+- יכול להוסיף חסימות לימי חול
+- לא עובד בשישי/שבת/חג כרגיל
+- הגשת אילוצים: בין ה-15 ל-22 לחודש`
+:`- כללי חמ"ל חוף: 7 ימים בשבוע, משמרות א' ו-ב' בלבד (ג' ידנית)`}
+
+מידע כללי על המערכת:
+- אילוץ = בקשה על משמרת (חסימה = לא יכול, העדפה = רוצה לעבוד)
+- הגשת אילוצים: לחץ "אילוצים" → בחר שם → הגש → לחץ "שלח למפקד"
+- חופשה: לחץ "בקשת חופשה" → בחר תאריכים → הגש → ממתין לאישור מפקד
+- מחלה: לחץ "דיווח מחלה" → דווח → המפקד מקבל התראה מיידית
+- צ'אט עם פיקוד: לחץ "צ'אט עם הפיקוד" → פנייה חדשה → כתוב נושא והודעה
+- הסידור שלי: לחץ "אילוצים" → בחר שם → טאב "הסידור שלי"
+- סיסמת מערכת: נמסרת ע"י הפיקוד
+
+אם שואלים שאלה שאינה קשורה למערכת — ענה: "אני יכול לעזור רק בשאלות על המערכת 😊"
+ענה תמיד בעברית, בקצרה ובבהירות.`;
+
+const BOT_SUGGESTIONS={
+  bashal:['מהו אילוץ?','כמה אילוצים מותר לי?','איך מגישים אילוצים?','איך מבקשים חופשה?','איך מדווחים מחלה?','מתי להגיש אילוצים?'],
+  student:['מה חובה לסמן?','כמה שעות צריך?','איך מגישים אילוצים?','מה ההבדל בין שישי לשבת?','איך מבקשים חופשה?'],
+  keva:['מה צריך לסמן?','מה זה חסימה?','איך מגישים אילוצים?','איך מדווחים מחלה?','מתי להגיש?'],
+  chouf:['מהו אילוץ?','איך מגישים אילוצים?','איך מבקשים חופשה?','מה שונה בחמ"ל חוף?']
+};
+
+function initBot(){
+  _botWorker=null;_botPop=null;_botHistory=[];
+  const wrap=g('bot-worker-sel-wrap');
+  if(wrap) wrap.innerHTML=workerSelHTML('bot-worker-sel','',true,true);
+  if(window._empWorker){const s=g('bot-worker-sel');if(s)s.value=window._empWorker;}
+  show('bot-id-wrap');hide('bot-chat-wrap');
+  const msgs=g('bot-messages');if(msgs)msgs.innerHTML='';
+}
+
+function botStart(){
+  const sel=g('bot-worker-sel');
+  if(!sel||!sel.value){toast('בחר שם');return;}
+  _botWorker=sel.value;
+  const isChouf=CHOUF_ALL.includes(_botWorker);
+  _botPop=isChouf?(CHOUF_POP_MAP[_botWorker]||'bashal'):(POP_MAP[_botWorker]||'bashal');
+  const popLabel=isChouf?(_botPop==='student'?'סטודנט חוף':'בש"ל חוף'):POP_LABEL[_botPop];
+  _botHistory=[];
+  hide('bot-id-wrap');show('bot-chat-wrap');
+  const msgs=g('bot-messages');if(msgs)msgs.innerHTML='';
+  const popKey=isChouf?'chouf':_botPop;
+  const sugg=BOT_SUGGESTIONS[popKey]||BOT_SUGGESTIONS.bashal;
+  const welcomes=[
+    `שלום ${_botWorker}! 👋 אני העוזר החכם של הסידור הגלוי. קודם כל — תודה על השירות המשמעותי שלך בהעוזר החכם, זה לא מובן מאליו ❤️\nאני כאן לעזור לך בכל שאלה על המערכת. במה אפשר לסייע?`,
+    `היי ${_botWorker}! 😊 נעים להכיר,  השירות שלך חשוב וממש מוערך 🙏\nיש לי הרבה מידע על המערכת שיכול לעזור לך — מה תרצה לדעת?`,
+    `שלום ${_botWorker}! ✨ אני כאן בשבילך. לפני הכל — כל הכבוד על ההתמדה בשירות!\nשאל/י כל מה שתרצה על המערכת, אני כאן 💙`
+  ];
+  botAddMsg('bot',welcomes[Math.floor(Math.random()*welcomes.length)]);
+  botShowSuggestions(sugg);
+}
+
+function botAddMsg(role,text){
+  const msgs=g('bot-messages');if(!msgs)return;
+  const isBot=role==='bot';
+  const div=document.createElement('div');
+  div.style.cssText=`display:flex;gap:.5rem;align-items:flex-start;${isBot?'':'flex-direction:row-reverse'}`;
+  div.innerHTML=`<div style="width:28px;height:28px;border-radius:50%;background:${isBot?'rgba(99,102,241,.3)':'rgba(37,99,235,.3)'};display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0">${isBot?'🤖':'👤'}</div>
+    <div style="background:${isBot?'#0f1623':'rgba(37,99,235,.15)'};border:1px solid ${isBot?'#1e2a40':'rgba(37,99,235,.3)'};border-radius:${isBot?'4px 12px 12px 12px':'12px 4px 12px 12px'};padding:.5rem .75rem;max-width:85%;font-size:.82rem;color:#e2e8f0;line-height:1.6;white-space:pre-wrap">${text}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function botShowSuggestions(sugg){
+  const el=g('bot-suggestions');if(!el)return;
+  el.innerHTML=sugg.map(s=>`<button onclick="botQuickSend('${s.replace(/'/g,"\'")}')" style="background:rgba(99,102,241,.1);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);border-radius:20px;padding:.25rem .6rem;font-size:.72rem;font-family:Heebo,sans-serif;cursor:pointer">${s}</button>`).join('');
+}
+
+function botQuickSend(text){
+  const inp=g('bot-input');if(inp){inp.value=text;}
+  botSend();
+}
+
+async function botSend(){
+  const inp=g('bot-input');
+  const text=inp?.value?.trim();
+  if(!text)return;
+  inp.value='';
+  g('bot-suggestions').innerHTML='';
+  botAddMsg('user',text);
+  _botHistory.push({role:'user',content:text});
+
+  // Loading indicator
+  const msgs=g('bot-messages');
+  const loader=document.createElement('div');
+  loader.id='bot-loader';
+  loader.style.cssText='display:flex;gap:.5rem;align-items:center;color:#475569;font-size:.78rem;padding:.3rem 0';
+  loader.innerHTML='<div style="width:28px;height:28px;border-radius:50%;background:rgba(99,102,241,.2);display:flex;align-items:center;justify-content:center;font-size:.8rem">🤖</div><span>מעבד...</span>';
+  msgs.appendChild(loader);
+  msgs.scrollTop=msgs.scrollHeight;
+
+  const isChouf=CHOUF_ALL.includes(_botWorker);
+  const popKey=isChouf?'chouf':_botPop;
+  const popLabel=isChouf?(_botPop==='student'?'סטודנט חוף':'בש"ל חוף'):POP_LABEL[_botPop];
+  const systemPrompt=BOT_SYSTEM(_botWorker,_botPop,popLabel,MAX_C,isChouf);
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:400,
+        system:systemPrompt,
+        messages:_botHistory
+      })
+    });
+    const data=await resp.json();
+    const reply=data.content?.[0]?.text||'לא הצלחתי לעבד את השאלה כרגע — נסה שוב 🙏';
+    loader.remove();
+    _botHistory.push({role:'assistant',content:reply});
+    botAddMsg('bot',reply);
+    // Show follow-up suggestions
+    const sugg=BOT_SUGGESTIONS[popKey]||BOT_SUGGESTIONS.bashal;
+    botShowSuggestions(sugg.filter(s=>s!==text).slice(0,4));
+  }catch(err){
+    loader.remove();
+    botAddMsg('bot','אופס, נתקלתי בתקלה קטנה 🙈 נסה שוב בעוד רגע — אני כאן בשבילך!');
+  }
+}
+// ══════════════════════ END CHATBOT ══════════════════════
 
 </script>
 </body>
