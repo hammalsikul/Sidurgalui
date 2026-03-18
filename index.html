@@ -1093,7 +1093,13 @@ function toggleSlot(day,month,sh){
 }
 function addCons(){
   const allC=get_allC();const pop=POP_MAP[window._empWorker]||'bashal';const wData=allC[window._empWorker]||{constraints:[],submitted:false};const cons=[...wData.constraints||[]];
-  if(cons.length>=MAX_C&&pop!=='keva'){toast(`❌ מכסה של ${MAX_C}`);return;}
+  // Students: no hard cap — only limit by 120 total hours
+  if(pop==='student'){
+    const totalHours=cons.reduce((s,cx)=>(SHIFT_HOURS[cx.shiftKey]||8)+s,0);
+    if(totalHours>=120){toast('❌ הגעת למקסימום 120 שעות חודשיות');return;}
+  } else if(pop!=='keva'&&cons.length>=MAX_C){
+    toast(`❌ מכסה של ${MAX_C}`);return;
+  }
   const dayEl=g('cons-day');const shEl=g('cons-sh');const typeEl=g('cons-type');
   if(!dayEl||!shEl){return;}
   const dayVal=dayEl.value,sh=shEl.value,type=typeEl?typeEl.value:(pop==='student'?'prefer':'block');
