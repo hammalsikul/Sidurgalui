@@ -138,7 +138,7 @@ select option{background:#0f1623;color:#e2e8f0}
     <div id="home-ticker-wrap" style="background:#0a1120;border:1px solid #1e2a40;border-radius:10px;padding:.5rem .8rem;margin-bottom:.65rem;overflow:hidden;display:none">
       <div style="font-size:.6rem;color:#64748b;margin-bottom:.2rem">📢 הודעות</div>
       <div style="overflow:hidden;white-space:nowrap">
-        <span id="home-ticker-text" style="display:inline-block;animation:ticker 18s linear infinite;font-size:.8rem;color:#93c5fd;font-weight:600"></span>
+        <span id="home-ticker-text" style="display:inline-block;animation:ticker 35s linear infinite;font-size:.8rem;color:#93c5fd;font-weight:600"></span>
       </div>
     </div>
     <!-- BIRTHDAYS -->
@@ -807,7 +807,7 @@ window._renderHome = function(){
   const chAvatars=CHOUF_ALL.map(n=>{const wd=(choufC||{})[n];const s=wd?.submitted;const col=s?'#10b981':'#1e2a40';const earlyBadge=s&&wd?.submittedAt&&new Date(wd.submittedAt).getDate()<=10?'⭐':'';return`<div class="avatar" title="🌊 ${n}${earlyBadge?' ⭐':''}" style="background:${s?col:'#1e2a40'};border:2px solid ${s?'#10b981':'#243048'};color:${s?'white':'#64748b'};font-size:.48rem">${initials(n)}${earlyBadge}</div>`;}).join('');
   g('home-avatars').innerHTML=`<div style="width:100%;font-size:.58rem;color:#93c5fd;font-weight:700;margin-bottom:2px">🏙 ירושלים</div>${jAvatars}<div style="width:100%;font-size:.58rem;color:#6ee7b7;font-weight:700;margin-top:4px;margin-bottom:2px">🌊 חוף</div>${chAvatars}`;
   if(activeSick>0){show('home-sick-banner');g('home-sick-banner').textContent=`🚨 ${activeSick} דיווח מחלה פעיל — לחץ לפרטים`;}else hide('home-sick-banner');
-  decided>0?show('home-vac-badge'):hide('home-vac-badge');
+  vacApproved>0?show('home-vac-badge'):hide('home-vac-badge');
   // Alert: days 15-22 of month
   const today=new Date(),d=today.getDate();
   if(d>=15&&d<=22){show('home-alert-banner');g('home-alert-text').textContent=`יש להזין אילוצים עד ה-22 לחודש! (נותרו ${22-d} ימים)`;}
@@ -3849,9 +3849,9 @@ function botStart(){
   const popKey=isChouf?'chouf':_botPop;
   const sugg=BOT_SUGGESTIONS[popKey]||BOT_SUGGESTIONS.bashal;
   const welcomes=[
-    `שלום ${_botWorker}! 👋 אני העוזר החכם של הסידור הגלוי. קודם כל — תודה על השירות המשמעותי שלך בהעוזר החכם, זה לא מובן מאליו ❤️\nאני כאן לעזור לך בכל שאלה על המערכת. במה אפשר לסייע?`,
-    `היי ${_botWorker}! 😊 נעים להכיר,  השירות שלך חשוב וממש מוערך 🙏\nיש לי הרבה מידע על המערכת שיכול לעזור לך — מה תרצה לדעת?`,
-    `שלום ${_botWorker}! ✨ אני כאן בשבילך. לפני הכל — כל הכבוד על ההתמדה בשירות!\nשאל/י כל מה שתרצה על המערכת, אני כאן 💙`
+    `שלום ${_botWorker}! 👋 קודם כל — תודה על השירות המשמעותי שלך, זה לא מובן מאליו ❤️\nאני כאן לעזור לך בכל שאלה על המערכת. במה אפשר לסייע?`,
+    `היי ${_botWorker}! 😊 השירות שלך חשוב וממש מוערך 🙏\nיש לי הרבה מידע על המערכת שיכול לעזור לך — מה תרצה לדעת?`,
+    `שלום ${_botWorker}! ✨ כל הכבוד על ההתמדה בשירות!\nשאל/י כל מה שתרצה על המערכת, אני כאן 💙`
   ];
   botAddMsg('bot',welcomes[Math.floor(Math.random()*welcomes.length)]);
   botShowSuggestions(sugg);
@@ -3899,31 +3899,116 @@ async function botSend(){
   const isChouf=CHOUF_ALL.includes(_botWorker);
   const popKey=isChouf?'chouf':_botPop;
   const popLabel=isChouf?(_botPop==='student'?'סטודנט חוף':'בש"ל חוף'):POP_LABEL[_botPop];
-  const systemPrompt=BOT_SYSTEM(_botWorker,_botPop,popLabel,MAX_C,isChouf);
-
-  try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:400,
-        system:systemPrompt,
-        messages:_botHistory
-      })
-    });
-    const data=await resp.json();
-    const reply=data.content?.[0]?.text||'לא הצלחתי לעבד את השאלה כרגע — נסה שוב 🙏';
+  // Smart local reply engine
+  setTimeout(()=>{
     loader.remove();
+    const reply=botSmartReply(text,_botWorker,_botPop,isChouf);
     _botHistory.push({role:'assistant',content:reply});
     botAddMsg('bot',reply);
-    // Show follow-up suggestions
     const sugg=BOT_SUGGESTIONS[popKey]||BOT_SUGGESTIONS.bashal;
     botShowSuggestions(sugg.filter(s=>s!==text).slice(0,4));
-  }catch(err){
-    loader.remove();
-    botAddMsg('bot','אופס, נתקלתי בתקלה קטנה 🙈 נסה שוב בעוד רגע — אני כאן בשבילך!');
+  },600);
+}
+
+function botSmartReply(text,name,pop,isChouf){
+  const t=text.toLowerCase().trim();
+  const firstName=name.split(' ')[0];
+
+  // Farewells
+  if(/תודה|להתראות|ביי|סיימתי|זהו|אין יותר/.test(t)){
+    const farewells=[
+      `תמיד בשמחה, ${firstName}! 😊 תמשיך/י לשרת באותה מסירות — השירות שלך ממש מוערך ❤️`,
+      `שיהיה לך יום נפלא, ${firstName}! 🌟 תודה על השירות המשמעותי. כאן בשבילך בכל פעם שצריך!`,
+      `בהצלחה ${firstName}! 💙 כל הכבוד על ההתמדה. שיהיה שקט ורגוע 🙏`
+    ];
+    return farewells[Math.floor(Math.random()*farewells.length)];
   }
+
+  // Sick / illness
+  if(/חול[אה]|חולי|מחל[הי]|לא מרגיש|לא טוב|חלית/.test(t)){
+    return `רפואה שלמה ${firstName}! 🤒 מקווה שתחלים/י מהר.\nלדיווח מחלה: לחץ/י "דיווח מחלה" במסך הבית → בחר/י שם → לחץ/י "דווח מחלה". הפיקוד מקבל התראה מיידית.\nדווח/י מוקדם ככל האפשר כדי שיוכלו למצוא החלפה ❤️`;
+  }
+
+  // What is a constraint?
+  if(/מה.*(אילוץ|אילוצים)|אילוץ.*מה|הגדרת אילוץ/.test(t)){
+    const popTip=pop==='student'?` כסטודנט/ית, אתה/את בעיקר בוחר/ת סוף-שבוע שאת/ה רוצה לעבוד.`:
+      pop==='keva'?` כקבע, אתה/את בוחר/ת שישי ושבת שמתאימים לך ויכול/ה להוסיף חסימות לימי חול.`:
+      ` אתה/את יכול/ה לחסום משמרות שלא נוחות לך, או לבקש לעבוד במשמרות מסוימות.`;
+    return `אילוץ הוא בקשה שלך בנוגע לסידור 📋\n\n• ❌ חסימה = "לא יכול/ה לעבוד" במשמרת הזו\n• ✅ העדפה = "מבקש/ת לעבוד" במשמרת הזו\n\nהפיקוד לוקח את האילוצים בחשבון בעת בניית הסידור.${popTip}`;
+  }
+
+  // How many constraints
+  if(/כמה אילוצ|מכסה|מגבלה|מקסימום/.test(t)){
+    if(pop==='student') return `כסטודנט/ית אין לך מכסה קבועה, אבל חובה לסמן:\n• לפחות 2 שישי ✓\n• לפחות 2 שבת ✓\n• סך הכל לפחות 80 שעות ✓\n\nהמערכת תדע להתריע אם חסר 😊`;
+    if(pop==='keva') return `כקבע אתה/את חייב/ת לבחור:\n• לפחות שישי אחד ✓\n• לפחות שבת אחד ✓\n• ניתן להוסיף חסימות לימי חול\n\nאין מכסה עליונה לחסימות ימי חול.`;
+    return `כבש"ל${isChouf?' חוף':''} יש לך מכסה של עד ${MAX_C} אילוצים בחודש 📋\nנצל/י אותם בחוכמה — לחסום את המשמרות שממש לא מתאימות לך.`;
+  }
+
+  // When to submit constraints
+  if(/מת[יי]|מועד|עד מת[יי]|מתי להגיש|חלון|תאריך.*אילוץ|אילוץ.*תאריך|מתי ניתן|מתי אפשר/.test(t)){
+    return `חלון הגשת האילוצים הוא בין ה-15 ל-22 לכל חודש 📅\n\nלאחר ה-22 — המערכת לא מקבלת שינויים נוספים.\n\nכרגע אנחנו ב-${new Date().getDate()} לחודש — ${new Date().getDate()>=15&&new Date().getDate()<=22?'✅ החלון פתוח! אפשר להגיש עכשיו.':'⏳ החלון '+(new Date().getDate()<15?'ייפתח ב-15 לחודש.':'נסגר. יש לחכות לחודש הבא.')}`;
+  }
+
+  // How to submit constraints
+  if(/איך.*אילוץ|הגש.*אילוץ|אילוץ.*הגש|שלח.*אילוץ|הגשת אילוצ/.test(t)){
+    if(pop==='student') return `הגשת אילוצים לסטודנטים 🎓\n\n1. לחץ/י "אילוצים" במסך הבית\n2. בחר/י את שמך\n3. סמן/י לפחות 2 שישי ו-2 שבת\n4. הוסף/י ימי חול אם תרצה/י\n5. לחץ/י "שלח למפקד" ✅\n\nזכור/י: מינימום 80 שעות! `;
+    if(pop==='keva') return `הגשת אילוצים לקבע 👮\n\n1. לחץ/י "אילוצים" במסך הבית\n2. בחר/י את שמך\n3. סמן/י שישי ושבת מועדפים\n4. הוסף/י חסימות לימי חול\n5. לחץ/י "שלח למפקד" ✅`;
+    return `הגשת אילוצים 📋\n\n1. לחץ/י "אילוצים" במסך הבית\n2. בחר/י את שמך\n3. הוסף/י אילוצי חסימה / העדפה\n4. לחץ/י "שלח למפקד" ✅\n\nלאחר השליחה, הפיקוד יאשר כל אילוץ. תקבל/י עדכון 😊`;
+  }
+
+  // Vacation
+  if(/חופש[הי]|חופשה|בקשת חופשה|לבקש חופשה/.test(t)){
+    return `בקשת חופשה 🏖\n\n1. לחץ/י "בקשת חופשה" במסך הבית\n2. בחר/י שם\n3. בחר/י תאריכי התחלה וסיום\n4. בחר/י סיבה (חובה)\n5. לחץ/י "שלח בקשה" ✅\n\nהבקשה עוברת לאישור הפיקוד. תקבל/י עדכון 😊\n\n💡 שים/י לב — אם הסיבה היא טיסה, נדרש טופס נפרד.`;
+  }
+
+  // View my schedule
+  if(/סידור שלי|המשמרות שלי|מתי אני עובד|מתי עובד|לראות סידור/.test(t)){
+    return `לצפייה בסידור שלך 📅\n\n1. לחץ/י "אילוצים" במסך הבית\n2. בחר/י את שמך\n3. לחץ/י על הטאב "הסידור שלי"\n\nשם תראה/י את כל המשמרות המתוכננות לחודש, ותוכל/י גם לייצא אותן ליומן הטלפון 📱`;
+  }
+
+  // Chat with commander
+  if(/פיקוד|מפקד|לפנות|פנייה|להודיע|להגיד למפקד/.test(t)){
+    return `ליצירת קשר עם הפיקוד 💬\n\n1. לחץ/י "צ'אט עם הפיקוד" במסך הבית\n2. בחר/י את שמך\n3. לחץ/י "פנייה חדשה לפיקוד"\n4. כתוב/י נושא קצר והודעה\n5. לחץ/י "שלח פנייה" ✅\n\nהפיקוד מקבל את הפנייה ועונה בהקדם 😊`;
+  }
+
+  // Sick report
+  if(/דיווח מחל|לדווח מחל|אני חול[אה]/.test(t)){
+    return `לדיווח מחלה 🤒\n\n1. לחץ/י "דיווח מחלה" במסך הבית\n2. בחר/י שם\n3. לחץ/י "דווח מחלה"\n\nהפיקוד מקבל התראה מיידית ⚡\nדווח/י מוקדם ככל האפשר כדי שיוכלו להסדיר החלפה 🙏`;
+  }
+
+  // Password
+  if(/סיסמ[הא]|password|להיכנס|כניסה/.test(t)){
+    return `סיסמת המערכת נמסרת על ידי הפיקוד 🔑\n\nאם אינך זוכר/ת את הסיסמה — פנה/י לפיקוד דרך הצ'אט.`;
+  }
+
+  // Difference Friday/Saturday for students
+  if(/הבדל.*שישי.*שבת|שישי.*לעומת.*שבת|למה שישי|למה שבת/.test(t)){
+    if(pop==='student') return `שישי ושבת — מה ההבדל? 📅\n\n• שישי = ערב שבת / סוף שבוע\n• שבת = יום שבת\n\nכסטודנט/ית חובה לסמן לפחות 2 שישי ו-2 שבת בנפרד.\nהסיבה: כל אחד מהם נחשב כיום אחר בסידור 😊`;
+    return `שישי ושבת הם ימי סוף שבוע — בהם חלות הגבלות שיבוץ שונות לפי סוג עובד. יש שאלה יותר ספציפית? 😊`;
+  }
+
+  // Chouf specific
+  if(isChouf&&/שונה|חוף|מה מיוחד/.test(t)){
+    return `חמ"ל חוף — מה מיוחד? 🌊\n\n• עובדים 7 ימים בשבוע (ללא פגרות שבת)\n• רק משמרות א' ו-ב' (משמרת ג' נקבעת ידנית)\n• 5 משמרות בשבוע לכל עובד\n\nמעבר לזה — הגשת האילוצים, חופשות ודיווח מחלה זהים לירושלים 😊`;
+  }
+
+  // General greeting
+  if(/^(שלום|היי|הי|בוקר|ערב|צהריים|מה שלומ|מה נשמע)/.test(t)){
+    const greetings=[
+      `שלום ${firstName}! 😊 כאן לעזור לך בכל שאלה על המערכת. מה תרצה/י לדעת?`,
+      `היי ${firstName}! 💙 במה אפשר לעזור לך היום?`,
+      `שלום שלום ${firstName}! ✨ שאל/י בחופשיות.`
+    ];
+    return greetings[Math.floor(Math.random()*greetings.length)];
+  }
+
+  // Default — encourage to rephrase
+  const defaults=[
+    `שאלה טובה, ${firstName}! 🤔 אני מתמחה בנושאי המערכת — אילוצים, חופשות, סידור, מחלה וצ'אט עם פיקוד. נסה/י לשאול בצורה יותר ספציפית 😊`,
+    `לא הצלחתי להבין בדיוק מה שואל/ת... נסה/י לנסח מחדש? אני יכול לעזור בכל הקשור לאילוצים, חופשות, סידור ומחלה 🙏`,
+    `אני לא בטוח שהבנתי ${firstName} 😅 אולי תנסה/י אחת מהשאלות המוצעות למטה?`
+  ];
+  return defaults[Math.floor(Math.random()*defaults.length)];
 }
 // ══════════════════════ END CHATBOT ══════════════════════
 
