@@ -2509,17 +2509,22 @@ function renderMgrAdmin(){
   const ticker=window._ticker||[];
   const bdays=window._birthdays||{};
   let html=`
-  <div class="card" style="border:1px solid rgba(220,38,38,.3);background:rgba(220,38,38,.04)">
-    <div style="font-weight:900;color:#fca5a5;margin-bottom:.5rem">🗑 השמדת סידורים</div>
-    <div style="font-size:.75rem;color:#94a3b8;margin-bottom:.75rem">מחיקה בלתי הפיכה של סידור עבודה מהמערכת — כולל הסרה מהסידורים הקודמים. דורש סיסמת מנהל ראשי.</div>
-    <div style="display:flex;flex-direction:column;gap:.5rem">
-      ${[{label:'🏙 סידור ירושלים — '+MONTH_LABEL,key:'curr_j'},{label:'🌊 סידור חוף — '+MONTH_LABEL,key:'curr_c'},
-         ...(CONS_MONTH!==SCHED_MONTH?[{label:'🏙 סידור ירושלים — '+NEXT_MONTH_LABEL,key:'next_j'},{label:'🌊 סידור חוף — '+NEXT_MONTH_LABEL,key:'next_c'}]:[])
-      ].map(item=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.4rem .6rem;background:#0a0e1a;border:1px solid rgba(220,38,38,.2);border-radius:8px">
-        <span style="font-size:.8rem;color:#e2e8f0">${item.label}</span>
-        <button onclick="destroySched('${item.key}')" style="background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.4);border-radius:6px;padding:.25rem .65rem;font-family:Heebo,sans-serif;font-size:.75rem;cursor:pointer">🗑 השמד</button>
-      </div>`).join('')}
+  <div class="card" style="border:1px solid rgba(220,38,38,.3);background:rgba(220,38,38,.04);padding:0;overflow:hidden">
+    <div onclick="window._destroyOpen=!window._destroyOpen;renderMgrAdmin()" style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 1rem;cursor:pointer;user-select:none">
+      <div style="font-weight:900;color:#fca5a5">🗑 השמדת סידורים</div>
+      <div style="color:#64748b;font-size:.85rem">${window._destroyOpen?'▲':'▼'}</div>
     </div>
+    ${window._destroyOpen?`<div style="padding:0 1rem 1rem">
+      <div style="font-size:.75rem;color:#94a3b8;margin-bottom:.75rem">מחיקה בלתי הפיכה — דורש סיסמת מנהל ראשי (9211).</div>
+      <div style="display:flex;flex-direction:column;gap:.5rem">
+        ${[{label:'🏙 סידור ירושלים — '+MONTH_LABEL,key:'curr_j'},{label:'🌊 סידור חוף — '+MONTH_LABEL,key:'curr_c'},
+           ...(CONS_MONTH!==SCHED_MONTH?[{label:'🏙 סידור ירושלים — '+NEXT_MONTH_LABEL,key:'next_j'},{label:'🌊 סידור חוף — '+NEXT_MONTH_LABEL,key:'next_c'}]:[])
+        ].map(item=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.4rem .6rem;background:#0a0e1a;border:1px solid rgba(220,38,38,.2);border-radius:8px">
+          <span style="font-size:.8rem;color:#e2e8f0">${item.label}</span>
+          <button onclick="destroySched('${item.key}')" style="background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.4);border-radius:6px;padding:.25rem .65rem;font-family:Heebo,sans-serif;font-size:.75rem;cursor:pointer">🗑 השמד</button>
+        </div>`).join('')}
+      </div>
+    </div>`:''}
   </div>
   <div class="card">
     <div style="font-weight:900;color:#93c5fd;margin-bottom:.75rem">📢 הודעות (טיקר)</div>
@@ -2529,8 +2534,12 @@ function renderMgrAdmin(){
       <button class="btn btn-blue" onclick="addTicker()">➕ הוסף</button>
     </div>
   </div>
-  <div class="card">
-    <div style="font-weight:900;color:#fcd34d;margin-bottom:.75rem">🎂 ימי הולדת</div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div onclick="window._bdayOpen=!window._bdayOpen;renderMgrAdmin()" style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 1rem;cursor:pointer;user-select:none">
+      <div style="font-weight:900;color:#fcd34d">🎂 ימי הולדת</div>
+      <div style="color:#64748b;font-size:.85rem;transition:transform .2s;transform:${window._bdayOpen?'rotate(180deg)':'rotate(0deg)'}">${window._bdayOpen?'▲':'▼'}</div>
+    </div>
+    ${window._bdayOpen?`<div style="padding:0 1rem 1rem">
     ${[1,2,3,4,5,6,7,8,9,10,11,12].map(mo=>{
       const rawList=bdays[String(mo)]||[];const list=Array.isArray(rawList)?rawList:Object.values(rawList);
       return`<div style="margin-bottom:.6rem">
@@ -2542,6 +2551,7 @@ function renderMgrAdmin(){
         </div>
       </div>`;
     }).join('')}
+    </div>`:''}
   </div>
   <div class="card" style="border:1px solid rgba(99,102,241,.3)">
     <div style="font-weight:900;color:#a5b4fc;margin-bottom:.5rem">📤 ייצוא אילוצים</div>
