@@ -112,6 +112,7 @@ select option{background:#0f1623;color:#e2e8f0}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
         <button class="big-btn" style="background:linear-gradient(135deg,#dc262620,#dc262610);border:1px solid #dc262640" onclick="nav('sick')"><div style="font-size:1.5rem;margin-bottom:.25rem">🤒</div><div style="font-weight:800;font-size:.9rem">דיווח מחלה</div><div style="font-size:.68rem;opacity:.7">דיווח בזמן אמת</div></button>
         <button class="big-btn" style="background:linear-gradient(135deg,#0891b220,#0891b210);border:1px solid #0891b240" onclick="nav('past')"><div style="font-size:1.5rem;margin-bottom:.25rem">🗂</div><div style="font-weight:800;font-size:.9rem">סידורים קודמים</div><div style="font-size:.68rem;opacity:.7">ארכיון חודשים</div></button>
+        <button class="big-btn" style="background:linear-gradient(135deg,#0d948820,#0d948810);border:1px solid #0d948840" onclick="nav('xreport')"><div style="font-size:1.5rem;margin-bottom:.25rem">📊</div><div style="font-weight:800;font-size:.9rem">דו"ח איקסים</div><div style="font-size:.68rem;opacity:.7">משמרות לפי חודש</div></button>
       </div>
       <div style="position:relative">
         <button class="big-btn" style="background:linear-gradient(135deg,#f59e0b20,#f59e0b10);border:1px solid #f59e0b40;width:100%" onclick="nav('chat')">
@@ -256,6 +257,39 @@ select option{background:#0f1623;color:#e2e8f0}
     </div>
     <div id="chat-worker-wrap" style="margin-bottom:.75rem"></div>
     <div id="chat-content"></div>
+  </div>
+</div>
+
+<!-- X REPORT (public) -->
+<div class="page" id="page-xreport">
+  <div class="wrap">
+    <div class="header"><button class="btn btn-ghost" onclick="nav('home')">← חזרה</button><div><h1>📊 דו"ח איקסים</h1></div></div>
+    <div class="card">
+      <div style="display:flex;flex-direction:column;gap:.5rem">
+        <div>
+          <div style="font-size:.7rem;color:#64748b;margin-bottom:.3rem">עובד</div>
+          <div id="xrep-pub-worker-wrap"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+          <div>
+            <div style="font-size:.7rem;color:#64748b;margin-bottom:.3rem">חודש</div>
+            <select id="xrep-pub-month" class="sel" onchange="renderXReportPub()">
+              <option value="1">ינואר</option><option value="2">פברואר</option><option value="3">מרץ</option>
+              <option value="4">אפריל</option><option value="5">מאי</option><option value="6">יוני</option>
+              <option value="7">יולי</option><option value="8">אוגוסט</option><option value="9">ספטמבר</option>
+              <option value="10">אוקטובר</option><option value="11">נובמבר</option><option value="12">דצמבר</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:.7rem;color:#64748b;margin-bottom:.3rem">שנה</div>
+            <select id="xrep-pub-year" class="sel" onchange="renderXReportPub()">
+              <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="xrep-pub-content"></div>
   </div>
 </div>
 
@@ -647,6 +681,7 @@ function nav(page){
   else if(page==='mgr')initMgr();
   else if(page==='sick')initSick();
   else if(page==='past')initPast();
+  else if(page==='xreport')initXReportPub();
 }
 
 window._appInit = function(){window._appReady=true;window._currentPage='home';nav('home');};
@@ -1642,6 +1677,91 @@ function downloadXReport(){
   win.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>דו"ח איקסים — ${name}</title><style>body{font-family:Arial,sans-serif;direction:rtl;font-size:10px;color:#000}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:3px 5px;text-align:center}th{background:#eee}h2{font-size:13px}</style></head><body><h2>דו"ח איקסים — ${name} — ${label}</h2>${wrap.outerHTML}<br><button onclick="window.print()">🖨️ הדפס</button></body></html>`);
   win.document.close();
 }
+function initXReportPub(){
+  // Set default: current month/year
+  const mSel=g('xrep-pub-month');const ySel=g('xrep-pub-year');
+  if(mSel&&!mSel.value) mSel.value=String(SCHED_MONTH);
+  if(mSel) mSel.value=String(SCHED_MONTH);
+  if(ySel) ySel.value=String(CURRENT_YEAR);
+  // Worker selector — all workers
+  const wrap=g('xrep-pub-worker-wrap');
+  if(wrap) wrap.innerHTML=workerSelHTML('xrep-pub-worker','renderXReportPub()',true,true);
+  if(window._empWorker){const s=g('xrep-pub-worker');if(s){s.value=window._empWorker;}}
+  renderXReportPub();
+}
+
+function renderXReportPub(){
+  const el=g('xrep-pub-content');if(!el)return;
+  const workerName=g('xrep-pub-worker')?.value;
+  const month=parseInt(g('xrep-pub-month')?.value||SCHED_MONTH);
+  const year=parseInt(g('xrep-pub-year')?.value||CURRENT_YEAR);
+  if(!workerName){el.innerHTML='<div class="card" style="color:#64748b;text-align:center">בחר עובד</div>';return;}
+
+  // Get schedule for this month/year from past_schedules or current
+  const past=get_pastSchedules();
+  const pastKey=`${year}_${month}`;
+  let sched={};
+  if(month===SCHED_MONTH&&year===CURRENT_YEAR){
+    // Current month — use live schedule
+    sched=CHOUF_ALL.includes(workerName)?get_choufSched():get_schedule();
+  } else if(past[pastKey]){
+    sched=past[pastKey].schedule||{};
+  } else {
+    el.innerHTML='<div class="card" style="color:#64748b;text-align:center;padding:1.5rem">אין סידור שמור לחודש זה</div>';return;
+  }
+
+  // Build days for this month
+  const dim=new Date(year,month,0).getDate();
+  const days=[];
+  for(let i=1;i<=dim;i++){
+    const jd=new Date(year,month-1,i).getDay();
+    days.push({day:i,month,year,label:`${i}/${month}`,jsDay:jd,isWeekend:jd===5||jd===6,isFri:jd===5,isSat:jd===6,holiday:getHoliday(i,month)});
+  }
+  const weeks=getWeeks(days);
+  const shiftKeys=['a','b','c'];
+  const shiftLabel={a:'א׳',b:'ב׳',c:'ג׳'};
+  const shiftColor={a:'#93c5fd',b:'#c4b5fd',c:'#fcd34d'};
+  const monthLabel=HEB_MONTHS[month-1]+' '+year;
+  let totalShifts=0;
+  const dayHeaders=HEB_DAYS.map((d,i)=>`<th style="text-align:center;padding:.3rem .35rem;font-size:.7rem;color:${i>=5?'#fcd34d':'#94a3b8'};min-width:44px">${d}</th>`).join('');
+  const rows=weeks.map((wk,wi)=>{
+    const dayMap={};wk.forEach(d=>dayMap[d.jsDay]=d);
+    let wkShifts=0;
+    const subRows=shiftKeys.map(sh=>{
+      const cells=HEB_DAYS.map((_,jsDay)=>{
+        const d=dayMap[jsDay];
+        if(!d)return`<td style="background:#050810;min-width:44px"></td>`;
+        const sk=`${d.day}-${d.month}`;const slot=sched[sk]||{};
+        const worked=Object.entries(slot).some(([k,v])=>v===workerName&&k.startsWith(sh+'_')&&!k.endsWith('_achmash'));
+        if(worked){totalShifts++;wkShifts++;}
+        const h=d.holiday;
+        const bg=h?HOLIDAY_COLORS[h.type]||'':d.isWeekend?'rgba(245,158,11,.04)':'transparent';
+        return`<td style="text-align:center;padding:.3rem .1rem;background:${bg};font-size:.85rem;font-weight:900;color:${shiftColor[sh]}">${worked?'✕':''}</td>`;
+      }).join('');
+      return`<tr><td style="background:#080c14;padding:.2rem .5rem;font-size:.7rem;color:${shiftColor[sh]};font-weight:700;white-space:nowrap">${shiftLabel[sh]}</td>${cells}</tr>`;
+    }).join('');
+    const wkRange=`${wk[0]?.label||''}–${wk[wk.length-1]?.label||''}`;
+    const wkColor=wkShifts>=5?'#6ee7b7':wkShifts>0?'#fcd34d':'#475569';
+    return`<tr style="background:#0a0e1a"><td colspan="8" style="padding:.3rem .5rem;font-size:.7rem;color:#64748b;font-weight:700;border-top:2px solid #1e2a40">שבוע ${wi+1} · ${wkRange} · <span style="color:${wkColor};font-weight:900">${wkShifts} משמרות</span></td></tr>${subRows}`;
+  }).join('');
+
+  el.innerHTML=`<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-wrap:wrap;gap:.4rem">
+      <div style="font-weight:700;font-size:.85rem">${workerName} — ${monthLabel}</div>
+      <div style="font-size:.75rem;color:#6ee7b7">${totalShifts} משמרות</div>
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr>
+          <th style="background:#080c14;padding:.3rem .5rem;font-size:.7rem;color:#64748b;min-width:44px;text-align:right">משמרת</th>
+          ${dayHeaders}
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
 // ══════════════════════ CHAT SYSTEM ══════════════════════
 // Structure: chats/{workerName}/{threadId} = {subject, messages:[], closed, createdAt}
 const CHAT_COMMANDERS=['שמואל','תמר','נועם','אוראל','רן חדד','נתנאל פינטו'];
