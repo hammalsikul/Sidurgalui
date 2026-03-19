@@ -1567,13 +1567,8 @@ function renderMgrCons(){
       </div>`;
     }).join('')}
   </div>`).join('');
-  // Prepend analysis block
-  const analysisEl=document.createElement('div');
-  analysisEl.id='mgr-panel-cons-analysis';
-  const consPanel=g('mgr-panel-cons');
-  consPanel.innerHTML=monthBanner+html;
-  consPanel.insertBefore(analysisEl,consPanel.firstChild);
-  renderConsAnalysis();
+  const analysisHTML=renderConsAnalysis();
+  g('mgr-panel-cons').innerHTML=analysisHTML+monthBanner+html;
 }
 function mgrApproveByEl(btn){
   const name=btn.dataset.n;
