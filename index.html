@@ -4120,30 +4120,43 @@ function renderPastSched(key){
 
 // ══════════════════════ CONSTRAINT ANALYSIS ══════════════════════
 function renderConsAnalysis(){
-  const el=g('mgr-panel-cons-analysis');
   const allC=get_allC();const choufC=get_choufC();
-  // Count blocks per shift-day
   const blockCounts={};const preferCounts={};
   [...Object.values(allC),...Object.values(choufC)].forEach(wd=>{
     (wd?.constraints||[]).forEach(cx=>{
-      const key=`${cx.day}-${cx.month}-${cx.shiftKey}`;
-      if(cx.type==='block'){blockCounts[key]=(blockCounts[key]||0)+1;}
-      else{preferCounts[key]=(preferCounts[key]||0)+1;}
+      const key=cx.day+'-'+cx.month+'-'+cx.shiftKey;
+      if(cx.type==='block') blockCounts[key]=(blockCounts[key]||0)+1;
+      else preferCounts[key]=(preferCounts[key]||0)+1;
     });
   });
-  const shL={a:'א׳',b:'ב׳',c:'ג׳'};
-  const hotspots=Object.entries(blockCounts).filter(([,v])=>v>=3).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  const popular=Object.entries(preferCounts).filter(([,v])=>v>=2).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  const submittedCount=Object.values(allC).filter(w=>w.submitted).length+Object.values(choufC).filter(w=>w.submitted).length;
-  const totalWorkers=ALL_WORKERS.length+CHOUF_ALL.length;
-  if(!el)return;
-  el.innerHTML=`<div class="card" style="border:1px solid rgba(245,158,11,.3);margin-bottom:.5rem">
-    <div style="font-weight:900;color:#fcd34d;margin-bottom:.5rem">📊 ניתוח אילוצים — ${submittedCount}/${totalWorkers} הגישו</div>
-    ${hotspots.length?`<div style="font-size:.75rem;font-weight:700;color:#fca5a5;margin-bottom:.3rem">⚠️ משמרות עמוסות בחסימות:</div>
-    ${hotspots.map(([k,v])=>{const[d,m,sh]=k.split('-');const dObj=(NEXT_MONTH_DAYS||SCHEDULE_DAYS).find(x=>x.day==d&&x.month==m);return`<div style="display:flex;justify-content:space-between;padding:.2rem 0;border-bottom:1px solid #1e2a40;font-size:.75rem"><span style="color:#e2e8f0">${dObj?.label||d+'/'+m} — משמרת ${shL[sh]}</span><span style="color:#fca5a5;font-weight:700">${v} חסימות 🚨</span></div>`;}).join('')}`:'<div style="font-size:.75rem;color:#6ee7b7">✅ אין משמרות עמוסות בחסימות</div>'}
-    ${popular.length?`<div style="font-size:.75rem;font-weight:700;color:#6ee7b7;margin-top:.5rem;margin-bottom:.3rem">⭐ משמרות מבוקשות:</div>
-    ${popular.map(([k,v])=>{const[d,m,sh]=k.split('-');const dObj=(NEXT_MONTH_DAYS||SCHEDULE_DAYS).find(x=>x.day==d&&x.month==m);return`<div style="display:flex;justify-content:space-between;padding:.2rem 0;font-size:.75rem"><span style="color:#e2e8f0">${dObj?.label||d+'/'+m} — ${shL[sh]}</span><span style="color:#6ee7b7">${v} מעוניינים ✨</span></div>`;}).join('')}`:''}
-  </div>`;
+  const shL={a:"א׳",b:"ב׳",c:"ג׳"};
+  const activeDays=NEXT_MONTH_DAYS||SCHEDULE_DAYS;
+  const hotspots=Object.entries(blockCounts).filter(([,v])=>v>=3).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const popular=Object.entries(preferCounts).filter(([,v])=>v>=2).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  const submittedJ=Object.values(allC).filter(w=>w.submitted).length;
+  const submittedC=Object.values(choufC).filter(w=>w.submitted).length;
+  const totalJ=ALL_WORKERS.length, totalC=CHOUF_ALL.length;
+  if(!hotspots.length&&!popular.length) return '<div style="background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);border-radius:10px;padding:.5rem .8rem;margin-bottom:.65rem;font-size:.75rem;color:#6ee7b7">✅ אין קונפליקטים באילוצים | הוגש: ירושלים '+submittedJ+'/'+totalJ+' חוף '+submittedC+'/'+totalC+'</div>';
+  let html='<div style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:.6rem .85rem;margin-bottom:.65rem">';
+  html+='<div style="font-weight:900;color:#fcd34d;font-size:.8rem;margin-bottom:.4rem">📊 ניתוח אילוצים | הוגש: ירושלים '+submittedJ+'/'+totalJ+' חוף '+submittedC+'/'+totalC+'</div>';
+  if(hotspots.length){
+    html+='<div style="font-size:.7rem;color:#fca5a5;font-weight:700;margin-bottom:.25rem">⚠️ משמרות עמוסות בחסימות:</div>';
+    hotspots.forEach(([k,v])=>{
+      const parts=k.split('-');const d=parts[0],m=parts[1],sh=parts[2];
+      const dObj=activeDays.find(x=>String(x.day)===d&&String(x.month)===m);
+      html+='<div style="display:flex;justify-content:space-between;padding:.15rem 0;border-bottom:1px solid rgba(245,158,11,.1);font-size:.73rem"><span style="color:#e2e8f0">'+(dObj?dObj.label:d+'/'+m)+' — משמרת '+shL[sh]+'</span><span style="color:#fca5a5;font-weight:700">'+v+' חסימות 🚨</span></div>';
+    });
+  }
+  if(popular.length){
+    html+='<div style="font-size:.7rem;color:#6ee7b7;font-weight:700;margin-top:.35rem;margin-bottom:.25rem">⭐ משמרות מבוקשות:</div>';
+    popular.forEach(([k,v])=>{
+      const parts=k.split('-');const d=parts[0],m=parts[1],sh=parts[2];
+      const dObj=activeDays.find(x=>String(x.day)===d&&String(x.month)===m);
+      html+='<div style="display:flex;justify-content:space-between;padding:.15rem 0;font-size:.73rem"><span style="color:#e2e8f0">'+(dObj?dObj.label:d+'/'+m)+' — '+shL[sh]+'</span><span style="color:#6ee7b7">'+v+' מעוניינים ✨</span></div>';
+    });
+  }
+  html+='</div>';
+  return html;
 }
 
 // ══════════════════════ SMART ASSIGNMENT SUGGESTION ══════════════════════
