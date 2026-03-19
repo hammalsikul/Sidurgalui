@@ -3086,10 +3086,54 @@ function toggleSchedView(){mgrSchedView=mgrSchedView==='week'?'month':'week';ren
 function toggleSchedMonth(){window._schedViewMonth=(window._schedViewMonth==='next'?'curr':'next');mgrSchedWeek=0;renderMgrSched();}
 function changeWeek(d){mgrSchedWeek=Math.max(0,Math.min(getWeeks().length-1,mgrSchedWeek+d));renderMgrSched();}
 function openCellModal(sk,field){
-  const schedule=get_schedule();const shKey=field.split('_')[0];const day=SCHEDULE_DAYS.find(d=>`${d.day}-${d.month}`===sk);const current=(schedule[sk]||{})[field];
+  const schedule=get_schedule();const shKey=field.split('_')[0];
+  const [skDay,skMonth]=sk.split('-').map(Number);
+  const day=(window._activeSchedDays||SCHEDULE_DAYS).find(d=>d.day===skDay&&d.month===skMonth)||SCHEDULE_DAYS.find(d=>d.day===skDay&&d.month===skMonth);
+  const current=(schedule[sk]||{})[field];
   const pool=ROSTER.filter(r=>{if(field.includes('achmash'))return ACHMASH.includes(r.name)||r.pop==='student'||r.pop==='keva';if(field.endsWith('_stu'))return r.pop==='student';if(field===`${shKey}_keva`)return r.pop==='keva';const desk=field.replace(`${shKey}_`,'').replace('_stu','');if(['sadatz','plili','paha'].includes(desk))return r.desk===desk&&r.pop==='bashal';return r.pop==='keva';});
-  const dc=current?getDeskColor(current):null;
-  g('modal-box').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem"><div style="font-weight:900;font-size:.9rem">✏️ ${day?.label}${day?.holiday?' — '+day.holiday.name:''}</div><button onclick="closeModal()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:1.3rem">✕</button></div><div style="display:flex;flex-direction:column;gap:.3rem;margin-bottom:.6rem">${pool.map(r=>{const dc2=getDeskColor(r.name);return`<button onclick="cellSet('${sk}','${field}','${r.name}')" style="text-align:right;padding:.4rem .6rem;border-radius:7px;border:1px solid ${dc2.border}40;background:${current===r.name?'#1e3a5f':'#0f1623'};color:#e2e8f0;cursor:pointer;font-family:Heebo,sans-serif"><span style="color:${dc2.text};font-weight:700">${r.name}</span> <span style="font-size:.62rem;background:${dc2.bg};color:${dc2.text};padding:.1rem .35rem;border-radius:4px;border:1px solid ${dc2.border}40">${dc2.label}</span> <span style="font-size:.6rem;color:#64748b">${POP_LABEL[r.pop]}</span></button>`;}).join('')}</div><button onclick="cellSet('${sk}','${field}',null)" style="width:100%;background:rgba(220,38,38,.1);color:#fca5a5;border:1px solid rgba(220,38,38,.25);padding:.5rem;border-radius:7px;cursor:pointer;font-family:Heebo,sans-serif">🗑 פנה תא</button>`;
+
+  // Smart suggestions — who prefers this shift, sorted by score
+  const allC=get_allC();
+  const monthCounts={};Object.values(schedule).forEach(slot=>Object.entries(slot||{}).forEach(([k,v])=>{if(v&&!k.includes('keva')&&!k.includes('achmash'))monthCounts[v]=(monthCounts[v]||0)+1;}));
+  const suggestions=pool.map(r=>{
+    const cons=allC[r.name]?.constraints||[];
+    const prefers=cons.some(cx=>cx.day===skDay&&cx.month===skMonth&&cx.shiftKey===shKey&&cx.type==='prefer');
+    const blocks=cons.some(cx=>cx.day===skDay&&cx.month===skMonth&&cx.shiftKey===shKey&&cx.type==='block');
+    const alreadyToday=Object.values(schedule[sk]||{}).includes(r.name);
+    const score=(prefers?10:0)+(blocks?-20:0)+(alreadyToday?-5:0)-((monthCounts[r.name]||0)*0.3);
+    return{...r,score,prefers,blocks,alreadyToday};
+  }).sort((a,b)=>b.score-a.score);
+
+  const topSugg=suggestions.filter(r=>r.prefers&&!r.blocks&&!r.alreadyToday).slice(0,3);
+  const suggHTML=topSugg.length?`<div style="background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);border-radius:8px;padding:.4rem .6rem;margin-bottom:.5rem">
+    <div style="font-size:.62rem;color:#6ee7b7;font-weight:700;margin-bottom:.3rem">✨ מוצע — ביקש/ה לעבוד:</div>
+    <div style="display:flex;gap:.3rem;flex-wrap:wrap">${topSugg.map(r=>{const dc2=getDeskColor(r.name);return`<button onclick="cellSet('${sk}','${field}','${r.name}')" style="padding:.25rem .5rem;border-radius:6px;background:rgba(5,150,105,.15);border:1px solid rgba(5,150,105,.3);color:#6ee7b7;cursor:pointer;font-family:Heebo,sans-serif;font-size:.75rem;font-weight:700">${r.name} ✓</button>`;}).join('')}</div>
+  </div>`:'';
+
+  g('modal-box').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+      <div style="font-weight:900;font-size:.9rem">✏️ ${day?.label||sk}${day?.holiday?' — '+day.holiday.name:''} — ${shKey==='a'?'א׳':shKey==='b'?'ב׳':'ג׳'}</div>
+      <button onclick="closeModal()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:1.3rem">✕</button>
+    </div>
+    ${suggHTML}
+    <div style="display:flex;flex-direction:column;gap:.3rem;margin-bottom:.6rem">
+    ${suggestions.map(r=>{
+      const dc2=getDeskColor(r.name);
+      const tag=r.prefers?'✅':r.blocks?'❌':r.alreadyToday?'⚠️':'';
+      const tagColor=r.prefers?'#6ee7b7':r.blocks?'#fca5a5':'#fcd34d';
+      const busy=r.alreadyToday?' (כבר שובץ היום)':'';
+      const loadColor=monthCounts[r.name]>14?'#fca5a5':monthCounts[r.name]>10?'#fcd34d':'#475569';
+      return`<button onclick="cellSet('${sk}','${field}','${r.name}')" style="text-align:right;padding:.4rem .6rem;border-radius:7px;border:1px solid ${dc2.border}40;background:${current===r.name?'#1e3a5f':r.blocks?'rgba(220,38,38,.05)':'#0f1623'};color:#e2e8f0;cursor:pointer;font-family:Heebo,sans-serif;display:flex;justify-content:space-between;align-items:center">
+        <div><span style="color:${dc2.text};font-weight:700">${r.name}</span>${busy?`<span style="font-size:.6rem;color:#fcd34d"> ${busy}</span>`:''}</div>
+        <div style="display:flex;gap:.3rem;align-items:center">
+          ${tag?`<span style="font-size:.7rem;color:${tagColor}">${tag}</span>`:''}
+          <span style="font-size:.55rem;color:${loadColor}">${monthCounts[r.name]||0}✕</span>
+          <span style="font-size:.6rem;background:${dc2.bg};color:${dc2.text};padding:.1rem .35rem;border-radius:4px">${dc2.label}</span>
+        </div>
+      </button>`;
+    }).join('')}
+    </div>
+    <button onclick="cellSet('${sk}','${field}',null)" style="width:100%;background:rgba(220,38,38,.1);color:#fca5a5;border:1px solid rgba(220,38,38,.25);padding:.5rem;border-radius:7px;cursor:pointer;font-family:Heebo,sans-serif">🗑 פנה תא</button>`;
   g('modal').classList.add('show');
 }
 function cellSet(sk,field,name){const schedule=get_schedule();const ns={...schedule,[sk]:{...schedule[sk],[field]:name||null}};saveS(ns,get_schedReady(),undefined,true);closeModal();toast(name?`✏️ ${name}`:'🗑');renderMgrSched();}
