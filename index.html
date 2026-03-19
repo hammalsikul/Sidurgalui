@@ -477,6 +477,26 @@ window._fbListen('holiday_overrides', v => {
     if(h)window._effectiveHolidays[sk]=h;
     else delete window._effectiveHolidays[sk];
   });
+  // Rebuild day arrays so holidays reflect Firebase overrides
+  function refreshDayHoliday(day){
+    if(!day)return day;
+    const h=getHoliday(day.day,day.month);
+    const chagSat=h&&(h.type==='chag'||h.type==='yom_haatzmaut');
+    const chagFri=h&&(h.type==='erev'||h.type==='yom_haatzmaut_erev');
+    const effectiveSat=day.jsDay===6||chagSat;
+    const effectiveFri=day.jsDay===5||chagFri;
+    return{...day,holiday:h,isWeekend:effectiveSat||effectiveFri,isFri:effectiveFri,isSat:effectiveSat,realWeekend:day.jsDay===5||day.jsDay===6};
+  }
+  if(window._appReady){
+    // Refresh SCHEDULE_DAYS holidays in-place
+    for(let i=0;i<SCHEDULE_DAYS.length;i++) SCHEDULE_DAYS[i]=refreshDayHoliday(SCHEDULE_DAYS[i]);
+    if(NEXT_MONTH_DAYS&&NEXT_MONTH_DAYS!==SCHEDULE_DAYS){
+      for(let i=0;i<NEXT_MONTH_DAYS.length;i++) NEXT_MONTH_DAYS[i]=refreshDayHoliday(NEXT_MONTH_DAYS[i]);
+    }
+    // Re-render current page if relevant
+    if(window._currentPage==='emp')renderConsPanel();
+    if(window._currentPage==='home')renderHome();
+  }
 });
 window._fbListen('duty_officer', v => {
   window._dutyOfficer=v||{j:null,c:null};
