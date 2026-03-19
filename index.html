@@ -277,7 +277,6 @@ select option{background:#0f1623;color:#e2e8f0}
 <button class="btn" id="mgr-tab-admin-btn" onclick="setMgrTab('admin')" style="border:1px solid #243048;font-size:.75rem">⚙️ ניהול</button>
         </div>
       </div>
-      <div id="mgr-panel-cons-analysis"></div>
       <div id="mgr-panel-cons"></div>
       <div id="mgr-panel-vacs" class="hidden"></div>
       <div id="mgr-panel-sched" class="hidden"></div>
@@ -1509,6 +1508,7 @@ function buildConsApproveBtn(sub,st,n,ci,isChouf){
   return '<button data-n="'+n+'" data-ci="'+ci+'" data-ic="'+isChouf+'" data-reset="1" onclick="mgrApproveByEl(this)" style="background:rgba(100,116,139,.1);color:#94a3b8;border:1px solid rgba(100,116,139,.3);padding:.15rem .4rem;border-radius:5px;font-size:.58rem;cursor:pointer;font-family:Heebo,sans-serif">↺ אפס</button>';
 }
 function renderMgrCons(){
+  renderConsAnalysis();
   const allC=get_allC();const choufC=get_choufC();const shL={a:'א׳',b:'ב׳',c:'ג׳'};
   // Month context banner
   const monthBanner=CONS_MONTH!==SCHED_MONTH?`<div style="background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:9px;padding:.5rem .8rem;margin-bottom:.75rem;font-size:.78rem;color:#a5b4fc;font-weight:700">📋 אילוצים ל<b>${NEXT_MONTH_LABEL}</b> | סידור נוכחי: <b>${MONTH_LABEL}</b></div>`:'';
@@ -1567,7 +1567,13 @@ function renderMgrCons(){
       </div>`;
     }).join('')}
   </div>`).join('');
-  g('mgr-panel-cons').innerHTML=monthBanner+html;
+  // Prepend analysis block
+  const analysisEl=document.createElement('div');
+  analysisEl.id='mgr-panel-cons-analysis';
+  const consPanel=g('mgr-panel-cons');
+  consPanel.innerHTML=monthBanner+html;
+  consPanel.insertBefore(analysisEl,consPanel.firstChild);
+  renderConsAnalysis();
 }
 function mgrApproveByEl(btn){
   const name=btn.dataset.n;
