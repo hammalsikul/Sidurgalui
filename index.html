@@ -121,7 +121,6 @@ select option{background:#0f1623;color:#e2e8f0}
       <div style="color:#94a3b8;font-weight:600;font-size:.82rem;margin-top:.2rem">שקוף • שווה • חכם</div>
       <div style="font-size:.78rem;color:#475569;margin-top:.15rem" id="home-month"></div>
     </div>
-    <div id="home-bday-today"></div>
     <div id="home-alert-banner" class="alert-banner hidden">⚠️ <span id="home-alert-text"></span></div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:1rem">
       <div class="card" style="text-align:center;padding:.75rem .5rem;margin-bottom:0"><div>📋</div><div style="font-size:1.3rem;font-weight:900;color:#93c5fd" id="home-stat-c">0/17</div><div style="font-size:.62rem;color:#64748b">הגישו</div><div style="font-size:.58rem;color:#64748b;margin-top:3px" id="home-stat-c-split"></div><div style="font-size:.6rem;color:#a5b4fc;font-weight:700;margin-top:2px" id="home-cons-label"></div></div>
@@ -872,7 +871,6 @@ window._renderHome = function(){
   renderTicker();renderBirthdays();
   renderOfficialSchedCard();
   renderDutyCard();
-  checkBirthdayToday();
   g('home-stat-c').textContent=`${sub}/${total}`;
   if(g('home-stat-c-split'))g('home-stat-c-split').innerHTML=`<span style="color:#93c5fd">🏙 ${subJ}/${totalJ}</span>&nbsp;&nbsp;<span style="color:#6ee7b7">🌊 ${subCh}/${totalCh}</span>`;
   g('home-stat-v').textContent=allV.length;
@@ -903,8 +901,25 @@ window._renderHome = function(){
   vacApproved>0?show('home-vac-badge'):hide('home-vac-badge');
   // Alert: days 15-22 of month
   const today=new Date(),d=today.getDate();
-  if(d>=15&&d<=22){show('home-alert-banner');g('home-alert-text').textContent=`יש להזין אילוצים עד ה-22 לחודש! (נותרו ${22-d} ימים)`;}
-  else hide('home-alert-banner');
+  if(d>=15&&d<=22){
+    show('home-alert-banner');
+    // Check if current user hasn't submitted yet
+    const empSel=g('emp-worker')||{value:window._empWorker};
+    const currWorker=window._empWorker;
+    const workerSubmitted=currWorker?(isChoufWorker(currWorker)?get_choufC()[currWorker]?.submitted:get_allC()[currWorker]?.submitted):true;
+    const daysLeft=22-d;
+    if(currWorker&&!workerSubmitted){
+      g('home-alert-banner').style.background='rgba(220,38,38,.15)';
+      g('home-alert-banner').style.borderColor='rgba(220,38,38,.5)';
+      g('home-alert-banner').style.color='#fca5a5';
+      g('home-alert-text').textContent=`${currWorker}, טרם הגשת אילוצים ל${NEXT_MONTH_LABEL}! נותרו ${daysLeft} ימים — לחץ/י "אילוצים" עכשיו`;
+    } else {
+      g('home-alert-banner').style.background='rgba(245,158,11,.1)';
+      g('home-alert-banner').style.borderColor='rgba(245,158,11,.5)';
+      g('home-alert-banner').style.color='#fcd34d';
+      g('home-alert-text').textContent=`יש להזין אילוצים עד ה-22 לחודש! (נותרו ${daysLeft} ימים)`;
+    }
+  } else hide('home-alert-banner');
 }
 function renderHome(){window._renderHome();}
 
@@ -4104,14 +4119,17 @@ function suggestForSlot(day,month,shKey){
 
 // ══════════════════════ REMINDERS ══════════════════════
 function sendReminders(){
-  const allC=get_allC();const d=new Date().getDate();
-  if(d<15||d>21)return;// only in submission window
+  const allC=get_allC();const choufC=get_choufC();const d=new Date().getDate();
+  if(d<15||d>21){toast('⚠️ ניתן לשלוח תזכורות רק בין ה-15 ל-21 לחודש');return;}
   const daysLeft=22-d;
-  const notSubmitted=ALL_WORKERS.filter(n=>!allC[n]?.submitted);
-  notSubmitted.forEach(name=>{
-    notifyWorker(name,`⏰ תזכורת: נותרו ${daysLeft} ימים להגשת אילוצים לחודש ${NEXT_MONTH_LABEL}. לחץ/י "אילוצים" כדי להגיש!`);
-  });
-  toast(`📨 נשלחו תזכורות ל-${notSubmitted.length} עובדים שטרם הגישו`);
+  const notSubmittedJ=ALL_WORKERS.filter(n=>!allC[n]?.submitted);
+  const notSubmittedC=CHOUF_ALL.filter(n=>!choufC[n]?.submitted);
+  const allNotSubmitted=[...notSubmittedJ,...notSubmittedC];
+  const msg=`⏰ תזכורת: נותרו ${daysLeft} ימים להגשת אילוצים ל${NEXT_MONTH_LABEL}. לחץ/י "אילוצים" כדי להגיש!`;
+  allNotSubmitted.forEach(name=>notifyWorker(name,msg));
+  // Save reminder flag in Firebase so banner shows on home
+  window._fbSet('pending_reminder',{msg,sentAt:new Date().toISOString(),daysLeft});
+  toast(`📨 נשלחו תזכורות ל-${allNotSubmitted.length} עובדים (${notSubmittedJ.length} ירושלים + ${notSubmittedC.length} חוף)`);
 }
 
 // ══════════════════════ EMERGENCY MODE ══════════════════════
@@ -4132,8 +4150,10 @@ function emergencyMode(){
     if(!blocked){slot[`a_${desks[idx%3]}_emergency_${idx}`]=name;idx++;}
   });
   saveS(schedule,true,undefined,false);
-  toast(`🚨 סידור חירום נוצר עם ${idx} עובדים!`);
-  renderMgrSched();
+  toast(`🚨 סידור חירום נוצר עם ${idx} עובדים! — עבר לטאב הסידור לצפייה`);
+  // Navigate to mgr sched tab to show the result
+  nav('mgr');
+  setTimeout(()=>setMgrTab('sched'),300);
 }
 
 // ══════════════════════ LOAD HISTORY ANALYSIS ══════════════════════
