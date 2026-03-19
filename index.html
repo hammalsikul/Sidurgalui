@@ -71,6 +71,13 @@ select option{background:#0f1623;color:#e2e8f0}
   100%{transform:rotateY(360deg)}
 }
 </style>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#080c14">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="הסידור הגלוי">
+  <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 
@@ -85,6 +92,7 @@ select option{background:#0f1623;color:#e2e8f0}
 <div class="modal-overlay" id="modal"><div class="modal-box" id="modal-box"></div></div>
 
 <!-- HOME -->
+<div id="ptr-indicator" style="display:none;text-align:center;padding:.5rem;font-size:.75rem;color:#6366f1;background:#0a1120;border-bottom:1px solid #1e2a40">🔄 מרענן...</div>
 <div class="page" id="page-home">
   <div class="wrap">
     <div style="text-align:center;padding:2rem 0 1.5rem">
@@ -113,6 +121,7 @@ select option{background:#0f1623;color:#e2e8f0}
       <div style="color:#94a3b8;font-weight:600;font-size:.82rem;margin-top:.2rem">שקוף • שווה • חכם</div>
       <div style="font-size:.78rem;color:#475569;margin-top:.15rem" id="home-month"></div>
     </div>
+    <div id="home-bday-today"></div>
     <div id="home-alert-banner" class="alert-banner hidden">⚠️ <span id="home-alert-text"></span></div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:1rem">
       <div class="card" style="text-align:center;padding:.75rem .5rem;margin-bottom:0"><div>📋</div><div style="font-size:1.3rem;font-weight:900;color:#93c5fd" id="home-stat-c">0/17</div><div style="font-size:.62rem;color:#64748b">הגישו</div><div style="font-size:.58rem;color:#64748b;margin-top:3px" id="home-stat-c-split"></div><div style="font-size:.6rem;color:#a5b4fc;font-weight:700;margin-top:2px" id="home-cons-label"></div></div>
@@ -269,6 +278,7 @@ select option{background:#0f1623;color:#e2e8f0}
 <button class="btn" id="mgr-tab-admin-btn" onclick="setMgrTab('admin')" style="border:1px solid #243048;font-size:.75rem">⚙️ ניהול</button>
         </div>
       </div>
+      <div id="mgr-panel-cons-analysis"></div>
       <div id="mgr-panel-cons"></div>
       <div id="mgr-panel-vacs" class="hidden"></div>
       <div id="mgr-panel-sched" class="hidden"></div>
@@ -432,7 +442,7 @@ function checkLoaded() {
   }
 }
 // Listen on current month schedule
-window._fbListen('schedule_'+SCHED_MONTH+'_'+CURRENT_YEAR, v => { const s=v||{}; window._schedule=s.schedule||{}; window._schedReady=s.schedReady||false; window._schedOfficial=s.official||false; loaded.s=true; checkLoaded(); });
+window._fbListen('schedule_'+SCHED_MONTH+'_'+CURRENT_YEAR, v => { const s=v||{}; window._schedule=s.schedule||{}; window._schedReady=s.schedReady||false; window._schedOfficial=s.official||false; loaded.s=true; checkLoaded(); if(window._schedOfficial)setTimeout(autoBackup,3000); });
 // Load previous month schedule for cross-month carry check
 const _PREV_SCHED_MONTH=SCHED_MONTH===1?12:SCHED_MONTH-1;
 const _PREV_SCHED_YEAR=SCHED_MONTH===1?CURRENT_YEAR-1:CURRENT_YEAR;
@@ -862,6 +872,7 @@ window._renderHome = function(){
   renderTicker();renderBirthdays();
   renderOfficialSchedCard();
   renderDutyCard();
+  checkBirthdayToday();
   g('home-stat-c').textContent=`${sub}/${total}`;
   if(g('home-stat-c-split'))g('home-stat-c-split').innerHTML=`<span style="color:#93c5fd">🏙 ${subJ}/${totalJ}</span>&nbsp;&nbsp;<span style="color:#6ee7b7">🌊 ${subCh}/${totalCh}</span>`;
   g('home-stat-v').textContent=allV.length;
@@ -928,6 +939,12 @@ function initVac(){
   const vacDays = window._vacMonth==='next' ? NEXT_MONTH_DAYS : SCHEDULE_DAYS;
   const vacLabel = window._vacMonth==='next' ? NEXT_MONTH_LABEL : MONTH_LABEL;
   g('vac-month').textContent = vacLabel;
+  // Days until next vacation eligibility
+  const approvedVacs=get_allV().filter(v=>v.worker===window._empWorker&&v.status==='approved');
+  if(approvedVacs.length){
+    const next=approvedVacs.map(v=>new Date(v.to?.year||CURRENT_YEAR,v.to?.month-1,v.to?.day)).filter(d=>d>=new Date()).sort((a,b)=>a-b)[0];
+    if(next){const diff=Math.ceil((next-new Date())/(1000*60*60*24));if(g('vac-month'))g('vac-month').textContent=vacLabel+(diff>0?` | ${diff} ימים לחופשה הבאה ✈️`:'');}
+  }
   g('vac-worker-wrap').innerHTML = workerSelHTML('vac-worker','vacWorkerChange()',true,true);
   // Month toggle button
   const toggleEl = g('vac-month-toggle');
@@ -970,7 +987,7 @@ function vacPickReason(btn,r){
   REASONS_NEED_FORM.includes(r)?show('vac-form-warn'):hide('vac-form-warn');
 }
 function vacSubmit(){
-  if(!vacWorker||!g('vac-from').value||!g('vac-to').value||!vacReason){toast('⚠️ יש לבחור שם, תאריכים וסיבה');return;}
+  if(!vacWorker||!g('vac-from').value||!g('vac-to').value||!vacReason){toast('⚠️ נא לבחור שם, תאריכים וסיבה לפני שליחת הבקשה');return;}
   const from=g('vac-from').value,to=g('vac-to').value;
   // Use the active month's days (current or next) — not always SCHEDULE_DAYS
   const _vacDays=window._vacMonth==='next'?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
@@ -1158,7 +1175,7 @@ function addCons(){
   if(!dayEl||!shEl){return;}
   const dayVal=dayEl.value,sh=shEl.value,type=typeEl?typeEl.value:(pop==='student'?'prefer':'block');
   const[d,m]=dayVal.split('-').map(Number);
-  if(cons.find(c=>c.day===d&&c.month===m&&c.shiftKey===sh)){toast('⚠️ כבר קיים');return;}
+  if(cons.find(c=>c.day===d&&c.month===m&&c.shiftKey===sh)){toast('⚠️ אילוץ זה כבר קיים ברשימה');return;}
   const _actDays2=NEXT_MONTH_DAYS||SCHEDULE_DAYS;const dObj=_actDays2.find(x=>x.day===d&&x.month===m)||SCHEDULE_DAYS.find(x=>x.day===d&&x.month===m);
   cons.push({day:d,month:m,dayLabel:dObj?.label||d+'/'+m,jsDay:dObj?.jsDay||0,shiftKey:sh,type,isWeekend:false});
   saveC({...allC,[window._empWorker]:{...wData,constraints:cons,submitted:false}});
@@ -1174,21 +1191,21 @@ function submitCons(){
   if(isChoufWorker(window._empWorker)){submitChoufCons();return;}
   const allC=get_allC();const pop=POP_MAP[window._empWorker]||'bashal';const wData=allC[window._empWorker]||{constraints:[],submitted:false};const cons=wData.constraints||[];
   const yr=SCHEDULE_DAYS[0]?.year||new Date().getFullYear();
-  if(pop==='student'){const fC=cons.filter(c=>new Date(yr,c.month-1,c.day).getDay()===5&&c.type==='prefer').length,sC=cons.filter(c=>new Date(yr,c.month-1,c.day).getDay()===6&&c.type==='prefer').length;if(fC<2||sC<2){toast('❌ חסר שישי/שבת (מינימום 2 כ"א)');return;}if(cons.reduce((s,c)=>(SHIFT_HOURS[c.shiftKey]||8)+s,0)<80){toast('❌ מינימום 80h');return;}}
+  if(pop==='student'){const fC=cons.filter(c=>new Date(yr,c.month-1,c.day).getDay()===5&&c.type==='prefer').length,sC=cons.filter(c=>new Date(yr,c.month-1,c.day).getDay()===6&&c.type==='prefer').length;if(fC<2||sC<2){toast('❌ חובה לסמן לפחות 2 ימי שישי ו-2 ימי שבת');return;}if(cons.reduce((s,c)=>(SHIFT_HOURS[c.shiftKey]||8)+s,0)<80){toast('❌ יש לצבור לפחות 80 שעות — הוסף/י עוד משמרות');return;}}
   if(pop==='keva'){const fC=cons.filter(c=>new Date(yr,c.month-1,c.day).getDay()===5&&c.type==='prefer').length,sC=cons.filter(c=>new Date(yr,c.month-1,c.day).getDay()===6&&c.type==='prefer').length;if(fC<1||sC<1){toast('❌ חסר שישי/שבת');return;}}
-  if(!cons.length){toast('⚠️ אין בחירות');return;}
+  if(!cons.length){toast('⚠️ לא נבחרו אילוצים — אנא הוסף/י לפחות אחד לפני השליחה');return;}
   const allCBefore=get_allC();const prevSubmitted=allCBefore[window._empWorker]?.submitted;
   const wasEarly=()=>{const now=new Date();return now.getDate()<=10;};// submitted before 10th = early
   saveC({...allC,[window._empWorker]:{...wData,submitted:true,submittedAt:new Date().toISOString()}});
   // praise logic
-  const praises=['כל הכבוד! הגשת אילוצים מהר — זה עוזר לנו לבנות סידור טוב יותר 🌟', 'ברוכה! הגשה מוקדמת כזו מקלה על כולם 🏆', 'ממש מדהים — אחת הראשונות להגיש! 💪'];
+  const praises=['כל הכבוד! הגשת אילוצים מוקדם — זה עוזר לנו מאוד לבנות סידור מאוזן 🌟','תודה על ההגשה המוקדמת! ⭐ זה ממש מקל על הפיקוד','אחד/ת הראשונים/ות להגיש — מוקירים את האחריות שלך 💙'];
   const praiseChange=['תודה על הגמישות! השינוי שביצעת עוזר לסידור להיות מבצעי יותר 🙏', 'כל הכבוד על הנכונות לשנות — זה רוח צוות אמיתית ⭐', 'השינוי שלך תורם לכולם — תודה! 💙'];
   if(!prevSubmitted&&wasEarly()){
     setTimeout(()=>{showPraise(praises[Math.floor(Math.random()*praises.length)]);},400);
   } else if(prevSubmitted){
     setTimeout(()=>{showPraise(praiseChange[Math.floor(Math.random()*praiseChange.length)]);},400);
   } else {
-    toast('✅ נשלח למפקד!');
+    toast('✅ האילוצים נשלחו למפקד בהצלחה!');
   }
   renderConsPanel();
 }
@@ -1261,7 +1278,7 @@ function addChoufCons(){
   if(!dayEl||!shEl)return;
   const dayVal=dayEl.value,sh=shEl.value;
   const[d,m]=dayVal.split('-').map(Number);
-  if(cons.find(c=>c.day===d&&c.month===m&&c.shiftKey===sh&&c.type==='block')){toast('⚠️ כבר קיים');return;}
+  if(cons.find(c=>c.day===d&&c.month===m&&c.shiftKey===sh&&c.type==='block')){toast('⚠️ אילוץ זה כבר קיים ברשימה');return;}
   const dObj=SCHEDULE_DAYS.find(x=>x.day===d&&x.month===m);
   cons.push({day:d,month:m,dayLabel:dObj.label,jsDay:dObj.jsDay,shiftKey:sh,type:'block',isWeekend:false});
   saveChoufC({...allC,[window._empWorker]:{...wData,constraints:cons,submitted:false}});
@@ -1401,6 +1418,12 @@ function showPraise(msg){
   el.innerHTML=`<div style="font-size:1.5rem;margin-bottom:.5rem">🌟</div><div style="color:#6ee7b7;font-weight:700;font-size:.95rem;line-height:1.5">${msg}</div><button onclick="this.parentNode.remove()" style="margin-top:.9rem;background:#059669;color:white;border:none;padding:.4rem 1.2rem;border-radius:8px;cursor:pointer;font-family:Heebo,sans-serif;font-weight:700">תודה! 💙</button>`;
   document.body.appendChild(el);
   setTimeout(()=>el.remove&&el.remove(),6000);
+}
+function getShiftMates(worker,day,month,shKey){
+  const schedule=get_schedule();const sk=`${day}-${month}`;const slot=schedule[sk]||{};
+  return Object.entries(slot)
+    .filter(([k,v])=>v&&v!==worker&&k.startsWith(shKey+'_')&&!k.includes('keva')&&!k.includes('achmash'))
+    .map(([,v])=>v);
 }
 function renderMySchedPanel(){
   if(isChoufWorker(window._empWorker)){renderChoufMySchedPanel();return;}
@@ -1915,6 +1938,54 @@ function renderXReportPub(){
     </div>
   </div>`;
 }
+
+
+// ══════════════════════ BIRTHDAY TODAY ══════════════════════
+function checkBirthdayToday(){
+  const bdays=window._birthdays||{};
+  const today=new Date();
+  const m=String(today.getMonth()+1);
+  const list=bdays[m]||[];
+  const birthdays=Array.isArray(list)?list:Object.values(list);
+  if(!birthdays.length)return;
+  const bdayBanner=g('home-bday-today');
+  if(!bdayBanner)return;
+  bdayBanner.innerHTML=`<div style="background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(220,38,38,.08));border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:.65rem .9rem;margin-bottom:.65rem;text-align:center">
+    <div style="font-size:.9rem;font-weight:900;color:#fcd34d">🎂 יום הולדת שמח!</div>
+    <div style="font-size:.78rem;color:#e2e8f0;margin-top:.2rem">${birthdays.join(', ')}</div>
+  </div>`;
+}
+
+// ══════════════════════ AUTO BACKUP ══════════════════════
+function autoBackup(){
+  const schedule=get_schedule();
+  if(!Object.keys(schedule).length)return;
+  const key=`backup_${CURRENT_YEAR}_${SCHED_MONTH}_${new Date().toISOString().slice(0,10)}`;
+  const past=get_pastSchedules();
+  if(past[key])return;// already backed up today
+  past[key]={schedule,month:SCHED_MONTH,year:CURRENT_YEAR,label:MONTH_LABEL+' (גיבוי)',official:false,isBackup:true};
+  window._fbSet('past_schedules',past).catch(()=>{});
+}
+
+// ══════════════════════ PULL TO REFRESH ══════════════════════
+(function(){
+  let startY=0,pulling=false;
+  document.addEventListener('touchstart',e=>{if(window.scrollY===0)startY=e.touches[0].clientY;},{ passive:true});
+  document.addEventListener('touchmove',e=>{
+    if(!startY)return;
+    const diff=e.touches[0].clientY-startY;
+    if(diff>60&&!pulling){pulling=true;const el=document.getElementById('ptr-indicator');if(el)el.style.display='block';}
+  },{passive:true});
+  document.addEventListener('touchend',()=>{
+    if(pulling){
+      pulling=false;startY=0;
+      setTimeout(()=>{const el=document.getElementById('ptr-indicator');if(el)el.style.display='none';},800);
+      // Re-listen Firebase (simulate refresh)
+      if(window._appReady&&window._currentPage==='home')renderHome();
+    }
+    startY=0;
+  });
+})();
 
 // ══════════════════════ CHAT SYSTEM ══════════════════════
 // Structure: chats/{workerName}/{threadId} = {subject, messages:[], closed, createdAt}
@@ -2647,6 +2718,17 @@ function renderMgrAdmin(){
       </div>`;
     }).join('')}
     </div>`:''}
+  </div>
+  <div class="card" style="border:1px solid rgba(245,158,11,.3)">
+    <div style="font-weight:900;color:#fcd34d;margin-bottom:.5rem">🔔 תזכורות + חירום</div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem">
+      <button onclick="sendReminders()" style="background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:.4rem .9rem;font-family:Heebo,sans-serif;font-size:.8rem;cursor:pointer">📨 שלח תזכורות לכל מי שלא הגיש</button>
+      <button onclick="emergencyMode()" style="background:rgba(220,38,38,.12);color:#fca5a5;border:1px solid rgba(220,38,38,.3);border-radius:8px;padding:.4rem .9rem;font-family:Heebo,sans-serif;font-size:.8rem;cursor:pointer">🚨 מצב חירום</button>
+    </div>
+  </div>
+  <div class="card" style="border:1px solid rgba(16,185,129,.2)">
+    <div style="font-weight:900;color:#6ee7b7;margin-bottom:.5rem">📈 ניתוח עומסי עבר</div>
+    <div id="mgr-load-analysis"></div>
   </div>
   <div class="card" style="border:1px solid rgba(99,102,241,.3)">
     <div style="font-weight:900;color:#a5b4fc;margin-bottom:.5rem">📤 ייצוא אילוצים</div>
@@ -3975,6 +4057,115 @@ function renderPastSched(key){
   g('past-content').innerHTML=html;
 }
 
+
+// ══════════════════════ CONSTRAINT ANALYSIS ══════════════════════
+function renderConsAnalysis(){
+  const el=g('mgr-panel-cons-analysis');
+  const allC=get_allC();const choufC=get_choufC();
+  // Count blocks per shift-day
+  const blockCounts={};const preferCounts={};
+  [...Object.values(allC),...Object.values(choufC)].forEach(wd=>{
+    (wd?.constraints||[]).forEach(cx=>{
+      const key=`${cx.day}-${cx.month}-${cx.shiftKey}`;
+      if(cx.type==='block'){blockCounts[key]=(blockCounts[key]||0)+1;}
+      else{preferCounts[key]=(preferCounts[key]||0)+1;}
+    });
+  });
+  const shL={a:'א׳',b:'ב׳',c:'ג׳'};
+  const hotspots=Object.entries(blockCounts).filter(([,v])=>v>=3).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const popular=Object.entries(preferCounts).filter(([,v])=>v>=2).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const submittedCount=Object.values(allC).filter(w=>w.submitted).length+Object.values(choufC).filter(w=>w.submitted).length;
+  const totalWorkers=ALL_WORKERS.length+CHOUF_ALL.length;
+  if(!el)return;
+  el.innerHTML=`<div class="card" style="border:1px solid rgba(245,158,11,.3);margin-bottom:.5rem">
+    <div style="font-weight:900;color:#fcd34d;margin-bottom:.5rem">📊 ניתוח אילוצים — ${submittedCount}/${totalWorkers} הגישו</div>
+    ${hotspots.length?`<div style="font-size:.75rem;font-weight:700;color:#fca5a5;margin-bottom:.3rem">⚠️ משמרות עמוסות בחסימות:</div>
+    ${hotspots.map(([k,v])=>{const[d,m,sh]=k.split('-');const dObj=(NEXT_MONTH_DAYS||SCHEDULE_DAYS).find(x=>x.day==d&&x.month==m);return`<div style="display:flex;justify-content:space-between;padding:.2rem 0;border-bottom:1px solid #1e2a40;font-size:.75rem"><span style="color:#e2e8f0">${dObj?.label||d+'/'+m} — משמרת ${shL[sh]}</span><span style="color:#fca5a5;font-weight:700">${v} חסימות 🚨</span></div>`;}).join('')}`:'<div style="font-size:.75rem;color:#6ee7b7">✅ אין משמרות עמוסות בחסימות</div>'}
+    ${popular.length?`<div style="font-size:.75rem;font-weight:700;color:#6ee7b7;margin-top:.5rem;margin-bottom:.3rem">⭐ משמרות מבוקשות:</div>
+    ${popular.map(([k,v])=>{const[d,m,sh]=k.split('-');const dObj=(NEXT_MONTH_DAYS||SCHEDULE_DAYS).find(x=>x.day==d&&x.month==m);return`<div style="display:flex;justify-content:space-between;padding:.2rem 0;font-size:.75rem"><span style="color:#e2e8f0">${dObj?.label||d+'/'+m} — ${shL[sh]}</span><span style="color:#6ee7b7">${v} מעוניינים ✨</span></div>`;}).join('')}`:''}
+  </div>`;
+}
+
+// ══════════════════════ SMART ASSIGNMENT SUGGESTION ══════════════════════
+function suggestForSlot(day,month,shKey){
+  const allC=get_allC();const schedule=get_schedule();
+  const sk=`${day}-${month}`;
+  const suggestions=ALL_WORKERS.map(name=>{
+    const wData=allC[name]||{};const cons=wData.constraints||[];
+    const prefersThis=cons.some(c=>c.day===day&&c.month===month&&c.shiftKey===shKey&&c.type==='prefer');
+    const blocksThis=cons.some(c=>c.day===day&&c.month===month&&c.shiftKey===shKey&&c.type==='block');
+    const alreadyScheduled=Object.values(schedule).some(slot=>Object.values(slot).includes(name));
+    if(blocksThis)return null;
+    const score=(prefersThis?10:0)+(alreadyScheduled?-3:0);
+    return{name,score,prefersThis};
+  }).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,5);
+  return suggestions;
+}
+
+// ══════════════════════ REMINDERS ══════════════════════
+function sendReminders(){
+  const allC=get_allC();const d=new Date().getDate();
+  if(d<15||d>21)return;// only in submission window
+  const daysLeft=22-d;
+  const notSubmitted=ALL_WORKERS.filter(n=>!allC[n]?.submitted);
+  notSubmitted.forEach(name=>{
+    notifyWorker(name,`⏰ תזכורת: נותרו ${daysLeft} ימים להגשת אילוצים לחודש ${NEXT_MONTH_LABEL}. לחץ/י "אילוצים" כדי להגיש!`);
+  });
+  toast(`📨 נשלחו תזכורות ל-${notSubmitted.length} עובדים שטרם הגישו`);
+}
+
+// ══════════════════════ EMERGENCY MODE ══════════════════════
+function emergencyMode(){
+  if(!confirm('⚠️ מצב חירום — יצור סידור מינימלי מיידי עם כל העובדים הזמינים כעת. האם להמשיך?'))return;
+  const pw=prompt('סיסמת מנהל ראשי:');
+  if(pw!=='9211'){toast('❌ סיסמה שגויה');return;}
+  const today=new Date();const d=today.getDate(),m=today.getMonth()+1;
+  const sk=`${d}-${m}`;
+  const schedule=get_schedule();
+  if(!schedule[sk])schedule[sk]={};
+  const allC=get_allC();
+  // Assign all available workers to morning shift
+  let slot=schedule[sk];let idx=0;
+  const desks=['sadatz','plili','paha'];
+  WORKERS_BASHAL.forEach(name=>{
+    const blocked=allC[name]?.constraints?.some(cx=>cx.day===d&&cx.month===m&&cx.shiftKey==='a'&&cx.type==='block');
+    if(!blocked){slot[`a_${desks[idx%3]}_emergency_${idx}`]=name;idx++;}
+  });
+  saveS(schedule,true,undefined,false);
+  toast(`🚨 סידור חירום נוצר עם ${idx} עובדים!`);
+  renderMgrSched();
+}
+
+// ══════════════════════ LOAD HISTORY ANALYSIS ══════════════════════
+function renderLoadAnalysis(){
+  const el=g('mgr-load-analysis');if(!el)return;
+  const past=get_pastSchedules();
+  const officialKeys=Object.keys(past).filter(k=>past[k].official).sort().slice(-3);
+  if(!officialKeys.length){el.innerHTML='<div style="color:#475569;font-size:.78rem">אין סידורים רשמיים קודמים לניתוח</div>';return;}
+  const workerCounts={};
+  officialKeys.forEach(key=>{
+    const sched=past[key].schedule||{};
+    Object.values(sched).forEach(slot=>{
+      Object.entries(slot||{}).forEach(([k,v])=>{
+        if(v&&!k.includes('achmash')&&!k.includes('keva')){
+          workerCounts[v]=(workerCounts[v]||0)+1;
+        }
+      });
+    });
+  });
+  const avg=Object.values(workerCounts).reduce((s,v)=>s+v,0)/Math.max(1,Object.keys(workerCounts).length);
+  const sorted=Object.entries(workerCounts).sort((a,b)=>b[1]-a[1]);
+  el.innerHTML=`<div style="font-size:.7rem;color:#64748b;margin-bottom:.4rem">ממוצע: ${avg.toFixed(1)} משמרות | ${officialKeys.length} חודשים אחרונים</div>
+  ${sorted.map(([n,v])=>{
+    const diff=v-avg;const color=diff>3?'#fca5a5':diff<-3?'#6ee7b7':'#94a3b8';
+    const pct=Math.round(v/avg*100);
+    return`<div style="display:flex;align-items:center;gap:.4rem;padding:.2rem 0;border-bottom:1px solid #0f1623">
+      <span style="font-size:.72rem;font-weight:700;min-width:55px">${n}</span>
+      <div style="flex:1;background:#1e2a40;border-radius:4px;height:6px;overflow:hidden"><div style="height:100%;background:${color};width:${Math.min(100,pct)}%;border-radius:4px"></div></div>
+      <span style="font-size:.65rem;color:${color};min-width:24px">${v}</span>
+    </div>`;
+  }).join('')}`;
+}
 // ══════════════════════ CHATBOT ══════════════════════
 let _botWorker=null,_botPop=null,_botHistory=[];
 
