@@ -3166,17 +3166,11 @@ function openManualFillModal(sk,shKey){
   g('modal').classList.add('show');
 }
 function manualFillSlot(sk,shKey,name,field){
-  const isNextView2=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
-  const schedule=isNextView2?(window._schedule_next||{}):get_schedule();
-  // find next available field
-  let f=field;let i=1;
-  while((schedule[sk]||{})[`${shKey}_${f}`]){f=field+i;i++;}
-  const ns={...schedule,[sk]:{...(schedule[sk]||{}),[`${shKey}_${f}`]:name}};
-  if(isNextView2){window._schedule_next=ns;window._fbSet('schedule_'+CONS_MONTH+'_'+CONS_YEAR,{schedule:ns,schedReady:true,official:false}).then(()=>setSyncing(false));}
-  else saveS(ns,get_schedReady(),undefined,false);
-  // remove from unfilled list
+  // This is now called from cellSet via openCellModal — field already set correctly
+  // Keep for backward compat but redirect to cellSet
+  cellSet(sk,field,name);
+  // Also remove from unfilled list after successful save
   window._unfilledShifts=(window._unfilledShifts||[]).filter(u=>!(u.day==sk.split('-')[0]&&u.month==sk.split('-')[1]&&u.shKey===shKey));
-  closeModal();toast(`✏️ ${name} שובץ`);renderMgrSched();
 }
 function makeOfficial(){
   const isNextView=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
@@ -3427,6 +3421,11 @@ function cellSet(sk,field,name){
     window._fbSet('schedule_'+CONS_MONTH+'_'+CONS_YEAR,{schedule:ns,schedReady:true,official:false}).then(()=>setSyncing(false));
   } else {
     saveS(ns,get_schedReady(),undefined,false);
+  }
+  // Remove from unfilled list if applicable
+  if(name){
+    const [skd,skm]=sk.split('-');
+    window._unfilledShifts=(window._unfilledShifts||[]).filter(u=>!(u.day==skd&&u.month==skm&&u.shKey===shKey));
   }
   closeModal();
   toast(name?'✏️ '+name:'🗑 תא פונה');
