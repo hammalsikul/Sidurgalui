@@ -3505,17 +3505,35 @@ function canAssign(name,day,month,shKey,usedToday,monthC,wkC,lastS,stuH,sunOff){
   if(w.pop==='student'&&isLikeSat&&shKey==='c')return false;
   // ג' בשבת/חג — רק בש"ל (צאת שבת/חג)
   if(isLikeSat&&shKey==='c'){if(w.pop!=='bashal')return false;if(NO_SAT_NIGHT.includes(name))return false;}
-  // Weekly shifts cap — bashal/keva only (students have NO weekly cap)
-  if((w.pop==='bashal'||w.pop==='keva')&&(wkC[name]||0)>=weeklyCapFor(name))return false;
+  // Weekly shifts cap — bashal only; keva with approved prefer constraint bypass
+  if(w.pop==='bashal'&&(wkC[name]||0)>=weeklyCapFor(name))return false;
+  if(w.pop==='keva'&&(wkC[name]||0)>=weeklyCapFor(name)){
+    // Allow keva to exceed cap ONLY if they have an approved prefer for this exact shift
+    const allC_keva=window._isNextMonthSchedule?(window._allC_next||window._allC||{}):get_allC();
+    const hasPrefer=(allC_keva[name]?.constraints||[]).some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey===shKey&&cx.type==='prefer'&&cx.approvalStatus==='approved');
+    if(!hasPrefer)return false;
+  }
   // בש"ל: מקסימום משמרת לילה אחת בשבוע (ראשון-שבת)
-  if(w.pop==='bashal'&&shKey==='c'&&((window._nightWkC||{})[name]||0)>=2)return false;
+  if(w.pop==='bashal'&&shKey==='c'&&((window._nightWkC||{})[name]||0)>=2){
+    // Already at 2 nights — hard cap regardless of constraints
+    return false;
+  }
+  if(w.pop==='bashal'&&shKey==='c'&&((window._nightWkC||{})[name]||0)>=1){
+    // At 1 night — allow 2nd ONLY if worker has approved prefer for this specific night
+    const allC_night=window._isNextMonthSchedule?(window._allC_next||window._allC||{}):get_allC();
+    const hasNightPrefer=(allC_night[name]?.constraints||[]).some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey==='c'&&cx.type==='prefer'&&cx.approvalStatus==='approved');
+    if(!hasNightPrefer)return false;
+  }
   // שוויון לילות חודשי: מקסימום = ceil(לילות_בחודש / כמות_בשל) + 1
   if(w.pop==='bashal'&&shKey==='c'){
     const _nc=window._nightCounts||{};
-    const nightDaysInMonth=SCHEDULE_DAYS.filter(d=>!d.isFri&&!isChagFri(d.holiday)).length;
+    const _activeDaysNight=window._activeSchedDays||SCHEDULE_DAYS;
+    const nightDaysInMonth=_activeDaysNight.filter(d=>!d.isFri&&!isChagFri(d.holiday)).length;
     const eligCount=WORKERS_BASHAL.length||1;
-    const maxNights=Math.ceil(nightDaysInMonth/eligCount)+1;
-    if((_nc[name]||0)>=maxNights)return false;
+    const avgNights=nightDaysInMonth/eligCount;
+    const maxNights=Math.ceil(avgNights)+1;// מקסימום ממוצע + 1 (tight cap)
+    const totalN=(_nc[name]||0)+((window._satNightCounts||{})[name]||0);
+    if(totalN>=maxNights)return false;
   }
   // קבע: מקסימום סוף שבוע (שישי+שבת) אחד בחודש, אלא אם ביקש יותר
   if(w.pop==='keva'&&(isLikeFri||isLikeSat)){
@@ -3541,10 +3559,11 @@ function scoreW(name,day,month,shKey,monthC){
   if(jd===0&&shKey==='a'&&w?.pop==='bashal')s+=((window._sunMornCounts||{})[name]||0)*6;
   // 4. שוויון חמישי
   if(jd===4&&w?.pop==='bashal')s+=((window._thuShiftCounts||{})[`${name}_thu_${shKey}`]||0)*8;
-  // 5. שוויון לילות — עדיפות גבוהה ביותר
+  // 5. שוויון לילות — עדיפות עליונה, משקל מוגבר מאוד
   if(shKey==='c'){
-    s+=((window._nightCounts||{})[name]||0)*14;
-    if(jd===6)s+=((window._satNightCounts||{})[name]||0)*12;
+    const totalNights=(window._nightCounts||{})[name]||0;
+    s+=totalNights*30;// משקל כבד מאוד — שוויון לילות הוא הפקטור הדומיננטי
+    if(jd===6)s+=((window._satNightCounts||{})[name]||0)*20;
   }
   // 6. אילוצים — מחייבים: prefer = עדיפות גבוהה מאוד, block = עונש חמור
   const cons=allC[name]?.constraints||[];
@@ -3654,9 +3673,18 @@ function runGenerate(){
         if(shKey==='a'&&lastS[name]==='c')return;
         if(shKey==='c'&&lastS[name]==='c')return;
         // בדוק שלא עבד לילה בשבוע זה (בש"ל בלבד)
-        if(shKey==='c'&&POP_MAP[name]==='bashal'&&((window._nightWkC||{})[name]||0)>=2)return;
-        // מכסה שבועית — רק לקבע ובש"ל, לא לסטודנטים
-        if((POP_MAP[name]==='bashal'||POP_MAP[name]==='keva')&&(wkC[name]||0)>=weeklyCapFor(name))return;
+        if(shKey==='c'&&POP_MAP[name]==='bashal'){
+          const nc0=(window._nightWkC||{})[name]||0;
+          if(nc0>=2)return;// hard cap at 2
+          // 1 night already — allow only if this is an approved prefer
+          if(nc0>=1){
+            const allC_np=window._isNextMonthSchedule?(window._allC_next||window._allC||{}):get_allC();
+            const hasNP=(allC_np[name]?.constraints||[]).some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey==='c'&&cx.type==='prefer'&&cx.approvalStatus==='approved');
+            if(!hasNP)return;
+          }
+        }
+        // מכסה שבועית — רק לבש"ל, לא לסטודנטים ולא לקבע (אילוצי קבע קריטיים)
+        if(POP_MAP[name]==='bashal'&&(wkC[name]||0)>=weeklyCapFor(name))return;
         // שבצ — קבע את הדסק/שדה המתאים
         const w=ROSTER.find(r=>r.name===name);
         let field='fill0_'+name.replace(/\s/g,'_');
@@ -3861,7 +3889,9 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
           const nightPool=elig(w=>(w.pop==='bashal'||w.pop==='student'),sh.key);
           // Sort night pool by night count (fewest nights first = equality)
           const _nc2=window._nightCounts||{};const _snc2=window._satNightCounts||{};
-          nightPool.sort((a,b)=>(_nc2[a.name]||0)-(_nc2[b.name]||0)||(_snc2[a.name]||0)-(_snc2[b.name]||0)||(monthC[a.name]||0)-(monthC[b.name]||0));
+          // שוויון לילות: מיון לפי סה"כ לילות (כולל מוצ"ש) — מי שעשה הכי פחות יקבל קודם
+          const totalNightCount=w=>(_nc2[w.name]||0)+(_snc2[w.name]||0);
+          nightPool.sort((a,b)=>totalNightCount(a)-totalNightCount(b)||(monthC[a.name]||0)-(monthC[b.name]||0));
           if(!nightPool.length){
             markUnfilled(sh.key,'אין עובד זמין ללילה');
           } else {
@@ -3873,31 +3903,39 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
             const canAlone=nightPool.filter(w=>NIGHT_ALONE.includes(w.name));
             const neutral=nightPool.filter(w=>!NIGHT_NEED_COMPANION.includes(w.name)&&!NIGHT_ALONE.includes(w.name));
 
-            if(needComp.length>=2){
-              // שתי עובדות שצריכות ליווי — מצמדות ביחד
-              assign(needComp[0].name,'p1',sh.key);
-              assign(needComp[1].name,'p2',sh.key);
-            } else if(needComp.length===1){
-              const first=needComp[0];
+            // Sort ALL sub-groups by total nights for fairness
+            const sortByNights=arr=>arr.slice().sort((a,b)=>{
+              const na=(_nc2[a.name]||0)+(_snc2[a.name]||0);
+              const nb=(_nc2[b.name]||0)+(_snc2[b.name]||0);
+              return na-nb;
+            });
+            const needCompSorted=sortByNights(needComp);
+            const canAloneSorted=sortByNights(canAlone);
+            const neutralSorted=sortByNights(neutral);
+            if(needCompSorted.length>=2){
+              // שתי עובדות שצריכות ליווי — מצמדות לפי שוויון לילות
+              assign(needCompSorted[0].name,'p1',sh.key);
+              assign(needCompSorted[1].name,'p2',sh.key);
+            } else if(needCompSorted.length===1){
+              const first=needCompSorted[0];
               // מלווה = neutral בלבד (לא NIGHT_ALONE — הם עובדים לבד!)
-              const compPool=[...neutral,...needComp.slice(1)];
+              const compPool=[...neutralSorted,...needCompSorted.slice(1)];
               if(compPool.length){
                 assign(first.name,'p1',sh.key);
                 assign(compPool[0].name,'p2',sh.key);
               } else {
                 // אין מלווה ניטרלי — מדלגים על NIGHT_NEED_COMPANION ומשבצים NIGHT_ALONE לבד
-                if(canAlone.length){
-                  assign(canAlone[0].name,'p1',sh.key);
+                if(canAloneSorted.length){
+                  assign(canAloneSorted[0].name,'p1',sh.key);
                 } else {
-                  // אין ברירה — משבצים לבד
                   assign(first.name,'p1',sh.key);
                   markUnfilled(sh.key,`${first.name} חייבת ליווי — אין מלווה זמין`);
                 }
               }
-            } else if(neutral.length){
-              assign(neutral[0].name,'p1',sh.key);
-            } else if(canAlone.length){
-              assign(canAlone[0].name,'p1',sh.key);
+            } else if(neutralSorted.length){
+              assign(neutralSorted[0].name,'p1',sh.key);
+            } else if(canAloneSorted.length){
+              assign(canAloneSorted[0].name,'p1',sh.key);
             } else {
               markUnfilled(sh.key,'אין עובד זמין ללילה');
             }
@@ -3967,6 +4005,7 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
           reason='שובץ למשמרת '+( shNames[theirShKey]||theirShKey||'אחרת')+' באותו יום';
         }
         else{
+          const isPop=POP_MAP[name]||'bashal';
           // Count how many already in this shift
           const inShiftCount=Object.entries(slot).filter(([k,v])=>v&&k.startsWith(cx.shiftKey+'_')&&!k.includes('keva')&&!k.includes('achmash')).length;
           if(inShiftCount>=8){reason='משמרת מלאה (מקס 8 עובדים)';}
