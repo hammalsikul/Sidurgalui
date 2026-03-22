@@ -3338,7 +3338,22 @@ function openCellModal(sk,field){
   const [skDay,skMonth]=sk.split('-').map(Number);
   const day=(window._activeSchedDays||SCHEDULE_DAYS).find(d=>d.day===skDay&&d.month===skMonth)||SCHEDULE_DAYS.find(d=>d.day===skDay&&d.month===skMonth);
   const current=(schedule[sk]||{})[field];
-  const pool=ROSTER.filter(r=>{if(field.includes('achmash'))return ACHMASH.includes(r.name)||r.pop==='student'||r.pop==='keva';if(field.endsWith('_stu'))return r.pop==='student';if(field===`${shKey}_keva`)return r.pop==='keva';const desk=field.replace(`${shKey}_`,'').replace('_stu','');if(['sadatz','plili','paha'].includes(desk))return r.desk===desk&&r.pop==='bashal';return r.pop==='keva';});
+  // Build pool based on field type — fill/pass2 fields open to ALL workers
+  const pool=ROSTER.filter(r=>{
+    if(field.includes('achmash'))return ACHMASH.includes(r.name)||r.pop==='student'||r.pop==='keva';
+    if(field.endsWith('_stu'))return r.pop==='student';
+    if(field===`${shKey}_keva`||field===`${shKey}_keva2`)return r.pop==='keva';
+    // fill fields (pass0/pass2/manual) — show all workers
+    if(field.includes('fill'))return r.pop==='bashal'||r.pop==='student'||r.pop==='keva';
+    const desk=field.replace(`${shKey}_`,'').replace('_stu','').replace('_extra','');
+    if(['sadatz','plili','paha'].includes(desk))return (r.desk===desk&&(r.pop==='bashal'||r.pop==='student'));
+    // fri_worker / sat_worker — all non-keva
+    if(field===`${shKey}_fri_worker`||field===`${shKey}_sat_worker`)return r.pop==='bashal'||r.pop==='student';
+    // p1/p2 (night) — bashal and students
+    if(field===`${shKey}_p1`||field===`${shKey}_p2`)return r.pop==='bashal'||r.pop==='student';
+    // fallback — show everyone
+    return true;
+  });
 
   // Smart suggestions — who prefers this shift, sorted by score
   const allC=get_allC();
