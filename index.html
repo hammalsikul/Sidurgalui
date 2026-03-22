@@ -785,6 +785,7 @@ function saveS(s,r,official,warnIfOfficial){
     window._fbSet('past_schedules',past).catch(()=>{});
   }
   window._fbSet('schedule_'+SCHED_MONTH+'_'+CURRENT_YEAR,{schedule:s,schedReady:r,official:window._schedOfficial||false}).then(()=>setSyncing(false));
+  return true;
 }
 function saveSick(d){window._allSick=d;setSyncing(true);window._fbSet('sick',d).then(()=>setSyncing(false));}
 
@@ -3418,9 +3419,10 @@ function cellSet(sk,field,name){
     // Check: worker placed has no prefer? — that's fine, no alert needed
   }
   const ns={...schedule,[sk]:{...schedule[sk],[field]:name||null}};
-  saveS(ns,get_schedReady(),undefined,true);
+  const saved=saveS(ns,get_schedReady(),undefined,true);
+  if(saved===false)return;// user cancelled official warning
   closeModal();
-  toast(name?'✏️ '+name:'🗑');
+  toast(name?'✏️ '+name:'🗑 תא פונה');
   renderMgrSched();
 }
 
