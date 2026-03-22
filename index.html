@@ -3242,34 +3242,22 @@ function makeOfficial(){
 function downloadPDF(){
   const el=document.getElementById('sched-output');
   if(!el)return;
+  // Determine which schedule to use — same logic as buildSchedOutput
   const _isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
   const _label=_isNextMonth?NEXT_MONTH_LABEL:MONTH_LABEL;
   const _official=_isNextMonth?false:get_schedOfficial();
-  // Always read directly from source — never use cached _currentViewSched
-  window._currentViewSched=_isNextMonth?(window._schedule_next||get_schedule()):get_schedule();
-  window._currentViewDays=_isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+  // Get schedule directly — pass to buildPDFTable to avoid any global state issues
+  const pdfSched=_isNextMonth?(window._schedule_next&&Object.keys(window._schedule_next).length>0?window._schedule_next:get_schedule()):get_schedule();
+  const pdfDays=_isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
   const win=window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>סידור ${_label}</title>
-  <style>
-    body{font-family:Arial,sans-serif;direction:rtl;font-size:10px;color:#000;background:#fff}
-    table{border-collapse:collapse;width:100%;margin-bottom:12px}
-    th,td{border:1px solid #999;padding:3px 4px;text-align:center;font-size:9px}
-    th{background:#eee;font-weight:bold}
-    h2{font-size:14px;margin-bottom:8px}
-    .official{color:green;font-weight:bold}
-    .week-title{font-weight:bold;margin:8px 0 4px;font-size:11px}
-    @media print{button{display:none}}
-  </style></head><body>
-  <h2>⬡ הסידור הגלוי — ${_label} ${_official?'<span class="official">✅ רשמי</span>':''}</h2>
-  ${buildPDFTable()}
-  <br><button onclick="window.print()">🖨️ הדפס / שמור PDF</button>
-  </body></html>`);
+  if(!win){alert('אפשר לפתוח חלון חדש? אפשר חלונות קופצים בדפדפן');return;}
+  win.document.write('<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>סידור '+_label+'</title><style>body{font-family:Arial,sans-serif;direction:rtl;font-size:10px;color:#000;background:#fff}table{border-collapse:collapse;width:100%;margin-bottom:12px}th,td{border:1px solid #999;padding:3px 4px;text-align:center;font-size:9px}th{background:#eee;font-weight:bold}h2{font-size:14px;margin-bottom:8px}.official{color:green;font-weight:bold}.week-title{font-weight:bold;margin:8px 0 4px;font-size:11px}@media print{button{display:none}}</style></head><body><h2>⬡ הסידור הגלוי — '+_label+(_official?' <span style="color:green;font-weight:bold">✅ רשמי</span>':'')+'</h2>'+buildPDFTable(pdfSched,pdfDays)+'<br><button onclick="window.print()">🖨️ הדפס / שמור PDF</button></body></html>');
   win.document.close();
 }
-function buildPDFTable(){
-  // Use what downloadPDF just set — guaranteed fresh
-  const schedule=window._currentViewSched||{};
-  const days=window._currentViewDays||SCHEDULE_DAYS;
+function buildPDFTable(schedule,days){
+  // Accept explicit schedule and days — no global state dependency
+  if(!schedule)schedule=window._currentViewSched||get_schedule();
+  if(!days)days=window._currentViewDays||SCHEDULE_DAYS;
   const weeks=getWeeks(days);
   const shL={a:'א׳ 07:00-15:00',b:'ב׳ 15:00-21:30',c:'ג׳ 21:30-07:00'};
   return weeks.map((wk,wi)=>{
