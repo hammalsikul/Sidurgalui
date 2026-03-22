@@ -73,7 +73,7 @@ select option{background:#0f1623;color:#e2e8f0}
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <!-- v20260322_1801 -->
+  <!-- v20260322_1818 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="הסידור הגלוי">
@@ -3764,6 +3764,13 @@ function canAssign(name,day,month,shKey,usedToday,monthC,wkC,lastS,stuH,sunOff){
   }
   if(w.pop==='student'&&!get_allC()[name]?.submitted)return false;
   if(w.pop==='student'){const h2=(stuH[name]||0)+(SHIFT_HOURS[shKey]||8);if(h2>120)return false;}
+  // CRITICAL: If worker has approved prefer for a DIFFERENT shift today,
+  // block this shift entirely — pass0 will handle the correct one.
+  const _allC_prefer=window._isNextMonthSchedule?(window._allC_next||window._allC||{}):get_allC();
+  const prefersOtherShiftToday=(_allC_prefer[name]?.constraints||[]).some(function(cx){
+    return cx.day===day&&cx.month===month&&cx.shiftKey!==shKey&&cx.type==='prefer'&&cx.approvalStatus==='approved';
+  });
+  if(prefersOtherShiftToday)return false;
   return true;
 }
 function scoreW(name,day,month,shKey,monthC){
