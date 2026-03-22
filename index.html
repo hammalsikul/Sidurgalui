@@ -3200,7 +3200,7 @@ function makeOfficial(){
 function downloadPDF(){
   const el=document.getElementById('sched-output');
   if(!el)return;
-  const _isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  const _isNextMonth=window._schedViewMonth==='next'&&!!(window._schedule_next&&Object.keys(window._schedule_next).length);
   const _label=_isNextMonth?NEXT_MONTH_LABEL:MONTH_LABEL;
   const _official=_isNextMonth?false:get_schedOfficial();
   const win=window.open('','_blank');
@@ -3222,7 +3222,9 @@ function downloadPDF(){
   win.document.close();
 }
 function buildPDFTable(){
-  const _isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  // Use _schedViewMonth directly — don't depend on CONS_MONTH comparison
+  // which fails when today is before the 15th
+  const _isNextMonth=window._schedViewMonth==='next'&&!!(window._schedule_next&&Object.keys(window._schedule_next).length);
   const schedule=_isNextMonth?(window._schedule_next||{}):get_schedule();
   const days=_isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
   const weeks=getWeeks(days);
