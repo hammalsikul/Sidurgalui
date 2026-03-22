@@ -3821,36 +3821,39 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
       } else {
         // ══ ימי חול (ראשון–חמישי) ══
         if(sh.key==='a'||sh.key==='b'){
-          // ── כמה עובדים כבר שובצו במשמרת המקבילה (א' vs ב') לצורך שוויון ──
-          const otherShKey=sh.key==='a'?'b':'a';
-          const otherShiftCount=Object.entries(sched[sk]).filter(([k,v])=>v&&k.startsWith(otherShKey+'_')&&!k.includes('achmash')&&!k.includes('keva')).length;
           // ── ספירת שיבוצי אחמ"ש חודשי לשוויון ──
           const achCounts={};Object.values(sched).forEach(slot=>Object.entries(slot||{}).forEach(([k,v])=>{if(k.includes('achmash')&&v)achCounts[v]=(achCounts[v]||0)+1;}));
 
-          // 1. פיקוד (קבע) — עדיפות ראשונה לפי אילוצים
+          // ── שוויון בין א' לב': ספור כמה שובצו לכל משמרת ——
+          const countInShift=(sk2,shk)=>Object.entries(sched[sk2]||{}).filter(([k,v])=>v&&k.startsWith(shk+'_')&&!k.includes('keva')&&!k.includes('achmash')).length;
+          const countA=countInShift(sk,'a');const countB=countInShift(sk,'b');
+          // אם א' כבר מאוישת יותר מב' — אל תוסיף עוד לא' (אלא אם pass0 הכריח)
+          const aPassOnly=countA>countB&&sh.key==='a';
+
+          // 1. פיקוד (קבע) — תמיד, לא מוגבל ע"י שוויון
           const kp=elig(w=>w.pop==='keva',sh.key);
           if(kp.length){
             assign(kp[0].name,'keva',sh.key);
-            // קבע נוסף — רק במשמרת א', רק אם סה"כ משובצים עדיין מתחת ל-9
             if(sh.key==='a'&&kp.length>1){
               const curCount=Object.values(sched[sk]).filter(Boolean).length;
               if(curCount<9)assign(kp[1].name,'keva2',sh.key);
             }
           }
 
-          // 2. בש"ל לפי דסקים — עם מגבלת מקס 8 עובדים (+ פיקוד = 9 סה"כ)
+          // 2. בש"ל — רק אם לא חרגנו בשוויון + מקס 8
           DESK_ORDER.forEach(desk=>{
             const nonKeva=Object.entries(sched[sk]).filter(([k,v])=>v&&!k.includes('keva')&&!k.includes('achmash')).length;
-            if(nonKeva>=8)return;// מקס 8 עובדים לא-פיקוד
+            if(nonKeva>=8)return;
+            if(aPassOnly&&sh.key==='a')return;// א' כבר עמוסה — עצור הוספה
             const p=elig(w=>w.desk===desk&&w.pop==='bashal',sh.key);
             if(p.length)assign(p[0].name,desk,sh.key);
           });
 
-          // 3. סטודנטים — רק אם עדיין לא עבר מקסימום
-          // שוויון בין א' לב': אם ב' ריקה יחסית — עדיפות לאנשים שביקשו ב'
+          // 3. סטודנטים — אותו כלל שוויון
           DESK_ORDER.forEach(desk=>{
             const nonKeva=Object.entries(sched[sk]).filter(([k,v])=>v&&!k.includes('keva')&&!k.includes('achmash')).length;
             if(nonKeva>=8)return;
+            if(aPassOnly&&sh.key==='a')return;
             const p=elig(w=>w.desk===desk&&w.pop==='student',sh.key);
             if(p.length)assign(p[0].name,desk+'_stu',sh.key);
           });
