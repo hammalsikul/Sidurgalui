@@ -784,6 +784,30 @@ function get_allC(){return window._allC||{};}
 function get_allV(){return window._allV||[];}
 function get_schedule(){return window._schedule||{};}
 function get_schedReady(){return window._schedReady||false;}
+function get_active_schedule(){
+  var isNext=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  if(isNext&&window._schedule_next&&Object.keys(window._schedule_next).length>0)return window._schedule_next;
+  return get_schedule();
+}
+function get_active_days(){
+  var isNext=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  return isNext?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+}
+function get_active_ready(){
+  var isNext=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  return isNext?(window._schedReady_next||false):get_schedReady();
+}
+function save_active_schedule(ns){
+  var isNext=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  if(isNext){
+    window._schedule_next=ns;
+    window._schedReady_next=true;
+    setSyncing(true);
+    window._fbSet('schedule_'+CONS_MONTH+'_'+CONS_YEAR,{schedule:ns,schedReady:true,official:window._nextSchedOfficial||false}).then(function(){setSyncing(false);});
+  } else {
+    saveS(ns,get_schedReady(),undefined,false);
+  }
+}
 function get_allSick(){return window._allSick||[];}
 function get_pastSchedules(){return window._pastSchedules||{};}
 function get_schedOfficial(){return window._schedOfficial||false;}
@@ -3144,7 +3168,7 @@ function renderMgrSched(){
   const activeMLabel=isNextMonth?NEXT_MONTH_LABEL:MONTH_LABEL;
   const nextMonthBtn=CONS_MONTH!==SCHED_MONTH?`
     <button class="btn" style="background:${isNextMonth?'rgba(99,102,241,.2)':'rgba(99,102,241,.08)'};color:#a5b4fc;border:1px solid rgba(99,102,241,.35);font-size:.78rem" onclick="toggleSchedMonth()">${isNextMonth?'🔙 '+MONTH_LABEL:'⏭ '+NEXT_MONTH_LABEL}</button>`:'';
-  const btns=`<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;align-items:center">
+  let btns='';try{btns=`<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;align-items:center">
     <div style="font-size:.78rem;font-weight:700;color:${isNextMonth?'#a5b4fc':'#93c5fd'};background:${isNextMonth?'rgba(99,102,241,.1)':'rgba(37,99,235,.1)'};border:1px solid ${isNextMonth?'rgba(99,102,241,.3)':'rgba(37,99,235,.3)'};padding:.25rem .6rem;border-radius:6px">${activeMLabel}</div>
     ${nextMonthBtn}
     ${renderConflictsBanner()}${renderUnmetConstraintsBanner()}
@@ -3158,7 +3182,7 @@ function renderMgrSched(){
     ${officialBadge}
   </div>
   <div id="holiday-verify-panel" class="hidden"></div>
-  <div id="shift-balance-panel" class="hidden"></div>`;
+  <div id="shift-balance-panel" class="hidden"></div>`;;}catch(e){console.error('btns error:',e);btns='<div style="color:#fca5a5">'+e.message+'</div>';}
   // משמרות שלא אויישו
   const unfilled=window._unfilledShifts||[];
   const unfilledHTML=unfilled.length?`<div style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.35);border-radius:10px;padding:.75rem;margin-bottom:.75rem">
@@ -3172,12 +3196,16 @@ function renderMgrSched(){
       </div>`;
     }).join('')}
   </div>`:'';
+  let _html='';
   try{
-    g('mgr-panel-sched').innerHTML=btns+unfilledHTML+'<div id="sched-output">'+(effectiveReady?buildSchedOutput():'<div style="text-align:center;color:#475569;padding:2rem">לחץ ⚡ צור סידור</div>')+'</div>';
+    _html=btns+unfilledHTML+'<div id="sched-output">'+(effectiveReady?buildSchedOutput():'<div style="text-align:center;color:#475569;padding:2rem">לחץ ⚡ צור סידור</div>')+'</div>';
   }catch(e){
     console.error('renderMgrSched error:',e);
-    g('mgr-panel-sched').innerHTML=btns+'<div style="color:#fca5a5;padding:1rem">שגיאה בטעינת הסידור: '+e.message+'</div>';
+    _html='<div style="padding:1rem">'
+      +'<button class="btn btn-blue" style="padding:.55rem 1rem;font-size:.88rem;margin-bottom:.5rem" onclick="runGenerateForMonth()">⚡ צור סידור</button>'
+      +'<div style="color:#fca5a5;font-size:.75rem">שגיאה: '+e.message+'</div></div>';
   }
+  g('mgr-panel-sched').innerHTML=_html;
 }
 function openManualFillModal(sk,shKey){
   const schedule=get_active_schedule();
