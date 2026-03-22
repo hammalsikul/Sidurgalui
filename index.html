@@ -73,7 +73,7 @@ select option{background:#0f1623;color:#e2e8f0}
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <!-- v20260322_1721 -->
+  <!-- v20260322_1801 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="הסידור הגלוי">
@@ -3272,6 +3272,9 @@ function doManualFill(sk,shKey,name){
 
   // Save
   const ns={...schedule,[sk]:{...(schedule[sk]||{}),[field]:name}};
+  // Update local state immediately before async save — prevents stale render
+  const isNextFill=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  if(isNextFill){window._schedule_next=ns;}else{window._schedule=ns;}
   save_active_schedule(ns);
 
   // Remove from unfilled ONLY after save
@@ -3434,7 +3437,9 @@ function buildWeekTable(week,schedOverride){
     return html;
   };
   const headers=week.map(d=>{const h=d.holiday;return`<th style="min-width:76px;background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.06)':d.isWeekend?'rgba(245,158,11,.04)':'#080c14'}"><div style="font-weight:800;color:${h?HOLIDAY_TEXT[h.type]||'#c4b5fd':d.isWeekend?'#fcd34d':'#e2e8f0'};font-size:.68rem">${HEB_DAYS[d.jsDay]}</div><div style="font-size:.55rem;color:${h?HOLIDAY_TEXT[h.type]:'#64748b'}">${d.label}</div><div style="font-size:.48rem;color:${h?HOLIDAY_TEXT[h.type]||'#c4b5fd':'#475569'}">${d.hebrewDate||''}</div>${h?`<div style="font-size:.48rem;color:${HOLIDAY_TEXT[h.type]||'#c4b5fd'}">${h.name}</div>`:''}</th>`;}).join('');
-  const rows=SHIFTS_K.map(sh=>`<tr><td style="background:#080c14;position:sticky;right:0;z-index:1;white-space:nowrap;padding:.35rem .4rem;min-width:68px"><div style="font-weight:700;color:#e2e8f0;font-size:.68rem">משמרת ${sh.label}</div><div style="font-size:.52rem;color:#64748b">${sh.time}</div></td>${week.map(d=>{const sk=`${d.day}-${d.month}`;const h=d.holiday;let cells='';if(d.isWeekend){if(d.isFri||(d.isSat&&sh.key!=='c')){if(sh.key==='a'||sh.key==='b')cells+=cellHTML(sk,sh.key,'keva');cells+=DESKS.map(desk=>cellHTML(sk,sh.key,desk+'_stu')).join('');}else if(d.isSat&&sh.key==='c'){cells+=cellHTML(sk,sh.key,'p1');cells+=cellHTML(sk,sh.key,'p2');}}else{if(sh.key==='a'||sh.key==='b'){cells+=cellHTML(sk,sh.key,'keva');if((schedule[sk]||{})[sh.key+'_keva2'])cells+=cellHTML(sk,sh.key,'keva2');cells+=cellHTML(sk,sh.key,'achmash');cells+=DESKS.map(desk=>cellHTML(sk,sh.key,desk)+cellHTML(sk,sh.key,desk+'_stu')).join('');let fi2=1;while((schedule[sk]||{})[`${sh.key}_fill${fi2}`]){cells+=cellHTML(sk,sh.key,`fill${fi2}`);fi2++;}}else{cells+=cellHTML(sk,sh.key,'p1');cells+=cellHTML(sk,sh.key,'p2');}}return`<td style="background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.04)':d.isWeekend?'rgba(245,158,11,.02)':'transparent'};min-width:72px">${cells}</td>`;}).join('')}</tr>`).join('');
+  const rows=SHIFTS_K.map(sh=>`<tr><td style="background:#080c14;position:sticky;right:0;z-index:1;white-space:nowrap;padding:.35rem .4rem;min-width:68px"><div style="font-weight:700;color:#e2e8f0;font-size:.68rem">משמרת ${sh.label}</div><div style="font-size:.52rem;color:#64748b">${sh.time}</div></td>${week.map(d=>{const sk=`${d.day}-${d.month}`;const h=d.holiday;let cells='';if(d.isWeekend){if(d.isFri||(d.isSat&&sh.key!=='c')){if(sh.key==='a'||sh.key==='b')cells+=cellHTML(sk,sh.key,'keva');cells+=DESKS.map(desk=>cellHTML(sk,sh.key,desk+'_stu')).join('');// show fill fields on weekend too (manual assignments)
+let fiW=1;while((schedule[sk]||{})[`${sh.key}_fill${fiW}`]){cells+=cellHTML(sk,sh.key,`fill${fiW}`);fiW++;}}else if(d.isSat&&sh.key==='c'){cells+=cellHTML(sk,sh.key,'p1');cells+=cellHTML(sk,sh.key,'p2');// fill fields for night too
+let fiN=1;while((schedule[sk]||{})[`${sh.key}_fill${fiN}`]){cells+=cellHTML(sk,sh.key,`fill${fiN}`);fiN++;}}}else{if(sh.key==='a'||sh.key==='b'){cells+=cellHTML(sk,sh.key,'keva');if((schedule[sk]||{})[sh.key+'_keva2'])cells+=cellHTML(sk,sh.key,'keva2');cells+=cellHTML(sk,sh.key,'achmash');cells+=DESKS.map(desk=>cellHTML(sk,sh.key,desk)+cellHTML(sk,sh.key,desk+'_stu')).join('');let fi2=1;while((schedule[sk]||{})[`${sh.key}_fill${fi2}`]){cells+=cellHTML(sk,sh.key,`fill${fi2}`);fi2++;}}else{cells+=cellHTML(sk,sh.key,'p1');cells+=cellHTML(sk,sh.key,'p2');}}return`<td style="background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.04)':d.isWeekend?'rgba(245,158,11,.02)':'transparent'};min-width:72px">${cells}</td>`;}).join('')}</tr>`).join('');
   return`<div class="week-table-wrap"><table><thead><tr><th style="background:#080c14;position:sticky;right:0;z-index:3;min-width:68px;border:none"></th>${headers}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 function toggleSchedView(){mgrSchedView=mgrSchedView==='week'?'month':'week';renderMgrSched();}
@@ -3525,6 +3530,8 @@ function cellSet(sk,field,name){
     // Check: worker placed has no prefer? — that's fine, no alert needed
   }
   const ns={...schedule,[sk]:{...schedule[sk],[field]:name||null}};
+  const isNextCS=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  if(isNextCS){window._schedule_next=ns;}else{window._schedule=ns;}
   save_active_schedule(ns);
   // Remove from unfilled list if applicable
   if(name){
@@ -3974,6 +3981,20 @@ function runGenerate(){
     });
   });
   // ══ END PASS 0 ══
+
+  // Rebuild wkC/monthC/lastS from pass0 results so main loop starts accurate
+  // (pass0 left wkC in state of last processed week — reset and rebuild)
+  Object.keys(wkC).forEach(n=>wkC[n]=0);
+  // Find first Sunday to define week boundaries
+  const _firstSunIdx=_activeDays.findIndex(d=>d.jsDay===0);
+  const _preWeek=_firstSunIdx>0?_activeDays.slice(0,_firstSunIdx):[];
+  // Count pass0 assignments in pre-Sunday days for wkC
+  _preWeek.forEach(d=>{
+    const sk2=`${d.day}-${d.month}`;
+    Object.entries(sched[sk2]||{}).forEach(([k,v])=>{
+      if(v&&!k.includes('keva')&&!k.includes('achmash'))wkC[v]=(wkC[v]||0)+1;
+    });
+  });
 
   _activeDays.forEach(({day,month,isWeekend,isFri,isSat,jsDay})=>{
     const sk=`${day}-${month}`;
