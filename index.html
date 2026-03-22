@@ -3046,14 +3046,63 @@ function renderUnmetConstraintsBanner(){
   try{
     const unmet=window._unmetConstraints||[];
     if(!unmet.length)return '';
-    const shL={a:'א׳',b:'ב׳',c:'ג׳'};
-    const items=unmet.slice(0,8).map(function(u){return '<div style="font-size:.72rem;color:#fcd34d;padding:.1rem 0">'+u.name+' — '+(u.dayLabel||u.day+'/'+u.month)+' משמרת '+shL[u.shiftKey]+'</div>';}).join('');
-    const more=unmet.length>8?'<div style="font-size:.68rem;color:#64748b">ועוד '+(unmet.length-8)+'...</div>':'';
-    return '<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:.65rem .85rem;margin-bottom:.65rem;width:100%">'
-      +'<div style="font-weight:900;color:#fcd34d;margin-bottom:.3rem;font-size:.82rem">⚠️ אילוצים שלא הושלמו ('+unmet.length+')</div>'
-      +'<div style="font-size:.7rem;color:#94a3b8;margin-bottom:.35rem">עובדים שביקשו משמרת ולא שובצו — בגלל מגבלות מבצעיות:</div>'
-      +items+more+'</div>';
+    const isOpen=window._unmetOpen||false;
+    let html='<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:0;margin-bottom:.65rem;width:100%;overflow:hidden">';
+    // Header — always visible
+    html+='<div onclick="window._unmetOpen=!window._unmetOpen;renderMgrSched()" style="display:flex;justify-content:space-between;align-items:center;padding:.55rem .85rem;cursor:pointer;user-select:none">';
+    html+='<div style="font-weight:900;color:#fcd34d;font-size:.82rem">⚠️ אילוצים שלא כובדו ('+unmet.length+')</div>';
+    html+='<div style="display:flex;gap:.5rem;align-items:center">';
+    html+='<button onclick="event.stopPropagation();exportUnmetPDF()" style="background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);color:#fcd34d;border-radius:6px;padding:.2rem .5rem;font-family:Heebo,sans-serif;font-size:.68rem;cursor:pointer">📄 ייצא PDF</button>';
+    html+='<span style="color:#94a3b8;font-size:.85rem">'+(isOpen?'▲':'▼')+'</span>';
+    html+='</div></div>';
+    if(isOpen){
+      html+='<div style="padding:0 .85rem .65rem">';
+      html+='<div style="font-size:.7rem;color:#94a3b8;margin-bottom:.4rem">רשימה מלאה — כולל סיבת אי-שיבוץ:</div>';
+      // Group by worker
+      const byWorker={};
+      unmet.forEach(function(u){if(!byWorker[u.name])byWorker[u.name]=[];byWorker[u.name].push(u);});
+      Object.entries(byWorker).forEach(function(entry){
+        const wName=entry[0];const items=entry[1];
+        html+='<div style="border-bottom:1px solid rgba(245,158,11,.1);padding:.3rem 0">';
+        html+='<div style="font-weight:700;color:#fcd34d;font-size:.78rem;margin-bottom:.15rem">'+wName+'</div>';
+        items.forEach(function(u){
+          html+='<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:.2rem;padding:.1rem 0">';
+          html+='<span style="font-size:.7rem;color:#e2e8f0">'+u.dayLabel+' — משמרת '+(u.shiftLabel||u.shiftKey)+'</span>';
+          html+='<span style="font-size:.68rem;color:#94a3b8;font-style:italic">'+u.reason+'</span>';
+          html+='</div>';
+        });
+        html+='</div>';
+      });
+      html+='</div>';
+    }
+    html+='</div>';
+    return html;
   }catch(e){return '';}
+}
+
+function exportUnmetPDF(){
+  const unmet=window._unmetConstraints||[];
+  if(!unmet.length){toast('אין אילוצים שלא כובדו');return;}
+  const byWorker={};
+  unmet.forEach(function(u){if(!byWorker[u.name])byWorker[u.name]=[];byWorker[u.name].push(u);});
+  const label=window._schedViewMonth==='next'?NEXT_MONTH_LABEL:MONTH_LABEL;
+  const win=window.open('','_blank');
+  let html='<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>אילוצים שלא כובדו</title>';
+  html+='<style>body{font-family:Arial,sans-serif;direction:rtl;font-size:12px;color:#000;background:#fff;padding:20px}';
+  html+='h1{font-size:16px;margin-bottom:4px}h2{font-size:13px;margin:12px 0 4px;color:#333;border-bottom:1px solid #ddd;padding-bottom:2px}';
+  html+='.item{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #eee;font-size:11px}';
+  html+='.reason{color:#666;font-style:italic}';
+  html+='@media print{button{display:none}}</style></head><body>';
+  html+='<h1>⚠️ אילוצים שלא כובדו — '+label+'</h1>';
+  html+='<div style="color:#666;font-size:11px;margin-bottom:16px">סה"כ: '+unmet.length+' אילוצים</div>';
+  Object.entries(byWorker).forEach(function(entry){
+    html+='<h2>'+entry[0]+' ('+entry[1].length+' אילוצים)</h2>';
+    entry[1].forEach(function(u){
+      html+='<div class="item"><span>'+u.dayLabel+' — משמרת '+(u.shiftLabel||u.shiftKey)+'</span><span class="reason">'+u.reason+'</span></div>';
+    });
+  });
+  html+='<br><button onclick="window.print()">🖨️ הדפס / שמור PDF</button></body></html>';
+  win.document.write(html);win.document.close();
 }
 function renderMgrSched(){
   const ready=get_schedReady(),official=get_schedOfficial();
@@ -3824,16 +3873,56 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
     saveS(sched,true,false,false);
   }
   // שמור משמרות חסרות
-  // ── ניתוח אילוצים לא מולאו ──
+  // ── ניתוח אילוצים לא מולאו + סיבות ──
   const allC_for_check=_wasNextMonth?(window._allC_next||window._allC||{}):get_allC();
   const unmetConstraints=[];
+  const shL_um={a:'א׳',b:'ב׳',c:'ג׳'};
   ALL_WORKERS.forEach(name=>{
     const cons=(allC_for_check[name]?.constraints||[]).filter(cx=>cx.type==='prefer'&&cx.approvalStatus==='approved');
     cons.forEach(cx=>{
       const sk=`${cx.day}-${cx.month}`;
       const slot=sched[sk]||{};
       const gotIt=Object.entries(slot).some(([k,v])=>v===name&&k.startsWith(cx.shiftKey+'_')&&!k.includes('achmash'));
-      if(!gotIt)unmetConstraints.push({name,day:cx.day,month:cx.month,dayLabel:cx.dayLabel,shiftKey:cx.shiftKey});
+      if(!gotIt){
+        // Determine reason
+        let reason='לא שובץ';
+        const w=ROSTER.find(r=>r.name===name);
+        // Was worker assigned elsewhere today?
+        const workedToday=Object.values(slot).includes(name);
+        if(workedToday){reason='שובץ למשמרת אחרת באותו יום';}
+        else{
+          // Count how many already in this shift
+          const inShiftCount=Object.entries(slot).filter(([k,v])=>v&&k.startsWith(cx.shiftKey+'_')&&!k.includes('keva')&&!k.includes('achmash')).length;
+          if(inShiftCount>=8){reason='משמרת מלאה (מקס 8 עובדים)';}
+          else{
+            // Check weekly cap
+            const _activeDaysUm=_wasNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+            const weekStart=_activeDaysUm.find(d=>d.day===cx.day&&d.month===cx.month);
+            if(weekStart){
+              // Count shifts that week
+              let weekShifts=0;
+              _activeDaysUm.forEach(d=>{
+                const jd=d.jsDay;
+                const weekOfDay=Math.floor(_activeDaysUm.indexOf(weekStart)/7);
+                const weekOfD=Math.floor(_activeDaysUm.indexOf(d)/7);
+                if(weekOfDay===weekOfD){
+                  const s2=sched[`${d.day}-${d.month}`]||{};
+                  if(Object.values(s2).includes(name))weekShifts++;
+                }
+              });
+              const cap=weeklyCapFor(name);
+              if(weekShifts>=cap){reason=`הגיע/ה למכסה השבועית (${cap} משמרות)`;}
+              else if(cx.shiftKey==='c'&&(w?.pop==='bashal')){
+                const nightThisWeek=Object.values(window._nightWkC||{}).includes&&((window._nightWkC||{})[name]||0)>=1;
+                if(nightThisWeek){reason='כבר עשה/תה לילה בשבוע זה';}
+                else{reason='לא נבחר/ה — מתחרים עם יותר זכויות';}
+              }
+              else{reason='לא נבחר/ה — עובד/ת אחר/ת עם עדיפות גבוהה יותר';}
+            }
+          }
+        }
+        unmetConstraints.push({name,day:cx.day,month:cx.month,dayLabel:cx.dayLabel||cx.day+'/'+cx.month,shiftKey:cx.shiftKey,shiftLabel:shL_um[cx.shiftKey]||cx.shiftKey,reason});
+      }
     });
   });
   window._unmetConstraints=unmetConstraints;
