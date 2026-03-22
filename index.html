@@ -3777,12 +3777,15 @@ function runGenerate(){
         if(POP_MAP[name]==='bashal'&&(wkC[name]||0)>=weeklyCapFor(name))return;
         // שבצ — קבע את הדסק/שדה המתאים
         const w=ROSTER.find(r=>r.name===name);
-        let field='fill0_'+name.replace(/\s/g,'_');
+        let field;
         if(pop==='keva')field='keva';
         else if(pop==='student')field=`${w?.desk||'plili'}_stu`;
         else field=w?.desk||'plili';
-        // אל תדרוס שיבוץ קיים של קבע בשדה זה
-        if(sched[sk][`${shKey}_${field}`])field=field+'_x'+name.replace(/\s/g,'_');
+        // אם השדה תפוס — השתמש ב-fill format
+        if(sched[sk][`${shKey}_${field}`]){
+          let fi0=1;while(sched[sk][`${shKey}_fill${fi0}`])fi0++;
+          field=`fill${fi0}`;
+        }
         sched[sk][`${shKey}_${field}`]=name;
         usedToday0.add(name);
         monthC[name]=(monthC[name]||0)+1;wkC[name]=(wkC[name]||0)+1;lastS[name]=shKey;
@@ -3917,8 +3920,8 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
           // ── שוויון בין א' לב': ספור כמה שובצו לכל משמרת ——
           const countInShift=(sk2,shk)=>Object.entries(sched[sk2]||{}).filter(([k,v])=>v&&k.startsWith(shk+'_')&&!k.includes('keva')&&!k.includes('achmash')).length;
           const countA=countInShift(sk,'a');const countB=countInShift(sk,'b');
-          // אם א' כבר מאוישת יותר מב' — אל תוסיף עוד לא' (אלא אם pass0 הכריח)
-          const aPassOnly=countA>countB&&sh.key==='a';
+          // עצור הוספה לא' רק אם: א' כבר עמוסה ממש (2+ יותר מב') וב' לא ריקה לחלוטין
+          const aPassOnly=countA>=(countB+2)&&countB>0&&sh.key==='a';
 
           // 1. פיקוד (קבע) — תמיד, לא מוגבל ע"י שוויון
           const kp=elig(w=>w.pop==='keva',sh.key);
@@ -3935,7 +3938,8 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
           const achName2=sched[sk][`${sh.key}_achmash`];
           const achDesk2=achName2?DESK_MAP[achName2]:null;
           DESK_ORDER.forEach(desk=>{
-            const nonKeva=Object.entries(sched[sk]).filter(([k,v])=>v&&!k.includes('keva')&&!k.includes('achmash')).length;
+            // Count only non-fill, non-pass0 workers toward the 8 cap
+            const nonKeva=Object.entries(sched[sk]).filter(([k,v])=>v&&!k.includes('keva')&&!k.includes('achmash')&&!k.includes('fill')).length;
             if(nonKeva>=8)return;
             if(aPassOnly&&sh.key==='a')return;
             // אחמ"ש מאותו דסק — כבר מיוצג, דלג
@@ -3947,7 +3951,7 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
 
           // 3. סטודנטים — אותו כלל שוויון
           DESK_ORDER.forEach(desk=>{
-            const nonKeva=Object.entries(sched[sk]).filter(([k,v])=>v&&!k.includes('keva')&&!k.includes('achmash')).length;
+            const nonKeva=Object.entries(sched[sk]).filter(([k,v])=>v&&!k.includes('keva')&&!k.includes('achmash')&&!k.includes('fill')).length;
             if(nonKeva>=8)return;
             if(aPassOnly&&sh.key==='a')return;
             const deskHebS=desk==='sadatz'?'סד"צ':desk==='plili'?'פלילי':desk==='paha'?'פח"ע':'';
@@ -4205,15 +4209,16 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
             if(shKey2==='c'&&pop==='bashal'&&((window._nightWkC||{})[name]||0)>=2)continue;
             // בדוק שהמשמרת לא מלאה (מקס 8 + פיקוד)
             const nonKeva2=Object.entries(sched[sk2]||{}).filter(([k,v])=>v&&!k.includes('keva')&&!k.includes('achmash')).length;
-            if(nonKeva2>=8)continue;
+            if(nonKeva2>=9)continue;// pass2 allows slightly more
             // בדוק חסימה
             const allC2=window._isNextMonthSchedule?(window._allC_next||window._allC||{}):get_allC();
             const blocked2=(allC2[name]?.constraints||[]).some(cx=>cx.day===d.day&&cx.month===d.month&&cx.shiftKey===shKey2&&cx.type==='block'&&cx.approvalStatus==='approved');
             if(blocked2)continue;
             // שבץ
-            const w2=ROSTER.find(r=>r.name===name);
-            const field2=pop==='keva'?'keva_fill2':((w2?.desk||'plili')+'_fill2');
-            if(sched[sk2][`${shKey2}_${field2}`])continue;// שדה תפוס
+            // Use fill1/fill2/fill3 format — known to buildWeekTable
+            let fi2=1;
+            while(sched[sk2][`${shKey2}_fill${fi2}`])fi2++;
+            const field2=`fill${fi2}`;
             sched[sk2][`${shKey2}_${field2}`]=name;
             weekShifts[name]=(weekShifts[name]||0)+1;
             monthC[name]=(monthC[name]||0)+1;
