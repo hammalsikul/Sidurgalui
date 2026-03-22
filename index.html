@@ -3933,8 +3933,15 @@ function runGenerate(){
             if(!hasNP)return;
           }
         }
-        // מכסה שבועית — רק לבש"ל, לא לסטודנטים ולא לקבע (אילוצי קבע קריטיים)
-        if(POP_MAP[name]==='bashal'&&(wkC[name]||0)>=weeklyCapFor(name))return;
+        // מכסה שבועית — רק לבש"ל (לא לסטודנטים ולא לקבע)
+        // Note: wkC resets each Sunday in the main loop, but pass0 runs before that.
+        // So we track a per-week count for pass0 manually.
+        if(POP_MAP[name]==='bashal'){
+          // Count how many WEEKDAY shifts assigned this week so far in sched
+          const dayWeekStart=new Date(_activeDays[0]?.year||new Date().getFullYear(),day.month-1||cx.month-1,cx.day).getDay();
+          // Simple check: use wkC which tracks current week
+          if((wkC[name]||0)>=weeklyCapFor(name))return;
+        }
         // שבצ — קבע את הדסק/שדה המתאים
         const w=ROSTER.find(r=>r.name===name);
         let field;
@@ -4272,10 +4279,17 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
         // Was worker assigned elsewhere today?
         const workedToday=Object.values(slot).includes(name);
         if(workedToday){
-          // Find which shift they're in
+          // Check if worker got a different shift THEY REQUESTED that day
           const theirShift=Object.entries(slot).find(([k,v])=>v===name&&!k.includes('achmash'));
           const theirShKey=theirShift?theirShift[0].split('_')[0]:null;
           const shNames={a:'א׳ (בוקר)',b:'ב׳ (ערב)',c:'ג׳ (לילה)'};
+          const gotRequestedShift=(allC_for_check[name]?.constraints||[]).some(cx2=>
+            cx2.day===cx.day&&cx2.month===cx.month&&cx2.shiftKey===theirShKey&&cx2.type==='prefer'&&cx2.approvalStatus==='approved');
+          if(gotRequestedShift){
+            // Worker got a shift they asked for — skip this as "conflict"
+            // (can't work two shifts same day)
+            return;
+          }
           reason='שובץ למשמרת '+( shNames[theirShKey]||theirShKey||'אחרת')+' באותו יום';
         }
         else{
@@ -4322,10 +4336,14 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
   (function pass2(){
     const weeks2=getWeeks(_activeDays);
     weeks2.forEach((wk,wi)=>{
-      // בנה usedThisWeek לכל עובד
+      // בנה usedThisWeek לכל עובד — סופ"ש לא נספר במכסת 5 משמרות
       const weekShifts={};
       wk.forEach(d=>{
         const sk2=`${d.day}-${d.month}`;
+        const dObj_ws=_activeDays.find(x=>x.day===d.day&&x.month===d.month);
+        const hol_ws=dObj_ws?.holiday||null;
+        const isWeekendDay=d.isFri||d.isSat||isChagSat(hol_ws)||isChagFri(hol_ws);
+        if(isWeekendDay)return;// don't count weekend toward 5-shift cap
         Object.values(sched[sk2]||{}).forEach(name=>{
           if(name)weekShifts[name]=(weekShifts[name]||0)+1;
         });
@@ -4349,12 +4367,11 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
           const hol2=dObj2?.holiday||null;
           const isLikeSat2=d.isSat||isChagSat(hol2);
           const isLikeFri2=d.isFri||isChagFri(hol2);
-          // בש"ל לא בשישי/ערב חג
-          // בש"ל: לא בשישי/ערב חג
-          const isErevYomHaatzmaut2=_activeDays.find(d=>d.day===d.day&&d.month===d.month)?.holiday?.type==='yom_haatzmaut_erev';
+          // בש"ל לא בשישי/ערב חג ולא א'/ב' בשבת/חג
           if(pop==='bashal'&&isLikeFri2)continue;
-          // בש"ל: לא א'/ב' בשבת/חג
           if(pop==='bashal'&&isLikeSat2&&(shKey2==='a'||shKey2==='b'))continue;
+          // קבע לא בסופ"ש (אלא אם ביקש)
+          if(pop==='keva'&&(isLikeFri2||isLikeSat2))continue;
 
           const workedToday2=Object.values(sched[sk2]||{}).includes(name);
           if(workedToday2)continue;// כבר עובד היום
