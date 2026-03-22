@@ -4179,11 +4179,8 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
             const chosenAch=cands[0];
             sched[sk][`${sh.key}_achmash`]=chosenAch;
             // הסר מהדסק שלו/ה באותה משמרת — לא לשבץ פעמיים
-            Object.keys(sched[sk]).forEach(k=>{
-              if(k!==`${sh.key}_achmash`&&k.startsWith(sh.key+'_')&&!k.includes('keva')&&sched[sk][k]===chosenAch){
-                delete sched[sk][k];
-              }
-            });
+            // Don't delete the worker's desk slot — keep achmash alongside desk assignment
+            // (UI deduplicates workers already shown as achmash)
           } else {
             // אין אחמ"ש — פיקוד הופך לאחמ"ש
             const kevaName=sched[sk][`${sh.key}_keva`];
@@ -4310,7 +4307,7 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
     cons.forEach(cx=>{
       const sk=`${cx.day}-${cx.month}`;
       const slot=sched[sk]||{};
-      const gotIt=Object.entries(slot).some(([k,v])=>v===name&&k.startsWith(cx.shiftKey+'_')&&!k.includes('achmash'));
+      const gotIt=Object.entries(slot).some(([k,v])=>v===name&&k.startsWith(cx.shiftKey+'_'));// achmash counts too
       if(!gotIt){
         // Determine reason
         let reason='לא שובץ';
