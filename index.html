@@ -3338,33 +3338,22 @@ function openCellModal(sk,field){
   const [skDay,skMonth]=sk.split('-').map(Number);
   const day=(window._activeSchedDays||SCHEDULE_DAYS).find(d=>d.day===skDay&&d.month===skMonth)||SCHEDULE_DAYS.find(d=>d.day===skDay&&d.month===skMonth);
   const current=(schedule[sk]||{})[field];
-  // Build pool based on field type — fill/pass2 fields open to ALL workers
-  const pool=ROSTER.filter(r=>{
-    if(field.includes('achmash'))return ACHMASH.includes(r.name)||r.pop==='student'||r.pop==='keva';
-    if(field.endsWith('_stu'))return r.pop==='student';
-    if(field===`${shKey}_keva`||field===`${shKey}_keva2`)return r.pop==='keva';
-    // fill fields (pass0/pass2/manual) — show all workers
-    if(field.includes('fill'))return r.pop==='bashal'||r.pop==='student'||r.pop==='keva';
-    const desk=field.replace(`${shKey}_`,'').replace('_stu','').replace('_extra','');
-    if(['sadatz','plili','paha'].includes(desk))return (r.desk===desk&&(r.pop==='bashal'||r.pop==='student'));
-    // fri_worker / sat_worker — all non-keva
-    if(field===`${shKey}_fri_worker`||field===`${shKey}_sat_worker`)return r.pop==='bashal'||r.pop==='student';
-    // p1/p2 (night) — bashal and students
-    if(field===`${shKey}_p1`||field===`${shKey}_p2`)return r.pop==='bashal'||r.pop==='student';
-    // fallback — show everyone
-    return true;
-  });
+  // All Jerusalem workers available for manual edit
+  const pool=ROSTER.slice();
 
   // Smart suggestions — who prefers this shift, sorted by score
   const allC=get_allC();
   const monthCounts={};Object.values(schedule).forEach(slot=>Object.entries(slot||{}).forEach(([k,v])=>{if(v&&!k.includes('keva')&&!k.includes('achmash'))monthCounts[v]=(monthCounts[v]||0)+1;}));
+  const allV_modal=get_allV();
   const suggestions=pool.map(r=>{
     const cons=allC[r.name]?.constraints||[];
     const prefers=cons.some(cx=>cx.day===skDay&&cx.month===skMonth&&cx.shiftKey===shKey&&cx.type==='prefer');
     const blocks=cons.some(cx=>cx.day===skDay&&cx.month===skMonth&&cx.shiftKey===shKey&&cx.type==='block');
+    const blocksDay=cons.some(cx=>cx.day===skDay&&cx.month===skMonth&&cx.type==='block');
     const alreadyToday=Object.values(schedule[sk]||{}).includes(r.name);
-    const score=(prefers?10:0)+(blocks?-20:0)+(alreadyToday?-5:0)-((monthCounts[r.name]||0)*0.3);
-    return{...r,score,prefers,blocks,alreadyToday};
+    const hasVac=allV_modal.some(v=>v.status==='approved'&&v.worker===r.name&&v.days?.some(vd=>vd.day===skDay&&vd.month===skMonth));
+    const score=(prefers?10:0)+(blocks?-20:0)+(hasVac?-30:0)+(alreadyToday?-5:0)-((monthCounts[r.name]||0)*0.3);
+    return{...r,score,prefers,blocks,blocksDay,alreadyToday,hasVac};
   }).sort((a,b)=>b.score-a.score);
 
   const topSugg=suggestions.filter(r=>r.prefers&&!r.blocks&&!r.alreadyToday).slice(0,3);
@@ -3386,8 +3375,10 @@ function openCellModal(sk,field){
       const tagColor=r.prefers?'#6ee7b7':r.blocks?'#fca5a5':'#fcd34d';
       const busy=r.alreadyToday?' (כבר שובץ היום)':'';
       const loadColor=monthCounts[r.name]>14?'#fca5a5':monthCounts[r.name]>10?'#fcd34d':'#475569';
-      return`<button onclick="cellSet('${sk}','${field}','${r.name}')" style="text-align:right;padding:.4rem .6rem;border-radius:7px;border:1px solid ${dc2.border}40;background:${current===r.name?'#1e3a5f':r.blocks?'rgba(220,38,38,.05)':'#0f1623'};color:#e2e8f0;cursor:pointer;font-family:Heebo,sans-serif;display:flex;justify-content:space-between;align-items:center">
-        <div><span style="color:${dc2.text};font-weight:700">${r.name}</span>${busy?`<span style="font-size:.6rem;color:#fcd34d"> ${busy}</span>`:''}</div>
+      const warningIcon=r.hasVac?'🏖':r.blocks?'🚫':r.blocksDay?'⚠️':'';
+      const rowBg=current===r.name?'#1e3a5f':r.hasVac?'rgba(220,38,38,.08)':r.blocks?'rgba(220,38,38,.05)':'#0f1623';
+      return`<button onclick="cellSet('${sk}','${field}','${r.name}')" style="text-align:right;padding:.4rem .6rem;border-radius:7px;border:1px solid ${dc2.border}40;background:${rowBg};color:#e2e8f0;cursor:pointer;font-family:Heebo,sans-serif;display:flex;justify-content:space-between;align-items:center">
+        <div><span style="color:${dc2.text};font-weight:700">${warningIcon?warningIcon+' ':''}<span style="${r.hasVac?'text-decoration:line-through;opacity:.6':r.blocks?'opacity:.7':''}">${r.name}</span></span>${busy?`<span style="font-size:.6rem;color:#fcd34d"> ${busy}</span>`:''}</div>
         <div style="display:flex;gap:.3rem;align-items:center">
           ${tag?`<span style="font-size:.7rem;color:${tagColor}">${tag}</span>`:''}
           <span style="font-size:.55rem;color:${loadColor}">${monthCounts[r.name]||0}✕</span>
@@ -3406,10 +3397,17 @@ function cellSet(sk,field,name){
   if(name){
     const allC=get_allC();
     const [d,m]=sk.split('-').map(Number);
-    // Worker being placed — does they have a block on this?
     const workerCons=(allC[name]?.constraints||[]);
-    const hasBlock=workerCons.some(cx=>cx.day===d&&cx.month===m&&cx.shiftKey===shKey&&cx.type==='block'&&cx.approvalStatus==='approved');
-    if(hasBlock&&!confirm('⚠️ '+name+' הגיש/ה חסימה מאושרת למשמרת זו. להמשיך בכל זאת?'))return;
+    // Check ANY block constraint for this day (any shift) or this specific shift
+    const hasBlockShift=workerCons.some(cx=>cx.day===d&&cx.month===m&&cx.shiftKey===shKey&&cx.type==='block'&&cx.approvalStatus==='approved');
+    const hasBlockDay=workerCons.some(cx=>cx.day===d&&cx.month===m&&cx.type==='block'&&cx.approvalStatus==='approved');
+    // Check vacation
+    const allV=get_allV();
+    const hasVac=allV.some(v=>v.status==='approved'&&v.worker===name&&v.days?.some(vd=>vd.day===d&&vd.month===m));
+    const msg=hasVac?('⚠️ '+name+' מאושר/ת בחופשה בתאריך זה! לשבץ בכל זאת?'):
+      hasBlockShift?('⚠️ '+name+' הגיש/ה חסימה מאושרת למשמרת '+shKey+'. לשבץ בכל זאת?'):
+      hasBlockDay?('⚠️ '+name+' הגיש/ה חסימה באותו יום. לשבץ בכל זאת?'):null;
+    if(msg&&!confirm(msg))return;
     // Also check: displacing someone who had an approved prefer
     const displaced=schedule[sk]?.[field];
     if(displaced&&displaced!==name){
