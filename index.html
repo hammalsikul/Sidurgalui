@@ -3508,7 +3508,7 @@ function canAssign(name,day,month,shKey,usedToday,monthC,wkC,lastS,stuH,sunOff){
   // Weekly shifts cap — bashal/keva only (students have NO weekly cap)
   if((w.pop==='bashal'||w.pop==='keva')&&(wkC[name]||0)>=weeklyCapFor(name))return false;
   // בש"ל: מקסימום משמרת לילה אחת בשבוע (ראשון-שבת)
-  if(w.pop==='bashal'&&shKey==='c'&&((window._nightWkC||{})[name]||0)>=1)return false;
+  if(w.pop==='bashal'&&shKey==='c'&&((window._nightWkC||{})[name]||0)>=2)return false;
   // שוויון לילות חודשי: מקסימום = ceil(לילות_בחודש / כמות_בשל) + 1
   if(w.pop==='bashal'&&shKey==='c'){
     const _nc=window._nightCounts||{};
@@ -3654,7 +3654,7 @@ function runGenerate(){
         if(shKey==='a'&&lastS[name]==='c')return;
         if(shKey==='c'&&lastS[name]==='c')return;
         // בדוק שלא עבד לילה בשבוע זה (בש"ל בלבד)
-        if(shKey==='c'&&POP_MAP[name]==='bashal'&&((window._nightWkC||{})[name]||0)>=1)return;
+        if(shKey==='c'&&POP_MAP[name]==='bashal'&&((window._nightWkC||{})[name]||0)>=2)return;
         // מכסה שבועית — רק לקבע ובש"ל, לא לסטודנטים
         if((POP_MAP[name]==='bashal'||POP_MAP[name]==='keva')&&(wkC[name]||0)>=weeklyCapFor(name))return;
         // שבצ — קבע את הדסק/שדה המתאים
@@ -3757,7 +3757,7 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
               // אסור לילה אחרי לילה
               if(lastS[r.name]==='c')return false;
               // מקסימום לילה אחד בשבוע (כולל שבת ג')
-              if((window._nightWkC||{})[r.name]>=1)return false;
+              if((window._nightWkC||{})[r.name]>=2)return false;
               const allC2=get_allC();
               if((allC2[r.name]?.constraints||[]).some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey===sh.key&&cx.type==='block'))return false;
               const allV2=get_allV();
@@ -3989,8 +3989,8 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
               const cap=weeklyCapFor(name);
               if(weekShifts>=cap){reason=`הגיע/ה למכסה השבועית (${cap} משמרות)`;}
               else if(cx.shiftKey==='c'&&(w?.pop==='bashal')){
-                const nightThisWeek=Object.values(window._nightWkC||{}).includes&&((window._nightWkC||{})[name]||0)>=1;
-                if(nightThisWeek){reason='כבר עשה/תה לילה בשבוע זה';}
+                const nightThisWeek=((window._nightWkC||{})[name]||0)>=2;
+                if(nightThisWeek){reason='הגיע/ה למכסת לילות שבועית (2 לילות)';}
                 else{reason='לא נבחר/ה — מתחרים עם יותר זכויות';}
               }
               else{reason='לא נבחר/ה — עובד/ת אחר/ת עם עדיפות גבוהה יותר';}
