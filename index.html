@@ -483,10 +483,13 @@ window._fbListen('holiday_overrides', v => {
     else delete window._effectiveHolidays[sk];
   });
   // Fully rebuild day arrays using updated getHoliday()
-  SCHEDULE_DAYS=buildScheduleDays();
-  NEXT_MONTH_DAYS=CONS_MONTH!==SCHED_MONTH?buildNextMonthDays():SCHEDULE_DAYS;
+  // Don't rebuild during active schedule generation — would corrupt it
+  if(!window._isGenerating){
+    SCHEDULE_DAYS=buildScheduleDays();
+    NEXT_MONTH_DAYS=CONS_MONTH!==SCHED_MONTH?buildNextMonthDays():SCHEDULE_DAYS;
+  }
   // Re-render current view
-  if(window._appReady){
+  if(window._appReady&&!window._isGenerating){
     if(window._currentPage==='emp')renderConsPanel();
     else if(window._currentPage==='home')renderHome();
   }
@@ -3242,8 +3245,8 @@ function downloadPDF(){
   const _isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
   const _label=_isNextMonth?NEXT_MONTH_LABEL:MONTH_LABEL;
   const _official=_isNextMonth?false:get_schedOfficial();
-  // Always force-refresh from current state — never use stale cache
-  window._currentViewSched=_isNextMonth?(window._schedule_next||{}):get_schedule();
+  // Always read directly from source — never use cached _currentViewSched
+  window._currentViewSched=_isNextMonth?(window._schedule_next||get_schedule()):get_schedule();
   window._currentViewDays=_isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
   const win=window.open('','_blank');
   win.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>סידור ${_label}</title>
@@ -3783,6 +3786,7 @@ function runGenerateForMonth(){
   }
 }
 function runGenerate(){
+  window._isGenerating=true;
   const DESK_ORDER=['plili','paha','sadatz'];
   // ══ כללי לילה ══
   // NIGHT_ALONE: נועה/ליאן/יוסף/עמית — עובדים לבד, לא יכולים עם אחרים
@@ -4349,11 +4353,13 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
 
   if(!_wasNextMonth)window._schedViewMonth='curr';
   window._manualConflicts=[];
+  window._isGenerating=false;// clear before toast/render
   if(unfilledShifts.length){
     toast(`✅ סידור נוצר — ${unfilledShifts.length} משמרות לאיוש ידני`);
   } else {
     toast('✅ סידור נוצר!');
   }
+  window._isGenerating=false;
   renderMgrSched();
 }
 
