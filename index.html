@@ -3166,12 +3166,14 @@ function openManualFillModal(sk,shKey){
   g('modal').classList.add('show');
 }
 function manualFillSlot(sk,shKey,name,field){
-  const schedule=get_schedule();
+  const isNextView2=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  const schedule=isNextView2?(window._schedule_next||{}):get_schedule();
   // find next available field
   let f=field;let i=1;
   while((schedule[sk]||{})[`${shKey}_${f}`]){f=field+i;i++;}
   const ns={...schedule,[sk]:{...(schedule[sk]||{}),[`${shKey}_${f}`]:name}};
-  saveS(ns,get_schedReady(),undefined,true);
+  if(isNextView2){window._schedule_next=ns;window._fbSet('schedule_'+CONS_MONTH+'_'+CONS_YEAR,{schedule:ns,schedReady:true,official:false}).then(()=>setSyncing(false));}
+  else saveS(ns,get_schedReady(),undefined,false);
   // remove from unfilled list
   window._unfilledShifts=(window._unfilledShifts||[]).filter(u=>!(u.day==sk.split('-')[0]&&u.month==sk.split('-')[1]&&u.shKey===shKey));
   closeModal();toast(`✏️ ${name} שובץ`);renderMgrSched();
@@ -3392,7 +3394,8 @@ function openCellModal(sk,field){
   g('modal').classList.add('show');
 }
 function cellSet(sk,field,name){
-  const schedule=get_schedule();
+  const isNextView=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  const schedule=isNextView?(window._schedule_next||{}):get_schedule();
   const shKey=field.split('_')[0];
   // Check conflict with constraints
   if(name){
@@ -3419,8 +3422,12 @@ function cellSet(sk,field,name){
     // Check: worker placed has no prefer? — that's fine, no alert needed
   }
   const ns={...schedule,[sk]:{...schedule[sk],[field]:name||null}};
-  const saved=saveS(ns,get_schedReady(),undefined,true);
-  if(saved===false)return;// user cancelled official warning
+  if(isNextView){
+    window._schedule_next=ns;
+    window._fbSet('schedule_'+CONS_MONTH+'_'+CONS_YEAR,{schedule:ns,schedReady:true,official:false}).then(()=>setSyncing(false));
+  } else {
+    saveS(ns,get_schedReady(),undefined,false);
+  }
   closeModal();
   toast(name?'✏️ '+name:'🗑 תא פונה');
   renderMgrSched();
