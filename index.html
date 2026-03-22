@@ -3311,13 +3311,17 @@ function buildWeekTable(week,schedOverride){
   };
   // build ordered cell list per day per shift: keva first, then achmash, then desks
   const orderedCells=(sk,shKey,d)=>{
+    const slot=schedule[sk]||{};
+    const achName=slot[`${shKey}_achmash`];
     let html='';
     html+=cellHTML(sk,shKey,'keva');
     html+=cellHTML(sk,shKey,'achmash');
     DESKS.forEach(desk=>{
-      html+=cellHTML(sk,shKey,desk);
-      html+=cellHTML(sk,shKey,desk+'_stu');
-      const slot=schedule[sk]||{};
+      // Skip desk field if same worker is already shown as achmash
+      if(achName&&slot[`${shKey}_${desk}`]===achName){}
+      else html+=cellHTML(sk,shKey,desk);
+      if(achName&&slot[`${shKey}_${desk+'_stu'}`]===achName){}
+      else html+=cellHTML(sk,shKey,desk+'_stu');
       if(slot[`${shKey}_${desk}_extra`])html+=cellHTML(sk,shKey,desk+'_extra');
     });
     return html;
@@ -3927,10 +3931,16 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
           }
 
           // 2. בש"ל — רק אם לא חרגנו בשוויון + מקס 8
+          // אם האחמ"ש שייך לדסק מסוים — הדסק כבר מיוצג, אין צורך בנציג נוסף
+          const achName2=sched[sk][`${sh.key}_achmash`];
+          const achDesk2=achName2?DESK_MAP[achName2]:null;
           DESK_ORDER.forEach(desk=>{
             const nonKeva=Object.entries(sched[sk]).filter(([k,v])=>v&&!k.includes('keva')&&!k.includes('achmash')).length;
             if(nonKeva>=8)return;
-            if(aPassOnly&&sh.key==='a')return;// א' כבר עמוסה — עצור הוספה
+            if(aPassOnly&&sh.key==='a')return;
+            // אחמ"ש מאותו דסק — כבר מיוצג, דלג
+            const deskHeb=desk==='sadatz'?'סד"צ':desk==='plili'?'פלילי':desk==='paha'?'פח"ע':'';
+            if(achDesk2&&achDesk2===deskHeb)return;
             const p=elig(w=>w.desk===desk&&w.pop==='bashal',sh.key);
             if(p.length)assign(p[0].name,desk,sh.key);
           });
@@ -3940,6 +3950,8 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
             const nonKeva=Object.entries(sched[sk]).filter(([k,v])=>v&&!k.includes('keva')&&!k.includes('achmash')).length;
             if(nonKeva>=8)return;
             if(aPassOnly&&sh.key==='a')return;
+            const deskHebS=desk==='sadatz'?'סד"צ':desk==='plili'?'פלילי':desk==='paha'?'פח"ע':'';
+            if(achDesk2&&achDesk2===deskHebS)return;// אחמ"ש מאותו דסק — כבר מיוצג
             const p=elig(w=>w.desk===desk&&w.pop==='student',sh.key);
             if(p.length)assign(p[0].name,desk+'_stu',sh.key);
           });
@@ -3954,7 +3966,14 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
           if(cands.length){
             // שוויון: מי שהיה אחמ"ש הכי מעט
             cands.sort((a,b)=>(achCounts[a]||0)-(achCounts[b]||0));
-            sched[sk][`${sh.key}_achmash`]=cands[0];
+            const chosenAch=cands[0];
+            sched[sk][`${sh.key}_achmash`]=chosenAch;
+            // הסר מהדסק שלו/ה באותה משמרת — לא לשבץ פעמיים
+            Object.keys(sched[sk]).forEach(k=>{
+              if(k!==`${sh.key}_achmash`&&k.startsWith(sh.key+'_')&&!k.includes('keva')&&sched[sk][k]===chosenAch){
+                delete sched[sk][k];
+              }
+            });
           } else {
             // אין אחמ"ש — פיקוד הופך לאחמ"ש
             const kevaName=sched[sk][`${sh.key}_keva`];
