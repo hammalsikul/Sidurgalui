@@ -3042,6 +3042,19 @@ function removeBday(mo,i){
 function mgrReject(id){const allV=get_allV();saveV(allV.map(v=>v.id===id?{...v,status:'rejected'}:v));toast('❌ נדחה');renderMgrVacs();}
 
 let mgrSchedView='month',mgrSchedWeek=0;
+function renderUnmetConstraintsBanner(){
+  try{
+    const unmet=window._unmetConstraints||[];
+    if(!unmet.length)return '';
+    const shL={a:'א׳',b:'ב׳',c:'ג׳'};
+    const items=unmet.slice(0,8).map(function(u){return '<div style="font-size:.72rem;color:#fcd34d;padding:.1rem 0">'+u.name+' — '+(u.dayLabel||u.day+'/'+u.month)+' משמרת '+shL[u.shiftKey]+'</div>';}).join('');
+    const more=unmet.length>8?'<div style="font-size:.68rem;color:#64748b">ועוד '+(unmet.length-8)+'...</div>':'';
+    return '<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:.65rem .85rem;margin-bottom:.65rem;width:100%">'
+      +'<div style="font-weight:900;color:#fcd34d;margin-bottom:.3rem;font-size:.82rem">⚠️ אילוצים שלא הושלמו ('+unmet.length+')</div>'
+      +'<div style="font-size:.7rem;color:#94a3b8;margin-bottom:.35rem">עובדים שביקשו משמרת ולא שובצו — בגלל מגבלות מבצעיות:</div>'
+      +items+more+'</div>';
+  }catch(e){return '';}
+}
 function renderMgrSched(){
   const ready=get_schedReady(),official=get_schedOfficial();
   const officialBadge=official?`<span style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);padding:.2rem .55rem;border-radius:6px;font-size:.72rem;font-weight:700">✅ רשמי</span>`:'';
@@ -3079,7 +3092,12 @@ function renderMgrSched(){
       </div>`;
     }).join('')}
   </div>`:'';
-  g('mgr-panel-sched').innerHTML=btns+unfilledHTML+`<div id="sched-output">${effectiveReady?buildSchedOutput():'<div style="text-align:center;color:#475569;padding:2rem">לחץ ⚡ צור סידור</div>'}</div>`;
+  try{
+    g('mgr-panel-sched').innerHTML=btns+unfilledHTML+'<div id="sched-output">'+(effectiveReady?buildSchedOutput():'<div style="text-align:center;color:#475569;padding:2rem">לחץ ⚡ צור סידור</div>')+'</div>';
+  }catch(e){
+    console.error('renderMgrSched error:',e);
+    g('mgr-panel-sched').innerHTML=btns+'<div style="color:#fca5a5;padding:1rem">שגיאה בטעינת הסידור: '+e.message+'</div>';
+  }
 }
 function openManualFillModal(sk,shKey){
   const shLabel=shKey==='a'?'א׳ בוקר':shKey==='b'?'ב׳ ערב':'ג׳ לילה';
@@ -3693,7 +3711,7 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
   }
   // שמור משמרות חסרות
   // ── ניתוח אילוצים לא מולאו ──
-  const allC_for_check=window._isNextMonthSchedule?(window._allC_next||window._allC||{}):get_allC();
+  const allC_for_check=_wasNextMonth?(window._allC_next||window._allC||{}):get_allC();
   const unmetConstraints=[];
   ALL_WORKERS.forEach(name=>{
     const cons=(allC_for_check[name]?.constraints||[]).filter(cx=>cx.type==='prefer'&&cx.approvalStatus==='approved');
