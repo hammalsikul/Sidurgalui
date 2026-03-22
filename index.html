@@ -3069,7 +3069,7 @@ function renderMgrSched(){
   const btns=`<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;align-items:center">
     <div style="font-size:.78rem;font-weight:700;color:${isNextMonth?'#a5b4fc':'#93c5fd'};background:${isNextMonth?'rgba(99,102,241,.1)':'rgba(37,99,235,.1)'};border:1px solid ${isNextMonth?'rgba(99,102,241,.3)':'rgba(37,99,235,.3)'};padding:.25rem .6rem;border-radius:6px">${activeMLabel}</div>
     ${nextMonthBtn}
-    ${renderUnmetConstraintsBanner()}
+    ${renderConflictsBanner()}${renderUnmetConstraintsBanner()}
     <button class="btn btn-blue" style="padding:.55rem 1rem;font-size:.88rem" onclick="runGenerateForMonth()">⚡ צור סידור</button>
     ${effectiveReady?`<button class="btn" style="background:#1e2a40;color:#94a3b8;font-size:.78rem" onclick="toggleSchedView()">${mgrSchedView==='week'?'🗓 חודשי':'📅 שבועי'}</button>`:''}
     ${effectiveReady?`<button class="btn" style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);font-size:.78rem" onclick="makeOfficial()">${official?'🔄 עדכן רשמי':'📌 הגדר כרשמי'}</button>`:''}
@@ -3329,7 +3329,64 @@ function openCellModal(sk,field){
     <button onclick="cellSet('${sk}','${field}',null)" style="width:100%;background:rgba(220,38,38,.1);color:#fca5a5;border:1px solid rgba(220,38,38,.25);padding:.5rem;border-radius:7px;cursor:pointer;font-family:Heebo,sans-serif">🗑 פנה תא</button>`;
   g('modal').classList.add('show');
 }
-function cellSet(sk,field,name){const schedule=get_schedule();const ns={...schedule,[sk]:{...schedule[sk],[field]:name||null}};saveS(ns,get_schedReady(),undefined,true);closeModal();toast(name?`✏️ ${name}`:'🗑');renderMgrSched();}
+function cellSet(sk,field,name){
+  const schedule=get_schedule();
+  const shKey=field.split('_')[0];
+  // Check conflict with constraints
+  if(name){
+    const allC=get_allC();
+    const [d,m]=sk.split('-').map(Number);
+    // Worker being placed — does they have a block on this?
+    const workerCons=(allC[name]?.constraints||[]);
+    const hasBlock=workerCons.some(cx=>cx.day===d&&cx.month===m&&cx.shiftKey===shKey&&cx.type==='block'&&cx.approvalStatus==='approved');
+    if(hasBlock&&!confirm('⚠️ '+name+' הגיש/ה חסימה מאושרת למשמרת זו. להמשיך בכל זאת?'))return;
+    // Also check: displacing someone who had an approved prefer
+    const displaced=schedule[sk]?.[field];
+    if(displaced&&displaced!==name){
+      const dispCons=(allC[displaced]?.constraints||[]);
+      const hadPrefer=dispCons.some(cx=>cx.day===d&&cx.month===m&&cx.shiftKey===shKey&&cx.type==='prefer'&&cx.approvalStatus==='approved');
+      if(hadPrefer) addConflict(displaced,d,m,shKey,'הוסר ממשמרת שביקש/ה');
+    }
+    // Check: worker placed has no prefer? — that's fine, no alert needed
+  }
+  const ns={...schedule,[sk]:{...schedule[sk],[field]:name||null}};
+  saveS(ns,get_schedReady(),undefined,true);
+  closeModal();
+  toast(name?'✏️ '+name:'🗑');
+  renderMgrSched();
+}
+
+function addConflict(name,day,month,shKey,reason){
+  const shL={a:'א׳',b:'ב׳',c:'ג׳'};
+  if(!window._manualConflicts)window._manualConflicts=[];
+  // Avoid duplicates
+  const key=name+'-'+day+'-'+month+'-'+shKey;
+  if(window._manualConflicts.some(c=>c.key===key))return;
+  window._manualConflicts.push({key,name,day,month,dayLabel:day+'/'+month,shiftKey:shKey,shiftLabel:shL[shKey]||shKey,reason,ts:Date.now()});
+}
+
+function clearConflict(key){
+  window._manualConflicts=(window._manualConflicts||[]).filter(c=>c.key!==key);
+  renderMgrSched();
+}
+
+function renderConflictsBanner(){
+  const conflicts=window._manualConflicts||[];
+  if(!conflicts.length)return '';
+  let html='<div style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.35);border-radius:10px;padding:.65rem .85rem;margin-bottom:.65rem;width:100%">';
+  html+='<div style="font-weight:900;color:#fca5a5;margin-bottom:.35rem;font-size:.82rem">🚨 סתירות עם אילוצים מאושרים ('+conflicts.length+')</div>';
+  html+='<div style="font-size:.7rem;color:#94a3b8;margin-bottom:.4rem">שינויים ידניים שסותרים אילוצי עובדים:</div>';
+  conflicts.forEach(function(cf){
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:.25rem 0;border-bottom:1px solid rgba(220,38,38,.15)">';
+    html+='<div style="font-size:.75rem;color:#fcd34d;font-weight:700">'+cf.name+'</div>';
+    html+='<div style="font-size:.7rem;color:#94a3b8">'+cf.dayLabel+' — '+cf.shiftLabel+'</div>';
+    html+='<div style="font-size:.68rem;color:#fca5a5">'+cf.reason+'</div>';
+    html+='<button data-ckey="'+cf.key+'" onclick="clearConflict(this.dataset.ckey)" style="background:none;border:none;color:#475569;cursor:pointer;font-size:.75rem">✕</button>';
+    html+='</div>';
+  });
+  html+='</div>';
+  return html;
+}
 function closeModal(){g('modal').classList.remove('show');}
 g('modal').addEventListener('click',e=>{if(e.target===g('modal'))closeModal();});
 
@@ -3440,12 +3497,12 @@ function scoreW(name,day,month,shKey,monthC){
     s+=((window._nightCounts||{})[name]||0)*14;
     if(jd===6)s+=((window._satNightCounts||{})[name]||0)*12;
   }
-  // 6. בונוס אילוץ "מבקש לעבוד" — אדבייזורי, לא מחייב
+  // 6. אילוצים — מחייבים: prefer = עדיפות גבוהה מאוד, block = עונש חמור
   const cons=allC[name]?.constraints||[];
-  const prefersThis=cons.some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey===shKey&&cx.type==='prefer');
-  const blocksThis=cons.some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey===shKey&&cx.type==='block');
-  if(prefersThis)s-=12;// בונוס — אבל לא מכריע
-  if(blocksThis)s+=30; // עונש — אבל canAssign עוצר אם חסימה מאושרת
+  const prefersThis=cons.some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey===shKey&&cx.type==='prefer'&&cx.approvalStatus==='approved');
+  const blocksThis=cons.some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey===shKey&&cx.type==='block'&&cx.approvalStatus==='approved');
+  if(prefersThis)s-=40;// עדיפות גבוהה מאוד — כמעט מחייב
+  if(blocksThis)s+=60; // עונש חמור — canAssign כבר חוסם אם מאושר
   // 7. סטודנטים — בונוס סופ"ש
   if(w?.pop==='student'&&(jd===5||jd===6))s-=20;
   return s+(Math.random()-.5)*0.5;
@@ -3725,6 +3782,7 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
   window._unmetConstraints=unmetConstraints;
   window._unfilledShifts=unfilledShifts;
   if(!_wasNextMonth)window._schedViewMonth='curr';
+  window._manualConflicts=[];// איפוס קונפליקטים ידניים בכל יצירת סידור חדש
   if(unfilledShifts.length){
     toast(`✅ סידור נוצר — ${unfilledShifts.length} משמרות לאיוש ידני`);
   } else {
