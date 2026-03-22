@@ -3159,17 +3159,41 @@ function renderMgrSched(){
   }
 }
 function openManualFillModal(sk,shKey){
-  const shLabel=shKey==='a'?'א׳ בוקר':shKey==='b'?'ב׳ ערב':'ג׳ לילה';
-  const day=SCHEDULE_DAYS.find(d=>`${d.day}-${d.month}`===sk);
-  const allWorkers=[...ROSTER.map(r=>r.name)];
-  g('modal-box').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
-    <div style="font-weight:900;font-size:.9rem">✏️ שיבוץ ידני — ${day?.label} ${shLabel}</div>
-    <button onclick="closeModal()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:1.3rem">✕</button>
-  </div>
-  <div style="font-size:.75rem;color:#94a3b8;margin-bottom:.5rem">בחר עובד לשיבוץ:</div>
-  <div style="display:flex;flex-direction:column;gap:.3rem;max-height:60vh;overflow-y:auto">
-    ${allWorkers.map(n=>{const dc=getDeskColor(n);return`<button onclick="manualFillSlot('${sk}','${shKey}','${n.replace(/'/g,"\\'")}','manual_mgr')" style="text-align:right;padding:.4rem .6rem;border-radius:7px;border:1px solid ${dc.border}40;background:#0f1623;color:#e2e8f0;cursor:pointer;font-family:Heebo,sans-serif"><span style="color:${dc.text};font-weight:700">${n}</span> <span style="font-size:.62rem;background:${dc.bg};color:${dc.text};padding:.1rem .35rem;border-radius:4px">${dc.label}</span></button>`;}).join('')}
-  </div>`;
+  const isNextView=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  const schedule=isNextView?(window._schedule_next||{}):get_schedule();
+  const shL={a:'א בוקר',b:'ב ערב',c:'ג לילה'};
+  const shLabel=shL[shKey]||shKey;
+  const dayObj=(isNextView?NEXT_MONTH_DAYS:SCHEDULE_DAYS).find(function(d){return d.day+'-'+d.month===sk;});
+  var parts=sk.split('-');var skDay=+parts[0];var skMonth=+parts[1];
+  var allC=get_allC();var allV=get_allV();
+  var monthCounts={};
+  Object.values(schedule).forEach(function(slot){
+    Object.entries(slot||{}).forEach(function(e){
+      var k=e[0],v=e[1];
+      if(v&&k.indexOf('keva')<0&&k.indexOf('achmash')<0)monthCounts[v]=(monthCounts[v]||0)+1;
+    });
+  });
+  var rows=ROSTER.map(function(r){
+    var dc=getDeskColor(r.name);
+    var cons=(allC[r.name]&&allC[r.name].constraints)||[];
+    var blocks=cons.some(function(cx){return cx.day===skDay&&cx.month===skMonth&&cx.shiftKey===shKey&&cx.type==='block'&&cx.approvalStatus==='approved';});
+    var hasVac=allV.some(function(v){return v.status==='approved'&&v.worker===r.name&&(v.days||[]).some(function(vd){return vd.day===skDay&&vd.month===skMonth;});});
+    var prefers=cons.some(function(cx){return cx.day===skDay&&cx.month===skMonth&&cx.shiftKey===shKey&&cx.type==='prefer'&&cx.approvalStatus==='approved';});
+    var icon=hasVac?'[חופשה] ':blocks?'[חסימה] ':prefers?'[+] ':'';
+    var bg=blocks?'rgba(220,38,38,.08)':'#0f1623';
+    var safeN=r.name.replace(/'/g,'\\x27');
+    return '<button onclick="doManualFill(\'' + sk + '\',\'' + shKey + '\',\'' + safeN + '\')"'
+      +' style="text-align:right;padding:.35rem .6rem;border-radius:7px;background:'+bg+';color:#e2e8f0;border:1px solid '+dc.border+'40;cursor:pointer;font-family:Heebo,sans-serif;display:flex;justify-content:space-between;width:100%">'
+      +'<span style="color:'+dc.text+';font-weight:700">'+icon+r.name+'</span>'
+      +'<span style="font-size:.6rem;background:'+dc.bg+';color:'+dc.text+';padding:.1rem .35rem;border-radius:4px">'+dc.label+'</span></button>';
+  }).join('');
+  var title=(dayObj?dayObj.label:sk)+' - '+shLabel;
+  g('modal-box').innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:.6rem">'
+    +'<div style="font-weight:900">✏️ '+title+'</div>'
+    +'<button onclick="closeModal()" style="background:none;border:none;color:#64748b;cursor:pointer">X</button></div>'
+    +'<div style="font-size:.68rem;color:#94a3b8;margin-bottom:.4rem">[חופשה]=חופשה [חסימה]=חסום [+]=ביקש לעבוד</div>'
+    +'<div style="display:flex;flex-direction:column;gap:.25rem;max-height:60vh;overflow-y:auto">'+rows+'</div>'
+    +'<button onclick="closeModal()" style="width:100%;margin-top:.5rem;padding:.4rem;border-radius:8px;background:rgba(220,38,38,.1);color:#fca5a5;border:1px solid rgba(220,38,38,.25);cursor:pointer;font-family:Heebo,sans-serif">ביטול</button>';
   g('modal').classList.add('show');
 }
 function manualFillSlot(sk,shKey,name,field){
