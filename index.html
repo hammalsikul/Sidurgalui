@@ -457,15 +457,24 @@ function checkLoaded() {
   }
 }
 // Listen on current month schedule
-window._fbListen('schedule_'+SCHED_MONTH+'_'+CURRENT_YEAR, v => { const s=v||{}; window._schedule=s.schedule||{}; window._schedReady=s.schedReady||false; window._schedOfficial=s.official||false; loaded.s=true; checkLoaded(); if(window._schedOfficial)setTimeout(autoBackup,3000); });
+window._fbListen('schedule_'+SCHED_MONTH+'_'+CURRENT_YEAR, v => {
+  const s=v||{}; window._schedule=s.schedule||{}; window._schedReady=s.schedReady||false; window._schedOfficial=s.official||false; loaded.s=true; checkLoaded();
+  if(window._schedOfficial)setTimeout(autoBackup,3000);
+  if(window._appReady&&window._schedViewMonth!=='next')renderMgrSched();
+});
 // Listen on NEXT month schedule (if different from current)
 if(CONS_MONTH!==SCHED_MONTH){
   window._fbListen('schedule_'+CONS_MONTH+'_'+CONS_YEAR, v => {
     const s=v||{};
+    // Always update from Firebase — this is the source of truth
     window._schedule_next=s.schedule||{};
     window._schedReady_next=s.schedReady||false;
     window._nextSchedOfficial=s.official||false;
     loaded.sn=true; checkLoaded();
+    // Re-render if mgr is viewing next month schedule
+    if(window._appReady&&window._schedViewMonth==='next'){
+      renderMgrSched();
+    }
   });
 } else {
   loaded.sn=true;// no next month to load
@@ -4223,6 +4232,8 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
   if(_wasNextMonth){
     // Save next month schedule
     window._schedule_next=sched;
+    window._schedReady_next=true;// mark as ready so UI shows it
+    window._nextSchedOfficial=false;
     window._fbSet(window._activeSchedKey||'schedule_'+CONS_MONTH+'_'+CONS_YEAR,{schedule:sched,schedReady:true,official:false}).then(()=>setSyncing(false));
     setSyncing(true);
     // Do NOT save to past_schedules here — only when makeOfficial() is called
