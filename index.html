@@ -3505,6 +3505,33 @@ function scoreW(name,day,month,shKey,monthC){
   if(blocksThis)s+=60; // עונש חמור — canAssign כבר חוסם אם מאושר
   // 7. סטודנטים — בונוס סופ"ש
   if(w?.pop==='student'&&(jd===5||jd===6))s-=20;
+
+  // 8. קבע — עדיפות על סטודנטים בכל מצב (כולל סופ"ש)
+  if(w?.pop==='keva')s-=10;
+
+  // 9. שוויון בין א' ל-ב': אם משמרת א' כבר מאוישת יותר — בונוס למשמרת ב'
+  if(w?.pop==='bashal'||w?.pop==='student'){
+    const _activeDaysBalance=window._activeSchedDays||SCHEDULE_DAYS;
+    const _dBalance=_activeDaysBalance.find(d=>d.day===day&&d.month===month);
+    if(_dBalance&&!_dBalance.isWeekend){
+      const _sched=window._currentSched||{};
+      const sk2=`${day}-${month}`;
+      const countA=Object.entries(_sched[sk2]||{}).filter(([k,v])=>v&&k.startsWith('a_')&&!k.includes('keva')&&!k.includes('achmash')).length;
+      const countB=Object.entries(_sched[sk2]||{}).filter(([k,v])=>v&&k.startsWith('b_')&&!k.includes('keva')&&!k.includes('achmash')).length;
+      // אם שיבוץ ב-א' וב' כבר פחות — בונוס לזה שיש בו פחות
+      if(shKey==='b'&&countB<countA)s-=6;
+      if(shKey==='a'&&countA<countB)s-=6;
+    }
+  }
+
+  // 10. שוויון אחמ"ש — מי שהיה אחמ"ש הכי פחות קיבל בונוס
+  if(ACHMASH.includes(name)){
+    const achC=Object.values(window._currentSched||{}).reduce((sum,slot)=>{
+      return sum+(Object.entries(slot||{}).some(([k,v])=>k.includes('achmash')&&v===name)?1:0);
+    },0);
+    s+=achC*5;
+  }
+
   return s+(Math.random()-.5)*0.5;
 }
 function runGenerateForMonth(){
@@ -3569,13 +3596,15 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
         if(isLikeFri){
           // שישי/ערב חג: אדם אחד בלבד לכל משמרת א' ו-ב'
           if(sh.key==='a'||sh.key==='b'){
-            // בנה ספירת סופ"ש לשוויון
-            const stuWeekendC={};_activeDays.forEach(d=>{if(!d.realWeekend&&!isChagSat(d.holiday)&&!isChagFri(d.holiday))return;const slot2=sched[`${d.day}-${d.month}`]||{};Object.values(slot2).forEach(v=>{if(v&&(WORKERS_STUDENT.includes(v)||WORKERS_BASHAL.includes(v)))stuWeekendC[v]=(stuWeekendC[v]||0)+1;});});
-            // מועמדים: סטודנטים ובש"ל — אדם אחד לפי שוויון
-            const allFriCands=elig(w=>w.pop==='student'||w.pop==='bashal',sh.key)
-              .sort((a,b)=>(stuWeekendC[a.name]||0)-(stuWeekendC[b.name]||0));
-            if(allFriCands.length)assign(allFriCands[0].name,'fri_worker',sh.key);
-            // אין פיקוד בשישי/ערב חג
+            // שישי: עדיפות קבע שביקש, אחר כך סטודנט שביקש, אחר כך שוויון
+            const friWeekendC={};_activeDays.forEach(d=>{if(!d.realWeekend&&!isChagSat(d.holiday)&&!isChagFri(d.holiday))return;const slot2=sched[`${d.day}-${d.month}`]||{};Object.values(slot2).forEach(v=>{if(v)friWeekendC[v]=(friWeekendC[v]||0)+1;});});
+            const allC2Fri=window._isNextMonthSchedule?(window._allC_next||window._allC||{}):get_allC();
+            const kevaWantedFri=elig(w=>w.pop==='keva',sh.key).filter(w=>(allC2Fri[w.name]?.constraints||[]).some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey===sh.key&&cx.type==='prefer'));
+            const stuWantedFri=elig(w=>w.pop==='student',sh.key).filter(w=>(allC2Fri[w.name]?.constraints||[]).some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey===sh.key&&cx.type==='prefer'));
+            const allFriCands=elig(w=>w.pop==='student'||w.pop==='bashal'||w.pop==='keva',sh.key).sort((a,b)=>(friWeekendC[a.name]||0)-(friWeekendC[b.name]||0));
+            const chosenFri=kevaWantedFri[0]||stuWantedFri[0]||allFriCands[0];
+            if(chosenFri)assign(chosenFri.name,'fri_worker',sh.key);
+            // בשישי: קבע ישובץ רק אם ביקש
           }
           // אין ג' בשישי/ערב חג
         } else if(isLikeSat){
@@ -3585,12 +3614,18 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
               const kp=elig(w=>w.pop==='keva',sh.key);
               if(kp.length)assign(kp[0].name,'keva',sh.key);
             } else {
-              // שבת/חג: אדם אחד בלבד — סטודנט או בש"ל לפי שוויון
-              const stuWeekendC2={};_activeDays.forEach(d=>{if(!d.realWeekend&&!isChagSat(d.holiday)&&!isChagFri(d.holiday))return;const slot2=sched[`${d.day}-${d.month}`]||{};Object.values(slot2).forEach(v=>{if(v&&(WORKERS_STUDENT.includes(v)||WORKERS_BASHAL.includes(v)))stuWeekendC2[v]=(stuWeekendC2[v]||0)+1;});});
-              const allSatCands=elig(w=>w.pop==='student'||w.pop==='bashal',sh.key)
-                .sort((a,b)=>(stuWeekendC2[a.name]||0)-(stuWeekendC2[b.name]||0));
-              if(allSatCands.length)assign(allSatCands[0].name,'sat_worker',sh.key);
-              // אין פיקוד בשבת/חג
+              // שבת/חג: אדם אחד בלבד
+              // סדר עדיפויות: קבע (אם ביקש) → סטודנט (אם ביקש) → קבע כרגיל → סטודנט כרגיל
+              const weekendC={};_activeDays.forEach(d=>{if(!d.realWeekend&&!isChagSat(d.holiday)&&!isChagFri(d.holiday))return;const slot2=sched[`${d.day}-${d.month}`]||{};Object.values(slot2).forEach(v=>{if(v)weekendC[v]=(weekendC[v]||0)+1;});});
+              const allC2=window._isNextMonthSchedule?(window._allC_next||window._allC||{}):get_allC();
+              // קבע שביקש לעבוד
+              const kevaWanted=elig(w=>w.pop==='keva',sh.key).filter(w=>(allC2[w.name]?.constraints||[]).some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey===sh.key&&cx.type==='prefer'));
+              // סטודנט שביקש
+              const stuWanted=elig(w=>w.pop==='student',sh.key).filter(w=>(allC2[w.name]?.constraints||[]).some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey===sh.key&&cx.type==='prefer'));
+              // כולם לפי שוויון
+              const allSatCands=elig(w=>w.pop==='student'||w.pop==='bashal'||w.pop==='keva',sh.key).sort((a,b)=>(weekendC[a.name]||0)-(weekendC[b.name]||0));
+              const chosen=kevaWanted[0]||stuWanted[0]||allSatCands[0];
+              if(chosen)assign(chosen.name,'sat_worker',sh.key);
             }
           } else if(sh.key==='c'){
             // צאת שבת/חג/יום העצמאות — שירות לאומי (בש"ל), מקס 2 אנשים
@@ -3639,28 +3674,50 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
       } else {
         // ══ ימי חול (ראשון–חמישי) ══
         if(sh.key==='a'||sh.key==='b'){
-          // 1. פיקוד — משמרת א': עד 2 קבע; משמרת ב': קבע אחד בלבד
+          // ── כמה עובדים כבר שובצו במשמרת המקבילה (א' vs ב') לצורך שוויון ──
+          const otherShKey=sh.key==='a'?'b':'a';
+          const otherShiftCount=Object.entries(sched[sk]).filter(([k,v])=>v&&k.startsWith(otherShKey+'_')&&!k.includes('achmash')&&!k.includes('keva')).length;
+          // ── ספירת שיבוצי אחמ"ש חודשי לשוויון ──
+          const achCounts={};Object.values(sched).forEach(slot=>Object.entries(slot||{}).forEach(([k,v])=>{if(k.includes('achmash')&&v)achCounts[v]=(achCounts[v]||0)+1;}));
+
+          // 1. פיקוד (קבע) — עדיפות ראשונה לפי אילוצים
           const kp=elig(w=>w.pop==='keva',sh.key);
           if(kp.length){
             assign(kp[0].name,'keva',sh.key);
-            // קבע נוסף — רק במשמרת א' (בוקר)
-            if(sh.key==='a'&&kp.length>1)assign(kp[1].name,'keva2',sh.key);
+            // קבע נוסף — רק במשמרת א', רק אם סה"כ משובצים עדיין מתחת ל-9
+            if(sh.key==='a'&&kp.length>1){
+              const curCount=Object.values(sched[sk]).filter(Boolean).length;
+              if(curCount<9)assign(kp[1].name,'keva2',sh.key);
+            }
           }
-          // 2. בש"ל לפי סדר דסקים: פלילי→פח"ע→סד"צ
+
+          // 2. בש"ל לפי דסקים — עם מגבלת מקס 8 עובדים (+ פיקוד = 9 סה"כ)
           DESK_ORDER.forEach(desk=>{
+            const nonKeva=Object.entries(sched[sk]).filter(([k,v])=>v&&!k.includes('keva')&&!k.includes('achmash')).length;
+            if(nonKeva>=8)return;// מקס 8 עובדים לא-פיקוד
             const p=elig(w=>w.desk===desk&&w.pop==='bashal',sh.key);
             if(p.length)assign(p[0].name,desk,sh.key);
-            // No markUnfilled per desk - post-processing will fill gaps
           });
-          // 3. סטודנטים
-          DESK_ORDER.forEach(desk=>{const p=elig(w=>w.desk===desk&&w.pop==='student',sh.key);if(p.length)assign(p[0].name,desk+'_stu',sh.key);});
-          // 4. אחמ"ש — מתוך מי שכבר שובץ, לא פיקוד
-          // אם אין מועמד מרשימת ACHMASH — הפיקוד הופך לאחמ"ש ומוסר מתפקיד "פיקוד"
+
+          // 3. סטודנטים — רק אם עדיין לא עבר מקסימום
+          // שוויון בין א' לב': אם ב' ריקה יחסית — עדיפות לאנשים שביקשו ב'
+          DESK_ORDER.forEach(desk=>{
+            const nonKeva=Object.entries(sched[sk]).filter(([k,v])=>v&&!k.includes('keva')&&!k.includes('achmash')).length;
+            if(nonKeva>=8)return;
+            const p=elig(w=>w.desk===desk&&w.pop==='student',sh.key);
+            if(p.length)assign(p[0].name,desk+'_stu',sh.key);
+          });
+
+          // 4. שוויון בין משמרות א' ו-ב':
+          // אם משמרת זו כבר יש יותר עובדים מהמקבילה — לא להוסיף עוד
+          // (כבר מטופל ע"י scoreW שמעדיף מי שביקש)
+
+          // 5. אחמ"ש — שוויון מקסימלי בין רשימת ACHMASH
           const inShift=Object.entries(sched[sk]).filter(([k,v])=>v&&k.startsWith(sh.key+'_')&&!k.includes('achmash')&&!k.includes('keva')).map(([,v])=>v);
           const cands=inShift.filter(n=>ACHMASH.includes(n));
-          const counts={};Object.values(sched).forEach(slot=>Object.entries(slot||{}).forEach(([k,v])=>{if(k.includes('achmash')&&v)counts[v]=(counts[v]||0)+1;}));
           if(cands.length){
-            cands.sort((a,b)=>(counts[a]||0)-(counts[b]||0));
+            // שוויון: מי שהיה אחמ"ש הכי מעט
+            cands.sort((a,b)=>(achCounts[a]||0)-(achCounts[b]||0));
             sched[sk][`${sh.key}_achmash`]=cands[0];
           } else {
             // אין אחמ"ש — פיקוד הופך לאחמ"ש
