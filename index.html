@@ -3200,7 +3200,7 @@ function makeOfficial(){
 function downloadPDF(){
   const el=document.getElementById('sched-output');
   if(!el)return;
-  const _isNextMonth=window._schedViewMonth==='next'&&!!(window._schedule_next&&Object.keys(window._schedule_next).length);
+  const _isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
   const _label=_isNextMonth?NEXT_MONTH_LABEL:MONTH_LABEL;
   const _official=_isNextMonth?false:get_schedOfficial();
   const win=window.open('','_blank');
@@ -3222,11 +3222,11 @@ function downloadPDF(){
   win.document.close();
 }
 function buildPDFTable(){
-  // Use _schedViewMonth directly — don't depend on CONS_MONTH comparison
-  // which fails when today is before the 15th
-  const _isNextMonth=window._schedViewMonth==='next'&&!!(window._schedule_next&&Object.keys(window._schedule_next).length);
-  const schedule=_isNextMonth?(window._schedule_next||{}):get_schedule();
-  const days=_isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+  // Use IDENTICAL condition to buildSchedOutput for consistency
+  const _isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  // Use the exact schedule currently shown on screen
+  const schedule=window._currentViewSched||((_isNextMonth?(window._schedule_next||{}):get_schedule()));
+  const days=window._currentViewDays||((_isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS));
   const weeks=getWeeks(days);
   const shL={a:'א׳ 07:00-15:00',b:'ב׳ 15:00-21:30',c:'ג׳ 21:30-07:00'};
   return weeks.map((wk,wi)=>{
@@ -3262,6 +3262,9 @@ function buildSchedOutput(){
   const _isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
   const _viewDays=_isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
   const _viewSched=_isNextMonth?(window._schedule_next||{}):get_schedule();
+  // Store currently viewed schedule for PDF export
+  window._currentViewSched=_viewSched;
+  window._currentViewDays=_viewDays;
   const weeks=getWeeks(_viewDays);
   if(mgrSchedView==='month')return weeks.map((wk,i)=>`<div style="margin-bottom:1rem"><div style="font-size:.68rem;color:#64748b;font-weight:700;margin-bottom:.3rem">שבוע ${i+1}</div>${buildWeekTable(wk,_viewSched)}</div>`).join('');
   const wk=weeks[mgrSchedWeek]||[];
