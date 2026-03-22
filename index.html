@@ -3238,11 +3238,9 @@ function downloadPDF(){
   const _isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
   const _label=_isNextMonth?NEXT_MONTH_LABEL:MONTH_LABEL;
   const _official=_isNextMonth?false:get_schedOfficial();
-  // Ensure _currentViewSched is up to date before PDF
-  if(!window._currentViewSched||Object.keys(window._currentViewSched).length===0){
-    window._currentViewSched=_isNextMonth?(window._schedule_next||{}):get_schedule();
-    window._currentViewDays=_isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
-  }
+  // Always force-refresh from current state — never use stale cache
+  window._currentViewSched=_isNextMonth?(window._schedule_next||{}):get_schedule();
+  window._currentViewDays=_isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
   const win=window.open('','_blank');
   win.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>סידור ${_label}</title>
   <style>
@@ -3262,11 +3260,9 @@ function downloadPDF(){
   win.document.close();
 }
 function buildPDFTable(){
-  // Use IDENTICAL condition to buildSchedOutput for consistency
-  const _isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
-  // Use the exact schedule currently shown on screen
-  const schedule=window._currentViewSched||((_isNextMonth?(window._schedule_next||{}):get_schedule()));
-  const days=window._currentViewDays||((_isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS));
+  // Use what downloadPDF just set — guaranteed fresh
+  const schedule=window._currentViewSched||{};
+  const days=window._currentViewDays||SCHEDULE_DAYS;
   const weeks=getWeeks(days);
   const shL={a:'א׳ 07:00-15:00',b:'ב׳ 15:00-21:30',c:'ג׳ 21:30-07:00'};
   return weeks.map((wk,wi)=>{
@@ -3800,11 +3796,35 @@ function runGenerate(){
   // מיון: קבע קודם, אחר כך בש"ל, אחר כך סטודנטים
   const popOrder={keva:0,bashal:1,student:2};
   const constraintsByDay={};
+  // Track which shift each worker is assigned on each day (to pick best shift if multiple)
+  const workerDayConsByShift={};// workerDayConsByShift[name-day-month] = [shKeys]
   ALL_WORKERS.forEach(name=>{
     const pop=POP_MAP[name]||'bashal';
     (allC_pass0[name]?.constraints||[])
       .filter(cx=>cx.type==='prefer'&&cx.approvalStatus==='approved')
       .forEach(cx=>{
+        const dayKey=`${name}-${cx.day}-${cx.month}`;
+        if(!workerDayConsByShift[dayKey])workerDayConsByShift[dayKey]=[];
+        workerDayConsByShift[dayKey].push(cx.shiftKey);
+      });
+  });
+  ALL_WORKERS.forEach(name=>{
+    const pop=POP_MAP[name]||'bashal';
+    const daysSeen={};// daysSeen[day-month] = shKey already queued
+    (allC_pass0[name]?.constraints||[])
+      .filter(cx=>cx.type==='prefer'&&cx.approvalStatus==='approved')
+      .sort((a,b)=>{
+        // If worker has multiple shifts on same day, pick the type they've done LEAST
+        // (shiftTypeCounts lower = higher priority = sort earlier)
+        const stc=window._shiftTypeCounts||{};
+        const countA=(stc[`${name}_${a.shiftKey}`]||0);
+        const countB=(stc[`${name}_${b.shiftKey}`]||0);
+        return countA-countB;// fewer of this type = pick it first
+      })
+      .forEach(cx=>{
+        const dayKey=`${cx.day}-${cx.month}`;
+        if(daysSeen[dayKey])return;// already queued a shift for this worker on this day
+        daysSeen[dayKey]=cx.shiftKey;
         const key=`${cx.day}-${cx.month}-${cx.shiftKey}`;
         if(!constraintsByDay[key])constraintsByDay[key]=[];
         constraintsByDay[key].push({name,pop,shiftKey:cx.shiftKey,day:cx.day,month:cx.month});
@@ -3823,8 +3843,13 @@ function runGenerate(){
     ['a','b','c'].forEach(shKey=>{
       const key=`${day}-${month}-${shKey}`;
       const cands=constraintsByDay[key]||[];
+      // If worker already assigned today to a different shift — check if this shift is better
       cands.forEach(({name,pop})=>{
-        if(usedToday0.has(name))return;// כבר שובץ היום
+        if(usedToday0.has(name)){
+          // Worker already assigned today — only block if they're in the SAME shift type
+          // (can't work two shifts). Since usedToday0 is per-day, skip entirely
+          return;
+        }
         // בדוק חסימות בסיסיות בלבד (לא מכסה שבועית לסטודנטים)
         const allV0=get_allV();
         if(allV0.some(v=>v.status==='approved'&&v.worker===name&&v.days?.some(vd=>vd.day===day&&vd.month===month)))return;
