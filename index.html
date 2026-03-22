@@ -3233,15 +3233,22 @@ function buildPDFTable(){
       const cells=wk.map(d=>{
         const sk=`${d.day}-${d.month}`;const slot=schedule[sk]||{};
         const names=[];
-        if(slot[`${sh.key}_keva`])names.push('<b>פיקוד: </b>'+slot[`${sh.key}_keva`]);
-        if(slot[`${sh.key}_achmash`])names.push('<b>אחמ"ש: </b>'+slot[`${sh.key}_achmash`]);
-        Object.entries(slot).forEach(([k,v])=>{
-          if(!v)return;
-          if(!k.startsWith(sh.key+'_'))return;
-          if(k===`${sh.key}_keva`||k===`${sh.key}_achmash`)return;
-          const desk=DESK_MAP[v]||'';
-          names.push(desk?`${v} (${desk})`:v);
+        const addName=(v,prefix)=>{if(!v)return;const desk=DESK_MAP[v]||'';const label=prefix||(desk?`${v} (${desk})`:v);names.push(label);};
+        // Mirror buildWeekTable field order exactly
+        addName(slot[`${sh.key}_keva`],'<b>פיקוד: </b>'+slot[`${sh.key}_keva`]);
+        addName(slot[`${sh.key}_keva2`],'<b>פיקוד נוסף: </b>'+slot[`${sh.key}_keva2`]);
+        addName(slot[`${sh.key}_achmash`],'<b>אחמ"ש: </b>'+slot[`${sh.key}_achmash`]);
+        // Desks + students
+        const seen=new Set([slot[`${sh.key}_keva`],slot[`${sh.key}_keva2`],slot[`${sh.key}_achmash`]].filter(Boolean));
+        ['sadatz','plili','paha'].forEach(desk=>{
+          const v=slot[`${sh.key}_${desk}`];const vs=slot[`${sh.key}_${desk}_stu`];
+          if(v&&!seen.has(v)){seen.add(v);addName(v);}
+          if(vs&&!seen.has(vs)){seen.add(vs);addName(vs);}
         });
+        // fill fields (pass0/pass2)
+        let fi=1;while(slot[`${sh.key}_fill${fi}`]){const v=slot[`${sh.key}_fill${fi}`];if(!seen.has(v)){seen.add(v);addName(v);}fi++;}
+        // p1/p2 (night), sat_worker, fri_worker
+        ['p1','p2','sat_worker','fri_worker'].forEach(f=>{const v=slot[`${sh.key}_${f}`];if(v&&!seen.has(v)){seen.add(v);addName(v);}});
         return`<td style="font-size:8px;text-align:right">${names.join('<br>')||'—'}</td>`;
       }).join('');
       return`<tr><td style="background:#eee;font-weight:bold;white-space:nowrap">${shL[sh.key]}</td>${cells}</tr>`;
