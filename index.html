@@ -3139,8 +3139,8 @@ function renderMgrSched(){
   // Month switcher for schedule
   const isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
   // effectiveReady: for next month use _schedule_next existence, for current use normal ready flag
-  const effectiveReady=isNextMonth?(window._schedReady_next||false):ready;
-  const activeSchedDays=isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+  const effectiveReady=get_active_ready();
+  const activeSchedDays=get_active_days();
   const activeMLabel=isNextMonth?NEXT_MONTH_LABEL:MONTH_LABEL;
   const nextMonthBtn=CONS_MONTH!==SCHED_MONTH?`
     <button class="btn" style="background:${isNextMonth?'rgba(99,102,241,.2)':'rgba(99,102,241,.08)'};color:#a5b4fc;border:1px solid rgba(99,102,241,.35);font-size:.78rem" onclick="toggleSchedMonth()">${isNextMonth?'🔙 '+MONTH_LABEL:'⏭ '+NEXT_MONTH_LABEL}</button>`:'';
@@ -3180,8 +3180,7 @@ function renderMgrSched(){
   }
 }
 function openManualFillModal(sk,shKey){
-  const isNextView=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
-  const schedule=isNextView?(window._schedule_next||{}):get_schedule();
+  const schedule=get_active_schedule();
   const shL={a:'א בוקר',b:'ב ערב',c:'ג לילה'};
   const shLabel=shL[shKey]||shKey;
   const dayObj=(isNextView?NEXT_MONTH_DAYS:SCHEDULE_DAYS).find(function(d){return d.day+'-'+d.month===sk;});
@@ -3223,8 +3222,7 @@ function manualFillSlot(sk,shKey,name,field){
 }
 
 function doManualFill(sk,shKey,name){
-  const isNextView=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
-  const schedule=isNextView?(window._schedule_next||{}):get_schedule();
+  const schedule=get_active_schedule();
   const [d,m]=sk.split('-').map(Number);
   const allC=get_allC();
   const allV=get_allV();
@@ -3244,14 +3242,7 @@ function doManualFill(sk,shKey,name){
 
   // Save
   const ns={...schedule,[sk]:{...(schedule[sk]||{}),[field]:name}};
-  if(isNextView){
-    window._schedule_next=ns;
-    window._currentViewSched=ns;
-    window._fbSet('schedule_'+CONS_MONTH+'_'+CONS_YEAR,{schedule:ns,schedReady:true,official:false}).then(()=>setSyncing(false));
-  } else {
-    saveS(ns,get_schedReady(),undefined,false);
-    window._currentViewSched=ns;
-  }
+  save_active_schedule(ns);
 
   // Remove from unfilled ONLY after save
   window._unfilledShifts=(window._unfilledShifts||[]).filter(u=>!(u.day==d&&u.month==m&&u.shKey===shKey));
@@ -3261,20 +3252,22 @@ function doManualFill(sk,shKey,name){
 }
 function makeOfficial(){
   const isNextView=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
-  const sched=isNextView?(window._schedule_next&&Object.keys(window._schedule_next).length>0?window._schedule_next:null):get_schedule();
-  if(isNextView&&!sched){toast('❌ אין סידור לאפריל — יש ליצור סידור תחילה');return;}
+  const sched=get_active_schedule();
+  if(!sched||Object.keys(sched).length===0){toast('❌ אין סידור — יש ליצור סידור תחילה');return;}
   const wasOfficial=isNextView?window._nextSchedOfficial:get_schedOfficial();
   const mLabel=isNextView?NEXT_MONTH_LABEL:MONTH_LABEL;
   const msg=wasOfficial
     ?`⚠️ הסידור של ${mLabel} כבר רשמי.\nהגדרה מחדש תחליף את הגרסה הרשמית הקיימת.\nלהמשיך?`
     :`להגדיר את סידור ${mLabel} כרשמי?\nלאחר מכן כל שינוי ידני יציג אזהרה.`;
   if(!confirm(msg))return;
-  if(isNextView){
-    // Save next month as official
+  const isNextOff=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  if(isNextOff){
     window._nextSchedOfficial=true;
-    window._fbSet(window._activeSchedKey||'schedule_'+CONS_MONTH+'_'+CONS_YEAR,{schedule:sched,schedReady:true,official:true}).then(()=>setSyncing(false));
-    // Save to past_schedules NOW (only when official)
-    const key=`${CONS_YEAR}_${CONS_MONTH}`;
+    window._schedule_next=sched;
+    window._schedReady_next=true;
+    const fbKey='schedule_'+CONS_MONTH+'_'+CONS_YEAR;
+    window._fbSet(fbKey,{schedule:sched,schedReady:true,official:true}).then(()=>setSyncing(false));
+    const key=CONS_YEAR+'_'+CONS_MONTH;
     const past=get_pastSchedules();
     past[key]={schedule:sched,schedReady:true,month:CONS_MONTH,year:CONS_YEAR,label:NEXT_MONTH_LABEL,official:true};
     window._fbSet('past_schedules',past).catch(()=>{});
@@ -3293,8 +3286,8 @@ function downloadPDF(){
   const _label=_isNextMonth?NEXT_MONTH_LABEL:MONTH_LABEL;
   const _official=_isNextMonth?false:get_schedOfficial();
   // Get schedule directly — pass to buildPDFTable to avoid any global state issues
-  const pdfSched=_isNextMonth?(window._schedule_next&&Object.keys(window._schedule_next).length>0?window._schedule_next:get_schedule()):get_schedule();
-  const pdfDays=_isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+  const pdfSched=get_active_schedule();
+  const pdfDays=get_active_days();
   const win=window.open('','_blank');
   if(!win){alert('אפשר לפתוח חלון חדש? אפשר חלונות קופצים בדפדפן');return;}
   win.document.write('<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>סידור '+_label+'</title><style>body{font-family:Arial,sans-serif;direction:rtl;font-size:10px;color:#000;background:#fff}table{border-collapse:collapse;width:100%;margin-bottom:12px}th,td{border:1px solid #999;padding:3px 4px;text-align:center;font-size:9px}th{background:#eee;font-weight:bold}h2{font-size:14px;margin-bottom:8px}.official{color:green;font-weight:bold}.week-title{font-weight:bold;margin:8px 0 4px;font-size:11px}@media print{button{display:none}}</style></head><body><h2>⬡ הסידור הגלוי — '+_label+(_official?' <span style="color:green;font-weight:bold">✅ רשמי</span>':'')+'</h2>'+buildPDFTable(pdfSched,pdfDays)+'<br><button onclick="window.print()">🖨️ הדפס / שמור PDF</button></body></html>');
@@ -3336,10 +3329,8 @@ function buildPDFTable(schedule,days){
   }).join('');
 }
 function buildSchedOutput(){
-  const _isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
-  const _viewDays=_isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
-  const _viewSched=_isNextMonth?(window._schedule_next&&Object.keys(window._schedule_next).length>0?window._schedule_next:{}):get_schedule();
-  // Store currently viewed schedule for PDF export
+  const _viewSched=get_active_schedule();
+  const _viewDays=get_active_days();
   window._currentViewSched=_viewSched;
   window._currentViewDays=_viewDays;
   const weeks=getWeeks(_viewDays);
@@ -3477,8 +3468,7 @@ function openCellModal(sk,field){
   g('modal').classList.add('show');
 }
 function cellSet(sk,field,name){
-  const isNextView=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
-  const schedule=isNextView?(window._schedule_next||{}):get_schedule();
+  const schedule=get_active_schedule();
   const shKey=field.split('_')[0];
   // Check conflict with constraints
   if(name){
@@ -3505,12 +3495,7 @@ function cellSet(sk,field,name){
     // Check: worker placed has no prefer? — that's fine, no alert needed
   }
   const ns={...schedule,[sk]:{...schedule[sk],[field]:name||null}};
-  if(isNextView){
-    window._schedule_next=ns;
-    window._fbSet('schedule_'+CONS_MONTH+'_'+CONS_YEAR,{schedule:ns,schedReady:true,official:false}).then(()=>setSyncing(false));
-  } else {
-    saveS(ns,get_schedReady(),undefined,false);
-  }
+  save_active_schedule(ns);
   // Remove from unfilled list if applicable
   if(name){
     const [skd,skm]=sk.split('-');
