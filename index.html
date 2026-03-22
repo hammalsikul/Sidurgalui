@@ -1708,12 +1708,12 @@ function renderMgrJustice(){
         const inDay=Object.entries(slot).filter(([k,v])=>v===name&&!k.includes('achmash'));
         inDay.forEach(([k])=>{
           const shKey=k.split('_')[0];
+          const isWE=d.realWeekend||(d.holiday&&(isChagSat(d.holiday)||isChagFri(d.holiday)));
           if(shKey==='a')a++;
           else if(shKey==='b')b++;
-          else if(shKey==='c')night++;
-          if(d.realWeekend||(d.holiday&&(isChagSat(d.holiday)||isChagFri(d.holiday)))){
-            if(['a','b','c'].includes(shKey))weekend++;
-          }
+          else if(shKey==='c')night++;// כולל מוצ"ש — לא מפריד
+          // סו"ש: רק א' וב' בסופ"ש (לא לילה — לילה נספר בעמודת ג')
+          if(isWE&&(shKey==='a'||shKey==='b'))weekend++;
         });
       });
       const total=a+b+night;
@@ -1762,7 +1762,7 @@ function renderMgrJustice(){
             <th style="text-align:center;padding:.3rem .4rem;font-size:.65rem;color:#93c5fd">א׳</th>
             <th style="text-align:center;padding:.3rem .4rem;font-size:.65rem;color:#a78bfa">ב׳</th>
             <th style="text-align:center;padding:.3rem .4rem;font-size:.65rem;color:#fcd34d">ג׳</th>
-            <th style="text-align:center;padding:.3rem .4rem;font-size:.65rem;color:#6ee7b7">סו"ש</th>
+            <th style="text-align:center;padding:.3rem .4rem;font-size:.65rem;color:#6ee7b7">סו"ש א'/ב'</th>
             <th style="text-align:center;padding:.3rem .4rem;font-size:.65rem;color:#e2e8f0">סה"כ</th>
           </tr></thead>
           <tbody>${rows_html}${avg_row}</tbody>
@@ -1790,7 +1790,7 @@ function renderMgrJustice(){
     <div style="font-weight:900;font-size:.9rem;margin-bottom:.5rem;color:#e2e8f0">⚖️ טבלת צדק — ${activeLabel}</div>
     ${monthBtns}
     <div style="font-size:.72rem;color:#64748b;margin-bottom:.75rem">
-      🟢 = מעל הממוצע בקבוצה &nbsp;|&nbsp; 🔴 = מתחת לממוצע &nbsp;|&nbsp; עמודת ג׳ ו-סו"ש: אדום = יותר מהממוצע
+      🟢 = מעל הממוצע בקבוצה &nbsp;|&nbsp; 🔴 = מתחת לממוצע &nbsp;|&nbsp; ג׳ = סה"כ לילות (כולל מוצ"ש) | סו"ש = א'/ב' בלבד
     </div>
     ${!ready&&!choufReady?'<div style="text-align:center;color:#475569;padding:2rem">צור תחילה סידור כדי לראות נתונים</div>':''}
     ${ready?`
@@ -4201,7 +4201,7 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
           if(lastS[name]==='c')continue;
 
           // נסה לשבץ במשמרת הפנויה ביותר (א' קודם, אחר כך ב')
-          const shifts2=isLikeSat2?['a','b']:['a','b','c'];
+          const shifts2=isLikeSat2?['a','b']:isLikeFri2?['a','b']:['b','a','c'];// prefer 'b' in pass2 to balance
           for(const shKey2 of shifts2){
             // קבע לא בלילה
             if(pop==='keva'&&shKey2==='c')continue;
@@ -4226,7 +4226,7 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
             lastS[name]=shKey2;
             if(shKey2==='c'&&pop==='bashal'){window._nightWkC=window._nightWkC||{};window._nightWkC[name]=(window._nightWkC[name]||0)+1;window._nightCounts[name]=(window._nightCounts[name]||0)+1;}
             filled++;
-            break;
+            break;// found a shift for this day, move to next day
           }
         }
       });
