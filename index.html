@@ -3505,7 +3505,7 @@ function canAssign(name,day,month,shKey,usedToday,monthC,wkC,lastS,stuH,sunOff){
   if(w.pop==='student'&&isLikeSat&&shKey==='c')return false;
   // ג' בשבת/חג — רק בש"ל (צאת שבת/חג)
   if(isLikeSat&&shKey==='c'){if(w.pop!=='bashal')return false;if(NO_SAT_NIGHT.includes(name))return false;}
-  // Weekly shifts cap — per-worker (default 5, exceptions via WEEKLY_CAP_OVERRIDE)
+  // Weekly shifts cap — bashal/keva only (students have NO weekly cap)
   if((w.pop==='bashal'||w.pop==='keva')&&(wkC[name]||0)>=weeklyCapFor(name))return false;
   // בש"ל: מקסימום משמרת לילה אחת בשבוע (ראשון-שבת)
   if(w.pop==='bashal'&&shKey==='c'&&((window._nightWkC||{})[name]||0)>=1)return false;
@@ -3612,8 +3612,76 @@ function runGenerate(){
   const monthC={},wkC={},lastS={},stuH={},sunOff={},kevWkCarry={};const sched={};
   const _activeDays=window._activeSchedDays||SCHEDULE_DAYS;
   window._currentSched=sched;// expose to canAssign for previous-day check
+  // ══ PASS 0: שיבוץ אילוצים מאושרים תחילה ══
+  // בנה מפה של אילוצים לפי תאריך+משמרת
+  const allC_pass0=window._isNextMonthSchedule?(window._allC_next||window._allC||{}):get_allC();
+  // מיון: קבע קודם, אחר כך בש"ל, אחר כך סטודנטים
+  const popOrder={keva:0,bashal:1,student:2};
+  const constraintsByDay={};
+  ALL_WORKERS.forEach(name=>{
+    const pop=POP_MAP[name]||'bashal';
+    (allC_pass0[name]?.constraints||[])
+      .filter(cx=>cx.type==='prefer'&&cx.approvalStatus==='approved')
+      .forEach(cx=>{
+        const key=`${cx.day}-${cx.month}-${cx.shiftKey}`;
+        if(!constraintsByDay[key])constraintsByDay[key]=[];
+        constraintsByDay[key].push({name,pop,shiftKey:cx.shiftKey,day:cx.day,month:cx.month});
+      });
+  });
+  // מיין כל קבוצת אילוצים: קבע ראשון
+  Object.values(constraintsByDay).forEach(arr=>arr.sort((a,b)=>(popOrder[a.pop]||1)-(popOrder[b.pop]||1)));
+  // אתחל sched לפני ה-pass0
+  _activeDays.forEach(({day,month})=>{const sk=`${day}-${month}`;sched[sk]={};});
+
   _activeDays.forEach(({day,month,isWeekend,isFri,isSat,jsDay})=>{
-    const sk=`${day}-${month}`;sched[sk]={};const usedToday=new Set();
+    const sk=`${day}-${month}`;const usedToday0=new Set();
+    const dObj0=_activeDays.find(d=>d.day===day&&d.month===month);
+    const hol0=dObj0?.holiday||null;
+    const isLikeSat0=isSat||isChagSat(hol0);const isLikeFri0=isFri||isChagFri(hol0);
+    ['a','b','c'].forEach(shKey=>{
+      const key=`${day}-${month}-${shKey}`;
+      const cands=constraintsByDay[key]||[];
+      cands.forEach(({name,pop})=>{
+        if(usedToday0.has(name))return;// כבר שובץ היום
+        // בדוק חסימות בסיסיות בלבד (לא מכסה שבועית לסטודנטים)
+        const allV0=get_allV();
+        if(allV0.some(v=>v.status==='approved'&&v.worker===name&&v.days?.some(vd=>vd.day===day&&vd.month===month)))return;
+        if(shKey==='c'&&POP_MAP[name]==='keva')return;// קבע לא בלילה
+        if((isLikeSat0||isLikeFri0)&&POP_MAP[name]==='bashal'&&!isLikeSat0)return;
+        if(isLikeSat0&&shKey==='c'&&POP_MAP[name]!=='bashal')return;
+        if(isLikeSat0&&shKey==='c'&&NO_SAT_NIGHT.includes(name))return;
+        // בדוק לא לילה אחרי לילה
+        if(shKey==='a'&&lastS[name]==='c')return;
+        if(shKey==='c'&&lastS[name]==='c')return;
+        // בדוק שלא עבד לילה בשבוע זה (בש"ל בלבד)
+        if(shKey==='c'&&POP_MAP[name]==='bashal'&&((window._nightWkC||{})[name]||0)>=1)return;
+        // מכסה שבועית — רק לקבע ובש"ל, לא לסטודנטים
+        if((POP_MAP[name]==='bashal'||POP_MAP[name]==='keva')&&(wkC[name]||0)>=weeklyCapFor(name))return;
+        // שבצ — קבע את הדסק/שדה המתאים
+        const w=ROSTER.find(r=>r.name===name);
+        let field='fill0_'+name.replace(/\s/g,'_');
+        if(pop==='keva')field='keva';
+        else if(pop==='student')field=`${w?.desk||'plili'}_stu`;
+        else field=w?.desk||'plili';
+        // אל תדרוס שיבוץ קיים של קבע בשדה זה
+        if(sched[sk][`${shKey}_${field}`])field=field+'_x'+name.replace(/\s/g,'_');
+        sched[sk][`${shKey}_${field}`]=name;
+        usedToday0.add(name);
+        monthC[name]=(monthC[name]||0)+1;wkC[name]=(wkC[name]||0)+1;lastS[name]=shKey;
+        if(shKey==='c'&&POP_MAP[name]==='bashal'){window._nightWkC=window._nightWkC||{};window._nightWkC[name]=(window._nightWkC[name]||0)+1;}
+        const _stc=window._shiftTypeCounts;_stc[`${name}_${shKey}`]=(_stc[`${name}_${shKey}`]||0)+1;
+        if(shKey==='c'){window._nightCounts[name]=(window._nightCounts[name]||0)+1;}
+        if(POP_MAP[name]==='student')stuH[name]=(stuH[name]||0)+(SHIFT_HOURS[shKey]||8);
+      });
+    });
+  });
+  // ══ END PASS 0 ══
+
+  _activeDays.forEach(({day,month,isWeekend,isFri,isSat,jsDay})=>{
+    const sk=`${day}-${month}`;
+    // sched[sk] already initialized in pass0 — don't reset it
+    if(!sched[sk])sched[sk]={};
+    const usedToday=new Set(Object.values(sched[sk]).filter(Boolean));
     const dObj=_activeDays.find(d=>d.day===day&&d.month===month);
     const hol=dObj?.holiday||null;
     const isLikeSat=isSat||isChagSat(hol);
@@ -3624,6 +3692,8 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
     const elig=(filter,shKey)=>ROSTER.filter(r=>filter(r)&&canAssign(r.name,day,month,shKey,usedToday,monthC,wkC,lastS,stuH,sunOff)).sort((a,b)=>scoreW(a.name,day,month,shKey,monthC)-scoreW(b.name,day,month,shKey,monthC));
     const assign=(name,field,shKey,isSatNight)=>{
       if(!name)return;
+      // Don't overwrite pass0 assignments
+      if(sched[sk][`${shKey}_${field}`])return;
       sched[sk][`${shKey}_${field}`]=name;usedToday.add(name);
       monthC[name]=(monthC[name]||0)+1;wkC[name]=(wkC[name]||0)+1;lastS[name]=shKey;
       if(shKey==='c'&&POP_MAP[name]==='bashal'){window._nightWkC=window._nightWkC||{};window._nightWkC[name]=(window._nightWkC[name]||0)+1;}
@@ -3889,7 +3959,13 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
         const w=ROSTER.find(r=>r.name===name);
         // Was worker assigned elsewhere today?
         const workedToday=Object.values(slot).includes(name);
-        if(workedToday){reason='שובץ למשמרת אחרת באותו יום';}
+        if(workedToday){
+          // Find which shift they're in
+          const theirShift=Object.entries(slot).find(([k,v])=>v===name&&!k.includes('achmash'));
+          const theirShKey=theirShift?theirShift[0].split('_')[0]:null;
+          const shNames={a:'א׳ (בוקר)',b:'ב׳ (ערב)',c:'ג׳ (לילה)'};
+          reason='שובץ למשמרת '+( shNames[theirShKey]||theirShKey||'אחרת')+' באותו יום';
+        }
         else{
           // Count how many already in this shift
           const inShiftCount=Object.entries(slot).filter(([k,v])=>v&&k.startsWith(cx.shiftKey+'_')&&!k.includes('keva')&&!k.includes('achmash')).length;
