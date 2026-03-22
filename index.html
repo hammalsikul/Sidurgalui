@@ -458,6 +458,18 @@ function checkLoaded() {
 }
 // Listen on current month schedule
 window._fbListen('schedule_'+SCHED_MONTH+'_'+CURRENT_YEAR, v => { const s=v||{}; window._schedule=s.schedule||{}; window._schedReady=s.schedReady||false; window._schedOfficial=s.official||false; loaded.s=true; checkLoaded(); if(window._schedOfficial)setTimeout(autoBackup,3000); });
+// Listen on NEXT month schedule (if different from current)
+if(CONS_MONTH!==SCHED_MONTH){
+  window._fbListen('schedule_'+CONS_MONTH+'_'+CONS_YEAR, v => {
+    const s=v||{};
+    window._schedule_next=s.schedule||{};
+    window._schedReady_next=s.schedReady||false;
+    window._nextSchedOfficial=s.official||false;
+    loaded.sn=true; checkLoaded();
+  });
+} else {
+  loaded.sn=true;// no next month to load
+}
 // Load previous month schedule for cross-month carry check
 const _PREV_SCHED_MONTH=SCHED_MONTH===1?12:SCHED_MONTH-1;
 const _PREV_SCHED_YEAR=SCHED_MONTH===1?CURRENT_YEAR-1:CURRENT_YEAR;
@@ -3118,7 +3130,7 @@ function renderMgrSched(){
   // Month switcher for schedule
   const isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
   // effectiveReady: for next month use _schedule_next existence, for current use normal ready flag
-  const effectiveReady=isNextMonth?(!!window._schedule_next&&Object.keys(window._schedule_next).length>0):ready;
+  const effectiveReady=isNextMonth?(window._schedReady_next||false):ready;
   const activeSchedDays=isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
   const activeMLabel=isNextMonth?NEXT_MONTH_LABEL:MONTH_LABEL;
   const nextMonthBtn=CONS_MONTH!==SCHED_MONTH?`
@@ -3240,7 +3252,8 @@ function doManualFill(sk,shKey,name){
 }
 function makeOfficial(){
   const isNextView=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
-  const sched=isNextView?(window._schedule_next||get_schedule()):get_schedule();
+  const sched=isNextView?(window._schedule_next&&Object.keys(window._schedule_next).length>0?window._schedule_next:null):get_schedule();
+  if(isNextView&&!sched){toast('❌ אין סידור לאפריל — יש ליצור סידור תחילה');return;}
   const wasOfficial=isNextView?window._nextSchedOfficial:get_schedOfficial();
   const mLabel=isNextView?NEXT_MONTH_LABEL:MONTH_LABEL;
   const msg=wasOfficial
@@ -3316,7 +3329,7 @@ function buildPDFTable(schedule,days){
 function buildSchedOutput(){
   const _isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
   const _viewDays=_isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
-  const _viewSched=_isNextMonth?(window._schedule_next||{}):get_schedule();
+  const _viewSched=_isNextMonth?(window._schedule_next&&Object.keys(window._schedule_next).length>0?window._schedule_next:{}):get_schedule();
   // Store currently viewed schedule for PDF export
   window._currentViewSched=_viewSched;
   window._currentViewDays=_viewDays;
