@@ -73,7 +73,7 @@ select option{background:#0f1623;color:#e2e8f0}
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <!-- v20260322_1349 -->
+  <!-- v20260322_1658 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="הסידור הגלוי">
@@ -3934,15 +3934,8 @@ function runGenerate(){
           }
         }
         // מכסה שבועית — רק לבש"ל (לא לסטודנטים ולא לקבע)
-        // Note: wkC resets each Sunday in the main loop, but pass0 runs before that.
-        // So we track a per-week count for pass0 manually.
-        if(POP_MAP[name]==='bashal'){
-          // Count how many WEEKDAY shifts assigned this week so far in sched
-          const dayWeekStart=new Date(_activeDays[0]?.year||new Date().getFullYear(),day.month-1||cx.month-1,cx.day).getDay();
-          // Simple check: use wkC which tracks current week
-          if((wkC[name]||0)>=weeklyCapFor(name))return;
-        }
-        // שבצ — קבע את הדסק/שדה המתאים
+        // מכסה שבועית — רק לבש"ל (לא לסטודנטים ולא לקבע)
+        if(POP_MAP[name]==='bashal'&&(wkC[name]||0)>=weeklyCapFor(name))return;
         const w=ROSTER.find(r=>r.name===name);
         let field;
         if(pop==='keva')field='keva';
@@ -4367,10 +4360,9 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
           const hol2=dObj2?.holiday||null;
           const isLikeSat2=d.isSat||isChagSat(hol2);
           const isLikeFri2=d.isFri||isChagFri(hol2);
-          // בש"ל לא בשישי/ערב חג ולא א'/ב' בשבת/חג
+          // בש"ל לא בשישי/ערב חג
           if(pop==='bashal'&&isLikeFri2)continue;
-          if(pop==='bashal'&&isLikeSat2&&(shKey2==='a'||shKey2==='b'))continue;
-          // קבע לא בסופ"ש (אלא אם ביקש)
+          // קבע לא בסופ"ש
           if(pop==='keva'&&(isLikeFri2||isLikeSat2))continue;
 
           const workedToday2=Object.values(sched[sk2]||{}).includes(name);
@@ -4384,8 +4376,10 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
           if(lastS[name]==='c')continue;
 
           // נסה לשבץ במשמרת הפנויה ביותר (א' קודם, אחר כך ב')
-          const shifts2=isLikeSat2?['a','b']:isLikeFri2?['a','b']:['b','a','c'];// prefer 'b' in pass2 to balance
+          const shifts2=isLikeSat2?['a','b']:['b','a','c'];// סוש: רק א/ב
           for(const shKey2 of shifts2){
+            // בש"ל: לא א'/ב' בשבת/חג
+            if(pop==='bashal'&&isLikeSat2&&(shKey2==='a'||shKey2==='b'))continue;
             // קבע לא בלילה
             if(pop==='keva'&&shKey2==='c')continue;
             // אל תחרוג ממכסת לילה שבועית
