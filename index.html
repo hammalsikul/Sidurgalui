@@ -3125,9 +3125,11 @@ function renderMgrSched(){
     ${effectiveReady?`<button class="btn" style="background:rgba(37,99,235,.15);color:#93c5fd;border:1px solid rgba(37,99,235,.4);font-size:.78rem" onclick="downloadPDF()">📄 הורד PDF</button>
     <button class="btn" style="background:rgba(37,211,102,.12);color:#25d366;border:1px solid rgba(37,211,102,.3);font-size:.78rem" onclick="exportWhatsapp()">💬 שתף בוואטסאפ</button><button class="btn" style="background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.4);font-size:.78rem" onclick="downloadImage('sched-output','סידור ירושלים')">🖼 הורד תמונה</button>`:''}
     <button class="btn" style="background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.3);font-size:.78rem" onclick="toggleHolidayVerify()">🗓 אמת חגים</button>
+    ${effectiveReady?'<button class="btn" style="background:rgba(16,185,129,.1);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);font-size:.78rem" onclick="toggleShiftBalance()">⚖️ בדוק שוויון</button>':''}
     ${officialBadge}
   </div>
-  <div id="holiday-verify-panel" class="hidden"></div>`;
+  <div id="holiday-verify-panel" class="hidden"></div>
+  <div id="shift-balance-panel" class="hidden"></div>`;
   // משמרות שלא אויישו
   const unfilled=window._unfilledShifts||[];
   const unfilledHTML=unfilled.length?`<div style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.35);border-radius:10px;padding:.75rem;margin-bottom:.75rem">
@@ -3419,6 +3421,90 @@ function clearConflict(key){
   renderMgrSched();
 }
 
+
+function toggleShiftBalance(){
+  const el=g('shift-balance-panel');
+  if(!el)return;
+  if(el.classList.contains('hidden')){
+    el.classList.remove('hidden');
+    renderShiftBalance();
+  } else {
+    el.classList.add('hidden');
+  }
+}
+
+function renderShiftBalance(){
+  const el=g('shift-balance-panel');if(!el)return;
+  const isNext=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  const schedule=isNext?(window._schedule_next||{}):get_schedule();
+  const days=isNext?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+  const cap=n=>weeklyCapFor(n);
+
+  // Group days into weeks
+  const weeks=getWeeks(days);
+  const workerWeekShifts={};// workerWeekShifts[name][weekIdx] = count
+
+  ALL_WORKERS.forEach(name=>{
+    workerWeekShifts[name]=weeks.map(()=>0);
+  });
+
+  weeks.forEach((wk,wi)=>{
+    wk.forEach(d=>{
+      const sk=`${d.day}-${d.month}`;
+      const slot=schedule[sk]||{};
+      Object.values(slot).forEach(name=>{
+        if(name&&workerWeekShifts[name])
+          workerWeekShifts[name][wi]=(workerWeekShifts[name][wi]||0)+1;
+      });
+    });
+  });
+
+  // Find workers below their cap in any week
+  const issues=[];
+  ALL_WORKERS.forEach(name=>{
+    const pop=POP_MAP[name]||'bashal';
+    if(pop==='student')return;// students have no weekly cap
+    const expected=cap(name);
+    weeks.forEach((wk,wi)=>{
+      const actual=workerWeekShifts[name][wi]||0;
+      if(actual<expected&&actual>0){
+        // Check week has enough days (partial weeks at start/end are ok)
+        const weekDays=wk.filter(d=>d.month===(isNext?CONS_MONTH:SCHED_MONTH));
+        if(weekDays.length<3)return;// skip very short weeks
+        issues.push({name,week:wi+1,actual,expected,diff:expected-actual,
+          range:wk[0]?.label+'–'+wk[wk.length-1]?.label});
+      }
+    });
+  });
+
+  if(!issues.length){
+    el.innerHTML='<div style="background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.3);border-radius:10px;padding:.65rem .85rem;margin-bottom:.65rem">'
+      +'<div style="font-weight:900;color:#6ee7b7;font-size:.82rem">✅ שוויון תקין — כל העובדים עומדים במכסת המשמרות</div></div>';
+    return;
+  }
+
+  // Group by worker
+  const byWorker={};
+  issues.forEach(i=>{if(!byWorker[i.name])byWorker[i.name]=[];byWorker[i.name].push(i);});
+
+  let html='<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:.65rem .85rem;margin-bottom:.65rem">';
+  html+='<div style="font-weight:900;color:#fcd34d;font-size:.82rem;margin-bottom:.35rem">⚖️ עובדים עם פחות משמרות מהמצופה ('+issues.length+' בעיות)</div>';
+  html+='<div style="font-size:.7rem;color:#94a3b8;margin-bottom:.4rem">ייתכן שהורדת עובד ממשמרת ידנית — שקול להוסיף אותו לשבוע זה:</div>';
+
+  Object.entries(byWorker).forEach(([name,wkIssues])=>{
+    html+='<div style="border-bottom:1px solid rgba(245,158,11,.1);padding:.3rem 0">';
+    html+='<div style="font-weight:700;color:#fcd34d;font-size:.78rem">'+name+'</div>';
+    wkIssues.forEach(i=>{
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:.15rem 0;flex-wrap:wrap;gap:.3rem">';
+      html+='<span style="font-size:.72rem;color:#e2e8f0">שבוע '+i.week+' ('+i.range+')</span>';
+      html+='<span style="font-size:.7rem;color:#fca5a5">'+i.actual+'/'+i.expected+' משמרות — חסרות '+i.diff+'</span>';
+      html+='</div>';
+    });
+    html+='</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
 function renderConflictsBanner(){
   const conflicts=window._manualConflicts||[];
   if(!conflicts.length)return '';
