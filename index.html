@@ -3777,7 +3777,14 @@ function runGenerate(){
         const allV0=get_allV();
         if(allV0.some(v=>v.status==='approved'&&v.worker===name&&v.days?.some(vd=>vd.day===day&&vd.month===month)))return;
         if(shKey==='c'&&POP_MAP[name]==='keva')return;// קבע לא בלילה
-        if((isLikeSat0||isLikeFri0)&&POP_MAP[name]==='bashal'&&!isLikeSat0)return;
+        // בש"ל: לא בשישי/ערב חג
+        const isErevYomHaatzmaut0=hol0?.type==='yom_haatzmaut_erev';
+        if(isLikeFri0&&!isErevYomHaatzmaut0&&POP_MAP[name]==='bashal')return;
+        // בש"ל: לא א'/ב' בשבת/חג
+        if(isLikeSat0&&(shKey==='a'||shKey==='b')&&POP_MAP[name]==='bashal')return;
+        // סטודנטים: לא ג' בשבת/חג
+        if(isLikeSat0&&shKey==='c'&&POP_MAP[name]==='student')return;
+        // ג' בשבת/חג — רק בש"ל שלא ב-NO_SAT_NIGHT
         if(isLikeSat0&&shKey==='c'&&POP_MAP[name]!=='bashal')return;
         if(isLikeSat0&&shKey==='c'&&NO_SAT_NIGHT.includes(name))return;
         // בדוק לא לילה אחרי לילה
@@ -4209,7 +4216,11 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
           const isLikeSat2=d.isSat||isChagSat(hol2);
           const isLikeFri2=d.isFri||isChagFri(hol2);
           // בש"ל לא בשישי/ערב חג
-          if(pop==='bashal'&&(isLikeFri2&&!isLikeSat2))continue;
+          // בש"ל: לא בשישי/ערב חג
+          const isErevYomHaatzmaut2=_activeDays.find(d=>d.day===d.day&&d.month===d.month)?.holiday?.type==='yom_haatzmaut_erev';
+          if(pop==='bashal'&&isLikeFri2)continue;
+          // בש"ל: לא א'/ב' בשבת/חג
+          if(pop==='bashal'&&isLikeSat2&&(shKey2==='a'||shKey2==='b'))continue;
 
           const workedToday2=Object.values(sched[sk2]||{}).includes(name);
           if(workedToday2)continue;// כבר עובד היום
