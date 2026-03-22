@@ -3166,11 +3166,46 @@ function openManualFillModal(sk,shKey){
   g('modal').classList.add('show');
 }
 function manualFillSlot(sk,shKey,name,field){
-  // This is now called from cellSet via openCellModal — field already set correctly
-  // Keep for backward compat but redirect to cellSet
   cellSet(sk,field,name);
-  // Also remove from unfilled list after successful save
   window._unfilledShifts=(window._unfilledShifts||[]).filter(u=>!(u.day==sk.split('-')[0]&&u.month==sk.split('-')[1]&&u.shKey===shKey));
+}
+
+function doManualFill(sk,shKey,name){
+  const isNextView=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  const schedule=isNextView?(window._schedule_next||{}):get_schedule();
+  const [d,m]=sk.split('-').map(Number);
+  const allC=get_allC();
+  const allV=get_allV();
+
+  // Check conflicts
+  const cons=allC[name]?.constraints||[];
+  const blocks=cons.some(cx=>cx.day===d&&cx.month===m&&cx.shiftKey===shKey&&cx.type==='block'&&cx.approvalStatus==='approved');
+  const hasVac=allV.some(v=>v.status==='approved'&&v.worker===name&&v.days?.some(vd=>vd.day===d&&vd.month===m));
+  const msg=hasVac?('⚠️ '+name+' בחופשה מאושרת. לשבץ בכל זאת?'):
+    blocks?('⚠️ '+name+' הגיש/ה חסימה למשמרת זו. לשבץ בכל זאת?'):null;
+  if(msg&&!confirm(msg))return;
+
+  // Find next available fill field
+  let fi=1;
+  while((schedule[sk]||{})[`${shKey}_fill${fi}`])fi++;
+  const field=`${shKey}_fill${fi}`;
+
+  // Save
+  const ns={...schedule,[sk]:{...(schedule[sk]||{}),[field]:name}};
+  if(isNextView){
+    window._schedule_next=ns;
+    window._currentViewSched=ns;
+    window._fbSet('schedule_'+CONS_MONTH+'_'+CONS_YEAR,{schedule:ns,schedReady:true,official:false}).then(()=>setSyncing(false));
+  } else {
+    saveS(ns,get_schedReady(),undefined,false);
+    window._currentViewSched=ns;
+  }
+
+  // Remove from unfilled ONLY after save
+  window._unfilledShifts=(window._unfilledShifts||[]).filter(u=>!(u.day==d&&u.month==m&&u.shKey===shKey));
+  closeModal();
+  const shLbl=shKey==='a'?'בוקר':shKey==='b'?'ערב':'לילה';toast('✏️ '+name+' שובץ — '+sk+' '+shLbl);
+  renderMgrSched();
 }
 function makeOfficial(){
   const isNextView=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
@@ -3203,6 +3238,11 @@ function downloadPDF(){
   const _isNextMonth=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
   const _label=_isNextMonth?NEXT_MONTH_LABEL:MONTH_LABEL;
   const _official=_isNextMonth?false:get_schedOfficial();
+  // Ensure _currentViewSched is up to date before PDF
+  if(!window._currentViewSched||Object.keys(window._currentViewSched).length===0){
+    window._currentViewSched=_isNextMonth?(window._schedule_next||{}):get_schedule();
+    window._currentViewDays=_isNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+  }
   const win=window.open('','_blank');
   win.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>סידור ${_label}</title>
   <style>
