@@ -73,7 +73,7 @@ select option{background:#0f1623;color:#e2e8f0}
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <!-- v20260322_1658 -->
+  <!-- v20260322_1709 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="הסידור הגלוי">
@@ -3938,13 +3938,26 @@ function runGenerate(){
         if(POP_MAP[name]==='bashal'&&(wkC[name]||0)>=weeklyCapFor(name))return;
         const w=ROSTER.find(r=>r.name===name);
         let field;
-        if(pop==='keva')field='keva';
-        else if(pop==='student')field=`${w?.desk||'plili'}_stu`;
-        else field=w?.desk||'plili';
-        // אם השדה תפוס — השתמש ב-fill format
-        if(sched[sk][`${shKey}_${field}`]){
+        // שישי/שבת: אדם אחד בלבד — אם כבר יש מישהו, דלג
+        // שישי/שבת: אדם אחד בלבד — אם כבר יש מישהו בשדה זה, דלג
+        if(isLikeFri0&&(shKey==='a'||shKey==='b')){
+          if(sched[sk][shKey+'_fri_worker'])return;// כבר יש מישהו
+          field='fri_worker';
+        } else if(isLikeSat0&&(shKey==='a'||shKey==='b')){
+          if(sched[sk][shKey+'_sat_worker'])return;// כבר יש מישהו
+          field='sat_worker';
+          field='keva';
+        } else if(pop==='student'){
+          field=`${w?.desk||'plili'}_stu`;
+        } else {
+          field=w?.desk||'plili';
+        }
+        // אם השדה תפוס — השתמש ב-fill format (ימי חול בלבד)
+        if(sched[sk][`${shKey}_${field}`]&&!isLikeFri0&&!isLikeSat0){
           let fi0=1;while(sched[sk][`${shKey}_fill${fi0}`])fi0++;
           field=`fill${fi0}`;
+        } else if(sched[sk][`${shKey}_${field}`]){
+          return;// weekend slot taken — skip
         }
         sched[sk][`${shKey}_${field}`]=name;
         usedToday0.add(name);
@@ -4003,7 +4016,8 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
             const stuWantedFri=elig(w=>w.pop==='student',sh.key).filter(w=>(allC2Fri[w.name]?.constraints||[]).some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey===sh.key&&cx.type==='prefer'));
             const allFriCands=elig(w=>w.pop==='student'||w.pop==='bashal'||w.pop==='keva',sh.key).sort((a,b)=>(friWeekendC[a.name]||0)-(friWeekendC[b.name]||0));
             const chosenFri=kevaWantedFri[0]||stuWantedFri[0]||allFriCands[0];
-            if(chosenFri)assign(chosenFri.name,'fri_worker',sh.key);
+            // Only assign if not already filled by pass0
+            if(chosenFri&&!sched[sk][`${sh.key}_fri_worker`])assign(chosenFri.name,'fri_worker',sh.key);
             // בשישי: קבע ישובץ רק אם ביקש
           }
           // אין ג' בשישי/ערב חג
@@ -4025,7 +4039,7 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
               // כולם לפי שוויון
               const allSatCands=elig(w=>w.pop==='student'||w.pop==='bashal'||w.pop==='keva',sh.key).sort((a,b)=>(weekendC[a.name]||0)-(weekendC[b.name]||0));
               const chosen=kevaWanted[0]||stuWanted[0]||allSatCands[0];
-              if(chosen)assign(chosen.name,'sat_worker',sh.key);
+              if(chosen&&!sched[sk][`${sh.key}_sat_worker`])assign(chosen.name,'sat_worker',sh.key);
             }
           } else if(sh.key==='c'){
             // צאת שבת/חג/יום העצמאות — שירות לאומי (בש"ל), מקס 2 אנשים
@@ -4289,7 +4303,10 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
           const isPop=POP_MAP[name]||'bashal';
           // Count how many already in this shift
           const inShiftCount=Object.entries(slot).filter(([k,v])=>v&&k.startsWith(cx.shiftKey+'_')&&!k.includes('keva')&&!k.includes('achmash')).length;
-          if(inShiftCount>=8){reason='משמרת מלאה (מקס 8 עובדים)';}
+          // Weekend: only 1 person allowed
+          const isWeekendSlot=(()=>{const d2=(_wasNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS).find(d=>d.day===cx.day&&d.month===cx.month);return d2&&(d2.isFri||d2.isSat||isChagSat(d2.holiday)||isChagFri(d2.holiday));})();
+          if(isWeekendSlot){reason='משמרת סופ"ש — ניתן לשבץ עובד אחד בלבד';}
+          else if(inShiftCount>=8){reason='משמרת מלאה (מקס 8 עובדים)';}
           else{
             // Check weekly cap
             const _activeDaysUm=_wasNextMonth?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
