@@ -73,7 +73,7 @@ select option{background:#0f1623;color:#e2e8f0}
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <!-- v20260323_0947 -->
+  <!-- v20260323_0956 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="הסידור הגלוי">
@@ -3681,18 +3681,47 @@ function renderShiftBalance(){
     });
   });
 
+  // Calculate effective weekly cap per week (excluding chag/erev-chag days)
+  const effectiveWeeklyCap=(wk,name)=>{
+    // Count workable weekdays: Sun-Thu, not erev-chag, not chag
+    const workableDays=wk.filter(d=>{
+      if(d.jsDay===5||d.jsDay===6)return false;
+      const hol=d.holiday||null;
+      if(isChagFri(hol))return false;
+      if(isChagSat(hol))return false;
+      return true;
+    });
+    let cap=Math.min(weeklyCapFor(name), workableDays.length);
+    // If worker worked motzash (Sat night / chag night) this week → -1 for comp day
+    const workedMotzash=wk.some(d=>{
+      if(!d.isSat&&!isChagSat(d.holiday||null))return false;
+      const sk=d.day+'-'+d.month;
+      return Object.entries(schedule[sk]||{}).some(([k,v])=>v===name&&k.startsWith('c_'));
+    });
+    if(workedMotzash&&cap>0)cap=Math.max(0,cap-1);
+    return cap;
+  };
+
   // Find workers below their cap in any week
   const issues=[];
   ALL_WORKERS.forEach(name=>{
     const pop=POP_MAP[name]||'bashal';
     if(pop==='student')return;// students have no weekly cap
-    const expected=cap(name);
     weeks.forEach((wk,wi)=>{
-      const actual=workerWeekShifts[name][wi]||0;
+      const expected=effectiveWeeklyCap(wk,name);
+      if(expected===0)return;// no workable days this week
+      // Count actual WEEKDAY (non-weekend, non-chag) shifts
+      const actual=wk.reduce((sum,d)=>{
+        const hol=d.holiday||null;
+        if(d.jsDay===5||d.jsDay===6||isChagFri(hol)||isChagSat(hol))return sum;
+        const sk=d.day+'-'+d.month;
+        const inDay=Object.values(schedule[sk]||{}).includes(name);
+        return sum+(inDay?1:0);
+      },0);
       if(actual<expected&&actual>0){
-        // Check week has enough days (partial weeks at start/end are ok)
+        // Skip very short weeks (partial month start/end)
         const weekDays=wk.filter(d=>d.month===(isNext?CONS_MONTH:SCHED_MONTH));
-        if(weekDays.length<3)return;// skip very short weeks
+        if(weekDays.length<3)return;
         issues.push({name,week:wi+1,actual,expected,diff:expected-actual,
           range:wk[0]?.label+'–'+wk[wk.length-1]?.label});
       }
@@ -4499,11 +4528,30 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
         Object.values(sched[sk2]||{}).forEach(n=>{if(n)wkC[n]=(wkC[n]||0)+0;});// just ensure key exists
       });
 
+      // Calculate effective cap for this week (may be <5 due to chagim)
+      const effCap2=(wkArr,name)=>{
+        const workable=wkArr.filter(d=>{
+          if(d.jsDay===5||d.jsDay===6)return false;
+          const h2=_activeDays.find(x=>x.day===d.day&&x.month===d.month)?.holiday||null;
+          return !isChagFri(h2)&&!isChagSat(h2);
+        });
+        let cap2=Math.min(weeklyCapFor(name), workable.length);
+        // worked motzash → comp day → -1
+        const workedMotzash2=wkArr.some(d=>{
+          const h2=_activeDays.find(x=>x.day===d.day&&x.month===d.month)?.holiday||null;
+          if(!d.isSat&&!isChagSat(h2))return false;
+          const sk2=d.day+'-'+d.month;
+          return Object.entries(sched[sk2]||{}).some(([k,v])=>v===name&&k.startsWith('c_'));
+        });
+        if(workedMotzash2&&cap2>0)cap2=Math.max(0,cap2-1);
+        return cap2;
+      };
+
       // Sort workers by deficit (most missing first) for fairness
       const workerDefs=ALL_WORKERS.map(name=>{
         const pop=POP_MAP[name]||'bashal';
         if(pop==='student')return null;
-        const expected=weeklyCapFor(name);
+        const expected=effCap2(wk,name);
         const actual=weekShifts[name]||0;
         const deficit=expected-actual;
         return deficit>0?{name,pop,deficit}:null;
