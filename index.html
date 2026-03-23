@@ -73,7 +73,7 @@ select option{background:#0f1623;color:#e2e8f0}
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <!-- v20260323_0905 -->
+  <!-- v20260323_0947 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="הסידור הגלוי">
@@ -3392,8 +3392,12 @@ function downloadPDF(){
   const _label=_isNextMonth?NEXT_MONTH_LABEL:MONTH_LABEL;
   const _official=_isNextMonth?false:get_schedOfficial();
   // Get schedule directly — pass to buildPDFTable to avoid any global state issues
+  // Force fresh from source
   const pdfSched=get_active_schedule();
   const pdfDays=get_active_days();
+  // Also update currentViewSched so buildPDFTable has fallback
+  window._currentViewSched=pdfSched;
+  window._currentViewDays=pdfDays;
   const win=window.open('','_blank');
   if(!win){alert('אפשר לפתוח חלון חדש? אפשר חלונות קופצים בדפדפן');return;}
   win.document.write('<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>סידור '+_label+'</title><style>body{font-family:Arial,sans-serif;direction:rtl;font-size:10px;color:#000;background:#fff}table{border-collapse:collapse;width:100%;margin-bottom:12px}th,td{border:1px solid #999;padding:3px 4px;text-align:center;font-size:9px}th{background:#eee;font-weight:bold}h2{font-size:14px;margin-bottom:8px}.official{color:green;font-weight:bold}.week-title{font-weight:bold;margin:8px 0 4px;font-size:11px}@media print{button{display:none}}</style></head><body><h2>⬡ הסידור הגלוי — '+_label+(_official?' <span style="color:green;font-weight:bold">✅ רשמי</span>':'')+'</h2>'+buildPDFTable(pdfSched,pdfDays)+'<br><button onclick="window.print()">🖨️ הדפס / שמור PDF</button></body></html>');
@@ -3401,8 +3405,9 @@ function downloadPDF(){
 }
 function buildPDFTable(schedule,days){
   // Accept explicit schedule and days — no global state dependency
-  if(!schedule)schedule=window._currentViewSched||get_schedule();
-  if(!days)days=window._currentViewDays||SCHEDULE_DAYS;
+  // Always use the most current active schedule
+  if(!schedule){schedule=get_active_schedule();}
+  if(!days){days=get_active_days();}
   const weeks=getWeeks(days);
   const shL={a:'א׳ 07:00-15:00',b:'ב׳ 15:00-21:30',c:'ג׳ 21:30-07:00'};
   return weeks.map((wk,wi)=>{
@@ -3512,7 +3517,15 @@ function buildWeekTable(week,schedOverride){
   const headers=week.map(d=>{const h=d.holiday;return`<th style="min-width:76px;background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.06)':d.isWeekend?'rgba(245,158,11,.04)':'#080c14'}"><div style="font-weight:800;color:${h?HOLIDAY_TEXT[h.type]||'#c4b5fd':d.isWeekend?'#fcd34d':'#e2e8f0'};font-size:.68rem">${HEB_DAYS[d.jsDay]}</div><div style="font-size:.55rem;color:${h?HOLIDAY_TEXT[h.type]:'#64748b'}">${d.label}</div><div style="font-size:.48rem;color:${h?HOLIDAY_TEXT[h.type]||'#c4b5fd':'#475569'}">${d.hebrewDate||''}</div>${h?`<div style="font-size:.48rem;color:${HOLIDAY_TEXT[h.type]||'#c4b5fd'}">${h.name}</div>`:''}</th>`;}).join('');
   const rows=SHIFTS_K.map(sh=>`<tr><td style="background:#080c14;position:sticky;right:0;z-index:1;white-space:nowrap;padding:.35rem .4rem;min-width:68px"><div style="font-weight:700;color:#e2e8f0;font-size:.68rem">משמרת ${sh.label}</div><div style="font-size:.52rem;color:#64748b">${sh.time}</div></td>${week.map(d=>{const sk=`${d.day}-${d.month}`;const h=d.holiday;let cells='';if(d.isWeekend){if(d.isFri||(d.isSat&&sh.key!=='c')){if(sh.key==='a'||sh.key==='b')cells+=cellHTML(sk,sh.key,'keva');cells+=DESKS.map(desk=>cellHTML(sk,sh.key,desk+'_stu')).join('');// show fill fields on weekend too (manual assignments)
 let fiW=1;while((schedule[sk]||{})[`${sh.key}_fill${fiW}`]){cells+=cellHTML(sk,sh.key,`fill${fiW}`);fiW++;}}else if(d.isSat&&sh.key==='c'){cells+=cellHTML(sk,sh.key,'p1');cells+=cellHTML(sk,sh.key,'p2');// fill fields for night too
-let fiN=1;while((schedule[sk]||{})[`${sh.key}_fill${fiN}`]){cells+=cellHTML(sk,sh.key,`fill${fiN}`);fiN++;}}}else{if(sh.key==='a'||sh.key==='b'){cells+=cellHTML(sk,sh.key,'keva');if((schedule[sk]||{})[sh.key+'_keva2'])cells+=cellHTML(sk,sh.key,'keva2');cells+=cellHTML(sk,sh.key,'achmash');cells+=DESKS.map(desk=>cellHTML(sk,sh.key,desk)+cellHTML(sk,sh.key,desk+'_stu')).join('');let fi2=1;while((schedule[sk]||{})[`${sh.key}_fill${fi2}`]){cells+=cellHTML(sk,sh.key,`fill${fi2}`);fi2++;}}else{cells+=cellHTML(sk,sh.key,'p1');cells+=cellHTML(sk,sh.key,'p2');}}return`<td style="background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.04)':d.isWeekend?'rgba(245,158,11,.02)':'transparent'};min-width:72px">${cells}</td>`;}).join('')}</tr>`).join('');
+let fiN=1;while((schedule[sk]||{})[`${sh.key}_fill${fiN}`]){cells+=cellHTML(sk,sh.key,`fill${fiN}`);fiN++;}}}else{if(sh.key==='a'||sh.key==='b'){cells+=cellHTML(sk,sh.key,'keva');if((schedule[sk]||{})[sh.key+'_keva2'])cells+=cellHTML(sk,sh.key,'keva2');cells+=cellHTML(sk,sh.key,'achmash');
+            {const _ach=(schedule[sk]||{})[sh.key+'_achmash'];
+            cells+=DESKS.map(desk=>{
+              const _dv=(schedule[sk]||{})[sh.key+'_'+desk];
+              const _dsv=(schedule[sk]||{})[sh.key+'_'+desk+'_stu'];
+              // skip desk/stu slot if worker already shown as achmash
+              return (_ach&&_dv===_ach?'':cellHTML(sk,sh.key,desk))+(_ach&&_dsv===_ach?'':cellHTML(sk,sh.key,desk+'_stu'));
+            }).join('');}
+            let fi2=1;while((schedule[sk]||{})[`${sh.key}_fill${fi2}`]){const _fv=(schedule[sk]||{})[`${sh.key}_fill${fi2}`];const _ach2=(schedule[sk]||{})[sh.key+'_achmash'];if(_fv&&_fv!==_ach2)cells+=cellHTML(sk,sh.key,`fill${fi2}`);fi2++;}}else{cells+=cellHTML(sk,sh.key,'p1');cells+=cellHTML(sk,sh.key,'p2');}}return`<td style="background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.04)':d.isWeekend?'rgba(245,158,11,.02)':'transparent'};min-width:72px">${cells}</td>`;}).join('')}</tr>`).join('');
   return`<div class="week-table-wrap"><table><thead><tr><th style="background:#080c14;position:sticky;right:0;z-index:3;min-width:68px;border:none"></th>${headers}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 function toggleSchedView(){mgrSchedView=mgrSchedView==='week'?'month':'week';renderMgrSched();}
@@ -4462,85 +4475,101 @@ Object.keys(kevWkCarry).forEach(n=>{wkC[n]=(kevWkCarry[n]||0);delete kevWkCarry[
   window._unfilledShifts=unfilledShifts;
 
   // ══ PASS 2: השלמת משמרות חסרות ══
-  // עוברים על כל עובד קבע/בש"ל — אם חסרות לו משמרות בשבוע, משלימים במקום פנוי
   (function pass2(){
+    const allC2=window._isNextMonthSchedule?(window._allC_next||window._allC||{}):get_allC();
+    const allV2=get_allV();
     const weeks2=getWeeks(_activeDays);
+
+    // Reset lastS to track night-after-night within pass2
+    const lastS2={...lastS};
+
     weeks2.forEach((wk,wi)=>{
-      // בנה usedThisWeek לכל עובד — סופ"ש לא נספר במכסת 5 משמרות
+      // Count WEEKDAY shifts per worker this week
       const weekShifts={};
       wk.forEach(d=>{
         const sk2=`${d.day}-${d.month}`;
-        const dObj_ws=_activeDays.find(x=>x.day===d.day&&x.month===d.month);
-        const hol_ws=dObj_ws?.holiday||null;
-        const isWeekendDay=d.isFri||d.isSat||isChagSat(hol_ws)||isChagFri(hol_ws);
-        if(isWeekendDay)return;// don't count weekend toward 5-shift cap
-        Object.values(sched[sk2]||{}).forEach(name=>{
-          if(name)weekShifts[name]=(weekShifts[name]||0)+1;
-        });
+        const hol_ws=_activeDays.find(x=>x.day===d.day&&x.month===d.month)?.holiday||null;
+        if(d.isFri||d.isSat||isChagSat(hol_ws)||isChagFri(hol_ws))return;
+        Object.values(sched[sk2]||{}).forEach(n=>{if(n)weekShifts[n]=(weekShifts[n]||0)+1;});
       });
 
-      // עובדים עם חסר — קבע ובש"ל בלבד
-      ALL_WORKERS.forEach(name=>{
+      // Reset wkC for this week based on actual sched
+      wk.forEach(d=>{
+        const sk2=`${d.day}-${d.month}`;
+        Object.values(sched[sk2]||{}).forEach(n=>{if(n)wkC[n]=(wkC[n]||0)+0;});// just ensure key exists
+      });
+
+      // Sort workers by deficit (most missing first) for fairness
+      const workerDefs=ALL_WORKERS.map(name=>{
         const pop=POP_MAP[name]||'bashal';
-        if(pop==='student')return;
+        if(pop==='student')return null;
         const expected=weeklyCapFor(name);
         const actual=weekShifts[name]||0;
-        if(actual>=expected)return;
-        const missing=expected-actual;
+        const deficit=expected-actual;
+        return deficit>0?{name,pop,deficit}:null;
+      }).filter(Boolean).sort((a,b)=>b.deficit-a.deficit);
 
-        // מצא ימים פנויים בשבוע זה
+      workerDefs.forEach(({name,pop,deficit})=>{
         let filled=0;
-        for(let di=0;di<wk.length&&filled<missing;di++){
+        // Try each weekday in the week
+        for(let di=0;di<wk.length&&filled<deficit;di++){
           const d=wk[di];
           const sk2=`${d.day}-${d.month}`;
-          const dObj2=_activeDays.find(x=>x.day===d.day&&x.month===d.month);
-          const hol2=dObj2?.holiday||null;
+          const hol2=_activeDays.find(x=>x.day===d.day&&x.month===d.month)?.holiday||null;
           const isLikeSat2=d.isSat||isChagSat(hol2);
           const isLikeFri2=d.isFri||isChagFri(hol2);
-          // בש"ל לא בשישי/ערב חג
+
+          // Skip weekends for bashal/keva
           if(pop==='bashal'&&isLikeFri2)continue;
-          // קבע לא בסופ"ש
           if(pop==='keva'&&(isLikeFri2||isLikeSat2))continue;
 
-          const workedToday2=Object.values(sched[sk2]||{}).includes(name);
-          if(workedToday2)continue;// כבר עובד היום
+          // Skip if already working today
+          if(Object.values(sched[sk2]||{}).includes(name))continue;
 
-          // בדוק אם יש חופשה/מחלה
-          const allV2=get_allV();
-          if(allV2.some(v=>v.status==='approved'&&v.worker===name&&v.days?.some(vd=>vd.day===d.day&&vd.month===d.month)))continue;
+          // Skip if on vacation
+          if(allV2.some(v=>v.status==='approved'&&v.worker===name&&(v.days||[]).some(vd=>vd.day===d.day&&vd.month===d.month)))continue;
 
-          // בדוק אין לילה אחרי לילה
-          if(lastS[name]==='c')continue;
+          // Skip night-after-night
+          if(lastS2[name]==='c')continue;
 
-          // נסה לשבץ במשמרת הפנויה ביותר (א' קודם, אחר כך ב')
-          const shifts2=isLikeSat2?['a','b']:['b','a','c'];// סוש: רק א/ב
-          for(const shKey2 of shifts2){
-            // בש"ל: לא א'/ב' בשבת/חג
-            if(pop==='bashal'&&isLikeSat2&&(shKey2==='a'||shKey2==='b'))continue;
-            // קבע לא בלילה
+          // Try shifts in order: prefer 'b' then 'a' then 'c' for balance
+          const shiftOrder=pop==='keva'?['a','b']:['b','a','c'];
+          for(const shKey2 of shiftOrder){
             if(pop==='keva'&&shKey2==='c')continue;
-            // אל תחרוג ממכסת לילה שבועית
+            if(pop==='bashal'&&isLikeSat2&&(shKey2==='a'||shKey2==='b'))continue;
+
+            // Check night cap
             if(shKey2==='c'&&pop==='bashal'&&((window._nightWkC||{})[name]||0)>=2)continue;
-            // בדוק שהמשמרת לא מלאה (מקס 8 + פיקוד)
-            const nonKeva2=Object.entries(sched[sk2]||{}).filter(([k,v])=>v&&!k.includes('keva')&&!k.includes('achmash')).length;
-            if(nonKeva2>=9)continue;// pass2 allows slightly more
-            // בדוק חסימה
-            const allC2=window._isNextMonthSchedule?(window._allC_next||window._allC||{}):get_allC();
-            const blocked2=(allC2[name]?.constraints||[]).some(cx=>cx.day===d.day&&cx.month===d.month&&cx.shiftKey===shKey2&&cx.type==='block'&&cx.approvalStatus==='approved');
+
+            // Check block constraint
+            const blocked2=(allC2[name]?.constraints||[]).some(cx=>
+              cx.day===d.day&&cx.month===d.month&&cx.shiftKey===shKey2&&cx.type==='block'&&cx.approvalStatus==='approved');
             if(blocked2)continue;
-            // שבץ
-            // Use fill1/fill2/fill3 format — known to buildWeekTable
+
+            // Check worker has prefer for OTHER shift today — don't override pass0
+            const prefersOtherToday=(allC2[name]?.constraints||[]).some(cx=>
+              cx.day===d.day&&cx.month===d.month&&cx.shiftKey!==shKey2&&cx.type==='prefer'&&cx.approvalStatus==='approved');
+            if(prefersOtherToday)continue;
+
+            // Check shift not overfull (max 9 including keva)
+            const total2=Object.values(sched[sk2]||{}).filter(Boolean).length;
+            if(total2>=9)continue;
+
+            // Assign
             let fi2=1;
             while(sched[sk2][`${shKey2}_fill${fi2}`])fi2++;
-            const field2=`fill${fi2}`;
-            sched[sk2][`${shKey2}_${field2}`]=name;
+            sched[sk2][`${shKey2}_fill${fi2}`]=name;
             weekShifts[name]=(weekShifts[name]||0)+1;
             monthC[name]=(monthC[name]||0)+1;
             wkC[name]=(wkC[name]||0)+1;
-            lastS[name]=shKey2;
-            if(shKey2==='c'&&pop==='bashal'){window._nightWkC=window._nightWkC||{};window._nightWkC[name]=(window._nightWkC[name]||0)+1;window._nightCounts[name]=(window._nightCounts[name]||0)+1;}
+            lastS2[name]=shKey2;
+            if(shKey2==='c'&&pop==='bashal'){
+              window._nightWkC=window._nightWkC||{};
+              window._nightWkC[name]=(window._nightWkC[name]||0)+1;
+              window._nightCounts[name]=(window._nightCounts[name]||0)+1;
+            }
             filled++;
-            break;// found a shift for this day, move to next day
+            break;
           }
         }
       });
