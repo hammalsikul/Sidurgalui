@@ -73,7 +73,7 @@ select option{background:#0f1623;color:#e2e8f0}
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <!-- v20260323_0956 -->
+  <!-- v20260323_1004 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="הסידור הגלוי">
@@ -3248,8 +3248,7 @@ function renderMgrSched(){
     ${effectiveReady?`<button class="btn" style="background:rgba(245,158,11,.15);color:#fcd34d;border:1px solid rgba(245,158,11,.3);font-size:.78rem" onclick="recalcUnmet();toast('🔄 רשימת האילוצים עודכנה')">🔄 עדכן פערים</button>`:''}
     ${effectiveReady?`<button class="btn" style="background:#1e2a40;color:#94a3b8;font-size:.78rem" onclick="toggleSchedView()">${mgrSchedView==='week'?'🗓 חודשי':'📅 שבועי'}</button>`:''}
     ${effectiveReady?`<button class="btn" style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);font-size:.78rem" onclick="makeOfficial()">${official?'🔄 עדכן רשמי':'📌 הגדר כרשמי'}</button>`:''}
-    ${effectiveReady?`<button class="btn" style="background:rgba(37,99,235,.15);color:#93c5fd;border:1px solid rgba(37,99,235,.4);font-size:.78rem" onclick="downloadPDF()">📄 הורד PDF</button>
-    <button class="btn" style="background:rgba(37,211,102,.12);color:#25d366;border:1px solid rgba(37,211,102,.3);font-size:.78rem" onclick="exportWhatsapp()">💬 שתף בוואטסאפ</button><button class="btn" style="background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.4);font-size:.78rem" onclick="downloadImage('sched-output','סידור ירושלים')">🖼 הורד תמונה</button>`:''}
+    ${effectiveReady?`<button class="btn" style="background:rgba(37,211,102,.12);color:#25d366;border:1px solid rgba(37,211,102,.3);font-size:.78rem" onclick="exportWhatsapp()">💬 שתף בוואטסאפ</button><button class="btn" style="background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.4);font-size:.78rem" onclick="downloadImage('sched-output','סידור ירושלים')">🖼 הורד תמונה</button>`:''}
     <button class="btn" style="background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.3);font-size:.78rem" onclick="toggleHolidayVerify()">🗓 אמת חגים</button>
     ${effectiveReady?'<button class="btn" style="background:rgba(16,185,129,.1);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);font-size:.78rem" onclick="toggleShiftBalance()">⚖️ בדוק שוויון</button>':''}
     ${officialBadge}
@@ -3495,7 +3494,9 @@ function buildWeekTable(week,schedOverride){
       else if(allS2.some(s=>!s.resolved&&s.worker===name))
         statusTag=`<div style="font-size:.42rem;background:rgba(220,38,38,.2);color:#fca5a5;border-radius:3px;padding:0 2px">🤒מחלה</div>`;
     }
-    return`<div class="cell-inner" style="background:${bg};border-color:${border}" onclick="openCellModal('${sk}','${shKey}_${field}')">${labelEl}<div style="color:${dc?dc.text:empty?'#374151':'#e2e8f0'}">${name||''}</div>${statusTag}${note?`<div style="font-size:.44rem;color:#fcd34d;font-weight:700">${note}</div>`:''}</div>`;
+    // Don't render empty non-achmash cells
+  if(empty&&!isAch)return'';
+  return`<div class="cell-inner" style="background:${bg};border-color:${border}" onclick="openCellModal('${sk}','${shKey}_${field}')">${labelEl}<div style="color:${dc?dc.text:empty?'#374151':'#e2e8f0'}">${name||''}</div>${statusTag}${note?`<div style="font-size:.44rem;color:#fcd34d;font-weight:700">${note}</div>`:''}</div>`;
   };
   // build ordered cell list per day per shift: keva first, then achmash, then desks
   const orderedCells=(sk,shKey,d)=>{
