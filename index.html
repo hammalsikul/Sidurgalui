@@ -73,7 +73,7 @@ select option{background:#0f1623;color:#e2e8f0}
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <!-- v20260323_1004 -->
+  <!-- v20260323_1012 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="הסידור הגלוי">
@@ -3248,7 +3248,8 @@ function renderMgrSched(){
     ${effectiveReady?`<button class="btn" style="background:rgba(245,158,11,.15);color:#fcd34d;border:1px solid rgba(245,158,11,.3);font-size:.78rem" onclick="recalcUnmet();toast('🔄 רשימת האילוצים עודכנה')">🔄 עדכן פערים</button>`:''}
     ${effectiveReady?`<button class="btn" style="background:#1e2a40;color:#94a3b8;font-size:.78rem" onclick="toggleSchedView()">${mgrSchedView==='week'?'🗓 חודשי':'📅 שבועי'}</button>`:''}
     ${effectiveReady?`<button class="btn" style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);font-size:.78rem" onclick="makeOfficial()">${official?'🔄 עדכן רשמי':'📌 הגדר כרשמי'}</button>`:''}
-    ${effectiveReady?`<button class="btn" style="background:rgba(37,211,102,.12);color:#25d366;border:1px solid rgba(37,211,102,.3);font-size:.78rem" onclick="exportWhatsapp()">💬 שתף בוואטסאפ</button><button class="btn" style="background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.4);font-size:.78rem" onclick="downloadImage('sched-output','סידור ירושלים')">🖼 הורד תמונה</button>`:''}
+    ${effectiveReady?`<button class="btn" style="background:rgba(37,99,235,.15);color:#93c5fd;border:1px solid rgba(37,99,235,.4);font-size:.78rem" onclick="exportSchedPDF()">📄 הורד PDF</button>
+    <button class="btn" style="background:rgba(37,211,102,.12);color:#25d366;border:1px solid rgba(37,211,102,.3);font-size:.78rem" onclick="exportWhatsapp()">💬 שתף בוואטסאפ</button><button class="btn" style="background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.4);font-size:.78rem" onclick="downloadImage('sched-output','סידור ירושלים')">🖼 הורד תמונה</button>`:''}
     <button class="btn" style="background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.3);font-size:.78rem" onclick="toggleHolidayVerify()">🗓 אמת חגים</button>
     ${effectiveReady?'<button class="btn" style="background:rgba(16,185,129,.1);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);font-size:.78rem" onclick="toggleShiftBalance()">⚖️ בדוק שוויון</button>':''}
     ${officialBadge}
@@ -3517,8 +3518,11 @@ function buildWeekTable(week,schedOverride){
   };
   const headers=week.map(d=>{const h=d.holiday;return`<th style="min-width:76px;background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.06)':d.isWeekend?'rgba(245,158,11,.04)':'#080c14'}"><div style="font-weight:800;color:${h?HOLIDAY_TEXT[h.type]||'#c4b5fd':d.isWeekend?'#fcd34d':'#e2e8f0'};font-size:.68rem">${HEB_DAYS[d.jsDay]}</div><div style="font-size:.55rem;color:${h?HOLIDAY_TEXT[h.type]:'#64748b'}">${d.label}</div><div style="font-size:.48rem;color:${h?HOLIDAY_TEXT[h.type]||'#c4b5fd':'#475569'}">${d.hebrewDate||''}</div>${h?`<div style="font-size:.48rem;color:${HOLIDAY_TEXT[h.type]||'#c4b5fd'}">${h.name}</div>`:''}</th>`;}).join('');
   const rows=SHIFTS_K.map(sh=>`<tr><td style="background:#080c14;position:sticky;right:0;z-index:1;white-space:nowrap;padding:.35rem .4rem;min-width:68px"><div style="font-weight:700;color:#e2e8f0;font-size:.68rem">משמרת ${sh.label}</div><div style="font-size:.52rem;color:#64748b">${sh.time}</div></td>${week.map(d=>{const sk=`${d.day}-${d.month}`;const h=d.holiday;let cells='';if(d.isWeekend){if(d.isFri||(d.isSat&&sh.key!=='c')){if(sh.key==='a'||sh.key==='b')cells+=cellHTML(sk,sh.key,'keva');cells+=DESKS.map(desk=>cellHTML(sk,sh.key,desk+'_stu')).join('');// show fill fields on weekend too (manual assignments)
-let fiW=1;while((schedule[sk]||{})[`${sh.key}_fill${fiW}`]){cells+=cellHTML(sk,sh.key,`fill${fiW}`);fiW++;}}else if(d.isSat&&sh.key==='c'){cells+=cellHTML(sk,sh.key,'p1');cells+=cellHTML(sk,sh.key,'p2');// fill fields for night too
-let fiN=1;while((schedule[sk]||{})[`${sh.key}_fill${fiN}`]){cells+=cellHTML(sk,sh.key,`fill${fiN}`);fiN++;}}}else{if(sh.key==='a'||sh.key==='b'){cells+=cellHTML(sk,sh.key,'keva');if((schedule[sk]||{})[sh.key+'_keva2'])cells+=cellHTML(sk,sh.key,'keva2');cells+=cellHTML(sk,sh.key,'achmash');
+let fiW=1;while((schedule[sk]||{})[`${sh.key}_fill${fiW}`]){cells+=cellHTML(sk,sh.key,`fill${fiW}`);fiW++;}
+          cells+=`<div class="cell-inner" style="background:transparent;border-color:rgba(100,116,139,.2);cursor:pointer;opacity:.5" onclick="openCellModal('${sk}','${sh.key}_fill${fiW}')"><div style="color:#475569;font-size:.9rem;text-align:center;line-height:1.8">＋</div></div>`;
+          }else if(d.isSat&&sh.key==='c'){cells+=cellHTML(sk,sh.key,'p1');cells+=cellHTML(sk,sh.key,'p2');
+          let fiN=1;while((schedule[sk]||{})[`${sh.key}_fill${fiN}`]){cells+=cellHTML(sk,sh.key,`fill${fiN}`);fiN++;}
+          cells+=`<div class="cell-inner" style="background:transparent;border-color:rgba(100,116,139,.2);cursor:pointer;opacity:.5" onclick="openCellModal('${sk}','${sh.key}_fill${fiN}')"><div style="color:#475569;font-size:.9rem;text-align:center;line-height:1.8">＋</div></div>`;}}else{if(sh.key==='a'||sh.key==='b'){cells+=cellHTML(sk,sh.key,'keva');if((schedule[sk]||{})[sh.key+'_keva2'])cells+=cellHTML(sk,sh.key,'keva2');cells+=cellHTML(sk,sh.key,'achmash');
             {const _ach=(schedule[sk]||{})[sh.key+'_achmash'];
             cells+=DESKS.map(desk=>{
               const _dv=(schedule[sk]||{})[sh.key+'_'+desk];
@@ -3526,7 +3530,12 @@ let fiN=1;while((schedule[sk]||{})[`${sh.key}_fill${fiN}`]){cells+=cellHTML(sk,s
               // skip desk/stu slot if worker already shown as achmash
               return (_ach&&_dv===_ach?'':cellHTML(sk,sh.key,desk))+(_ach&&_dsv===_ach?'':cellHTML(sk,sh.key,desk+'_stu'));
             }).join('');}
-            let fi2=1;while((schedule[sk]||{})[`${sh.key}_fill${fi2}`]){const _fv=(schedule[sk]||{})[`${sh.key}_fill${fi2}`];const _ach2=(schedule[sk]||{})[sh.key+'_achmash'];if(_fv&&_fv!==_ach2)cells+=cellHTML(sk,sh.key,`fill${fi2}`);fi2++;}}else{cells+=cellHTML(sk,sh.key,'p1');cells+=cellHTML(sk,sh.key,'p2');}}return`<td style="background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.04)':d.isWeekend?'rgba(245,158,11,.02)':'transparent'};min-width:72px">${cells}</td>`;}).join('')}</tr>`).join('');
+            let fi2=1;while((schedule[sk]||{})[`${sh.key}_fill${fi2}`]){const _fv=(schedule[sk]||{})[`${sh.key}_fill${fi2}`];const _ach2=(schedule[sk]||{})[sh.key+'_achmash'];if(_fv&&_fv!==_ach2)cells+=cellHTML(sk,sh.key,`fill${fi2}`);fi2++;}
+            // Always show "+" add button for manager to add workers
+            cells+=`<div class="cell-inner" style="background:transparent;border-color:rgba(100,116,139,.2);cursor:pointer;opacity:.5" onclick="openCellModal('${sk}','${sh.key}_fill${fi2}')"><div style="color:#475569;font-size:.9rem;text-align:center;line-height:1.8">＋</div></div>`;
+            }else{cells+=cellHTML(sk,sh.key,'p1');cells+=cellHTML(sk,sh.key,'p2');
+            // Add button for night shifts too
+            cells+=`<div class="cell-inner" style="background:transparent;border-color:rgba(100,116,139,.2);cursor:pointer;opacity:.5" onclick="openCellModal('${sk}','${sh.key}_fill1')"><div style="color:#475569;font-size:.9rem;text-align:center;line-height:1.8">＋</div></div>`;}}return`<td style="background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.04)':d.isWeekend?'rgba(245,158,11,.02)':'transparent'};min-width:72px">${cells}</td>`;}).join('')}</tr>`).join('');
   return`<div class="week-table-wrap"><table><thead><tr><th style="background:#080c14;position:sticky;right:0;z-index:3;min-width:68px;border:none"></th>${headers}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 function toggleSchedView(){mgrSchedView=mgrSchedView==='week'?'month':'week';renderMgrSched();}
@@ -5702,6 +5711,59 @@ ${status}`;
 
 
 // ══════════════════════ WHATSAPP EXPORT ══════════════════════
+function exportSchedPDF(){
+  const el=document.getElementById('sched-output');
+  if(!el){toast('❌ אין סידור להורדה');return;}
+  const isNext=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
+  const label=isNext?NEXT_MONTH_LABEL:MONTH_LABEL;
+  const official=isNext?window._nextSchedOfficial:get_schedOfficial();
+
+  // Build PDF HTML directly from current schedule data (same as screen)
+  const schedule=get_active_schedule();
+  const days=get_active_days();
+  const weeks=getWeeks(days);
+  const shL={a:'א’ 07:00–15:00',b:'ב’ 15:00–21:30',c:'ג’ 21:30–07:00'};
+  const HD=HEB_DAYS;
+
+  let tableHTML='';
+  weeks.forEach((wk,wi)=>{
+    const hdrs=wk.map(d=>'<th style="font-size:9px;background:#eee">'+HD[d.jsDay]+'<br>'+d.label+(d.holiday?'<br><span style="font-size:7px">'+d.holiday.name+'</span>':'')+'</th>').join('');
+    const rowsHTML=['a','b','c'].map(shKey=>{
+      const cells=wk.map(d=>{
+        const sk=d.day+'-'+d.month;
+        const slot=schedule[sk]||{};
+        const seen=new Set();
+        const names=[];
+        const add=(v,lbl)=>{if(!v||seen.has(v))return;seen.add(v);names.push(lbl||v+(DESK_MAP[v]?' ('+DESK_MAP[v]+')':''));};
+        add(slot[shKey+'_keva'],'פיקוד: '+slot[shKey+'_keva']);
+        add(slot[shKey+'_keva2'],'פיקוד נוסף: '+slot[shKey+'_keva2']);
+        add(slot[shKey+'_achmash'],'אחמ"ש: '+slot[shKey+'_achmash']);
+        ['sadatz','plili','paha'].forEach(dk=>{add(slot[shKey+'_'+dk]);add(slot[shKey+'_'+dk+'_stu']);});
+        let fi=1;while(slot[shKey+'_fill'+fi]){add(slot[shKey+'_fill'+fi]);fi++;}
+        ['p1','p2','sat_worker','fri_worker'].forEach(f=>add(slot[shKey+'_'+f]));
+        return'<td style="font-size:8px;text-align:right;vertical-align:top;padding:2px 3px">'+(names.join('<br>')||'—')+'</td>';
+      }).join('');
+      return'<tr><td style="background:#eee;font-weight:bold;font-size:8px;white-space:nowrap;padding:2px 4px">'+shL[shKey]+'</td>'+cells+'</tr>';
+    }).join('');
+    tableHTML+='<div style="font-weight:bold;font-size:11px;margin:8px 0 3px">שבוע '+(wi+1)+'</div>'
+      +'<table><thead><tr><th style="font-size:9px;background:#eee">משמרת</th>'+hdrs+'</tr></thead><tbody>'+rowsHTML+'</tbody></table>';
+  });
+
+  const win=window.open('','_blank');
+  if(!win){alert('אפשר חלונות קופצות בדפדפן');return;}
+  win.document.write('<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>סידור '+label+'</title>'
+    +'<style>body{font-family:Arial,sans-serif;direction:rtl;color:#000;background:#fff;padding:12px}'
+    +'table{border-collapse:collapse;width:100%;margin-bottom:10px}'
+    +'th,td{border:1px solid #aaa;padding:2px 4px;text-align:center}'
+    +'h2{font-size:14px;margin-bottom:6px}'
+    +'@media print{button{display:none}}</style></head><body>'
+    +'<h2>סידור עבודה — '+label+(official?' ✅ רשמי':'')+'</h2>'
+    +tableHTML
+    +'<br><button onclick="window.print()" style="padding:6px 16px;background:#2563eb;color:white;border:none;border-radius:6px;cursor:pointer">הדפס / שמור PDF</button>'
+    +'</body></html>');
+  win.document.close();
+}
+
 function exportWhatsapp(){
   const _isNext=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
   const schedule=_isNext?(window._schedule_next||{}):get_schedule();
