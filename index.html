@@ -3363,21 +3363,18 @@ function doManualFill(sk,shKey,name){
 }
 function saveOfficialSched(){
   const isNext=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
-  const sched=get_active_schedule();
-  const days=get_active_days();
   const month=isNext?CONS_MONTH:SCHED_MONTH;
   const year=isNext?CONS_YEAR:CURRENT_YEAR;
   const label=isNext?NEXT_MONTH_LABEL:MONTH_LABEL;
+  const days=get_active_days();
+  const sched=isNext?(window._schedule_next||{}):(window._schedule||{});
   if(!sched||Object.keys(sched).length===0){toast('❌ אין סידור לשמירה');return;}
   const existing=window._savedOfficialSched&&window._savedOfficialSched.month===month&&window._savedOfficialSched.year===year;
   if(existing){if(!confirm('⚠️ יש כבר סידור שמור לחודש '+label+'. להחליף?'))return;}
-  window._savedOfficialSched={schedule:sched,month,year,label,days:days.map(d=>({day:d.day,month:d.month,year:d.year})),savedAt:new Date().toISOString()};
-  window._fbSet('official_sched',window._savedOfficialSched).then(()=>{
-    setSyncing(false);
-    toast('💾 הסידור נשמר בהצלחה!');
-    renderMgrSched();
-  });
+  const data={schedule:sched,month,year,label,days:days.map(d=>({day:d.day,month:d.month,year:d.year})),savedAt:new Date().toISOString()};
+  window._savedOfficialSched=data;
   setSyncing(true);
+  window._fbSet('official_sched',data).then(()=>{setSyncing(false);toast('💾 הסידור נשמר!');});
 }
 function makeOfficial(){
   const isNextView=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
