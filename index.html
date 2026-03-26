@@ -727,6 +727,12 @@ function buildScheduleDays(){
     const p=prevDay(sd,sm,sy);sd=p.d;sm=p.mo;sy=p.yr;
   }
   // End at Saturday of the week containing last day of the month
+  if(p.days&&p.days.length){
+    p.days.forEach(({day,month,year})=>{
+      const jd=new Date(year,month-1,day).getDay();
+      days.push({day,month,year,label:`${day}/${month}`,jsDay:jd,isWeekend:jd===5||jd===6,isFri:jd===5,isSat:jd===6,realWeekend:jd===5||jd===6,holiday:getHoliday(day,month)});
+    });
+    const weeks=getWeeks(days);
   const dim=new Date(y,m,0).getDate();
   let {d:ed,mo:em,yr:ey}={d:dim,mo:m,yr:y};
   while(new Date(ey,em-1,ed).getDay()!==6){
@@ -830,10 +836,10 @@ function saveS(s,r,official,warnIfOfficial){
   if(official!==undefined)window._schedOfficial=official;
   setSyncing(true);
   // Save to past_schedules ONLY when marking official
-  if(official===true){
+ if(official===true){
     const key=`${SCHEDULE_DAYS[0]?.year}_${SCHEDULE_DAYS[0]?.month}`;
     const past=get_pastSchedules();
-    past[key]={schedule:s,schedReady:r,month:SCHEDULE_DAYS[0]?.month,year:SCHEDULE_DAYS[0]?.year,label:MONTH_LABEL,official:true};
+    past[key]={schedule:s,schedReady:r,month:SCHEDULE_DAYS[0]?.month,year:SCHEDULE_DAYS[0]?.year,label:MONTH_LABEL,official:true,days:SCHEDULE_DAYS.map(d=>({day:d.day,month:d.month,year:d.year}))};
     window._fbSet('past_schedules',past).catch(()=>{});
   }
   window._fbSet('schedule_'+SCHED_MONTH+'_'+CURRENT_YEAR,{schedule:s,schedReady:r,official:window._schedOfficial||false}).then(()=>setSyncing(false));
