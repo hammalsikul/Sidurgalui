@@ -163,8 +163,7 @@ select option{background:#0f1623;color:#e2e8f0}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
         <button class="big-btn" style="background:linear-gradient(135deg,#dc262620,#dc262610);border:1px solid #dc262640" onclick="nav('sick')"><div style="font-size:1.5rem;margin-bottom:.25rem">🤒</div><div style="font-weight:800;font-size:.9rem">דיווח מחלה</div><div style="font-size:.68rem;opacity:.7">דיווח בזמן אמת</div></button>
-        <button class="big-btn" style="background:linear-gradient(135deg,#0891b220,#0891b210);border:1px solid #0891b240" onclick="nav('past')"><div style="font-size:1.5rem;margin-bottom:.25rem">🗂</div><div style="font-weight:800;font-size:.9rem">סידורים קודמים</div><div style="font-size:.68rem;opacity:.7">ארכיון חודשים</div></button>
-        <button class="big-btn" style="background:linear-gradient(135deg,#0d948820,#0d948810);border:1px solid #0d948840" onclick="nav('xreport')"><div style="font-size:1.5rem;margin-bottom:.25rem">📊</div><div style="font-weight:800;font-size:.9rem">דו"ח איקסים</div><div style="font-size:.68rem;opacity:.7">משמרות לפי חודש</div></button>
+<button class="big-btn" style="background:linear-gradient(135deg,#0891b220,#0891b210);border:1px solid #0891b240" onclick="nav('past')"><div style="font-size:1.5rem;margin-bottom:.25rem">📅</div><div style="font-weight:800;font-size:.9rem">סידור עבודה רשמי</div><div style="font-size:.68rem;opacity:.7">הסידור המאושר הנוכחי</div></button>        <button class="big-btn" style="background:linear-gradient(135deg,#0d948820,#0d948810);border:1px solid #0d948840" onclick="nav('xreport')"><div style="font-size:1.5rem;margin-bottom:.25rem">📊</div><div style="font-weight:800;font-size:.9rem">דו"ח איקסים</div><div style="font-size:.68rem;opacity:.7">משמרות לפי חודש</div></button>
         <div class="big-btn" style="background:linear-gradient(135deg,#78350f20,#78350f10);border:1px solid rgba(245,158,11,.3);cursor:default;text-align:right;padding:.65rem .75rem" id="home-duty-card">
           <div style="font-size:.62rem;color:#f59e0b;font-weight:700;margin-bottom:.3rem">🎖 מפקד תורן</div>
           <div id="home-duty-j" style="font-size:.75rem;color:#e2e8f0;margin-bottom:.2rem"><span style="color:#93c5fd;font-size:.6rem">🏙</span> <span style="color:#64748b">—</span></div>
@@ -833,6 +832,9 @@ function saveS(s,r,official,warnIfOfficial){
  if(official===true){
     const key=`${SCHEDULE_DAYS[0]?.year}_${SCHEDULE_DAYS[0]?.month}`;
     const past=get_pastSchedules();
+    delete past[key];
+    past[key]=null;
+delete past[key];
     past[key]={schedule:s,schedReady:r,month:SCHEDULE_DAYS[0]?.month,year:SCHEDULE_DAYS[0]?.year,label:MONTH_LABEL,official:true};
     window._fbSet('past_schedules',past).catch(()=>{});
   }
@@ -3373,8 +3375,11 @@ function makeOfficial(){
     window._schedReady_next=true;
     const fbKey='schedule_'+CONS_MONTH+'_'+CONS_YEAR;
     window._fbSet(fbKey,{schedule:sched,schedReady:true,official:true}).then(()=>setSyncing(false));
+    delete past[key];
     const key=CONS_YEAR+'_'+CONS_MONTH;
     const past=get_pastSchedules();
+    past[key]=null;
+delete past[key];
     past[key]={schedule:sched,schedReady:true,month:CONS_MONTH,year:CONS_YEAR,label:NEXT_MONTH_LABEL,official:true};
     window._fbSet('past_schedules',past).catch(()=>{});
     window._pastSchedules=past;
@@ -5212,33 +5217,87 @@ function renderOfficialSchedCard(){
 }
 
 function initPast(){
-  const past=get_pastSchedules();
-  // Show only official schedules
-  const keys=Object.keys(past).filter(k=>past[k].official).sort().reverse();
-  if(!keys.length){g('past-content').innerHTML='<div class="card" style="text-align:center;color:#64748b;padding:2rem">אין סידורים רשמיים שמורים עדיין</div>';return;}
-  if(pastViewKey&&past[pastViewKey]){renderPastSched(pastViewKey);return;}
-  g('past-content').innerHTML=keys.map(k=>{const p=past[k];return`<div class="card" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="renderPastSched('${k}')"><div><div style="font-weight:700">${p.label||k} <span style="font-size:.65rem;color:#6ee7b7;font-weight:700">✅ רשמי</span></div><div style="font-size:.7rem;color:#64748b">${Object.keys(p.schedule||{}).length} ימים</div></div><span style="color:#93c5fd">← צפייה</span></div>`;}).join('');
-}
-function renderPastSched(key){
-  pastViewKey=key;const past=get_pastSchedules();const p=past[key];if(!p)return;
-  const m=p.month,y=p.year;
-  function _mkD(d,mo,yr){const jd=new Date(yr,mo-1,d).getDay();return{day:d,month:mo,year:yr,label:`${d}/${mo}`,jsDay:jd,isWeekend:jd===5||jd===6,isFri:jd===5,isSat:jd===6,realWeekend:jd===5||jd===6,holiday:getHoliday(d,mo)};}
-  function _nxt(d,mo,yr){const dim=new Date(yr,mo,0).getDate();if(d<dim)return{d:d+1,mo,yr};if(mo<12)return{d:1,mo:mo+1,yr};return{d:1,mo:1,yr:yr+1};}
-  function _prv(d,mo,yr){if(d>1)return{d:d-1,mo,yr};if(mo>1)return{d:new Date(yr,mo-1,0).getDate(),mo:mo-1,yr};return{d:31,mo:12,yr:yr-1};}
-  let {d:sd,mo:sm,yr:sy}={d:1,mo:m,yr:y};
-  while(new Date(sy,sm-1,sd).getDay()!==0){const p2=_prv(sd,sm,sy);sd=p2.d;sm=p2.mo;sy=p2.yr;}
-  const dim=new Date(y,m,0).getDate();
-  let {d:ed,mo:em,yr:ey}={d:dim,mo:m,yr:y};
-  while(new Date(ey,em-1,ed).getDay()!==6){const n=_nxt(ed,em,ey);ed=n.d;em=n.mo;ey=n.yr;}
-  const days=[];let cd=sd,cm=sm,cy=sy;
-  while(true){days.push(_mkD(cd,cm,cy));if(cd===ed&&cm===em&&cy===ey)break;const n=_nxt(cd,cm,cy);cd=n.d;cm=n.mo;cy=n.yr;if(days.length>45)break;}
-  const weeks=getWeeks(days);let html=`<div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.75rem"><button class="btn btn-ghost" onclick="pastViewKey=null;initPast()">← חזרה לרשימה</button><div style="font-weight:700;font-size:.9rem">${p.label||key}</div></div>`;
-  html+=weeks.map((wk,i)=>{
-    const headers=wk.map(d=>{const h=d.holiday;return`<th style="min-width:72px;background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.06)':d.isWeekend?'rgba(245,158,11,.04)':'#080c14'}"><div style="font-weight:800;color:${h?HOLIDAY_TEXT[h.type]:d.isWeekend?'#fcd34d':'#e2e8f0'};font-size:.68rem">${HEB_DAYS[d.jsDay]}</div><div style="font-size:.55rem;color:#64748b">${d.label}</div>${h?`<div style="font-size:.48rem;color:${HOLIDAY_TEXT[h.type]}">${h.name}</div>`:''}</th>`;}).join('');
-    const rows=SHIFTS_K.map(sh=>`<tr><td style="background:#080c14;position:sticky;right:0;z-index:1;white-space:nowrap;padding:.3rem .4rem;min-width:68px"><div style="font-weight:700;color:#e2e8f0;font-size:.65rem">${sh.label}</div><div style="font-size:.5rem;color:#64748b">${sh.time}</div></td>${wk.map(d=>{const sk=`${d.day}-${d.month}`;const slot=p.schedule[sk]||{};const entries=Object.entries(slot).filter(([k,v])=>v&&k.startsWith(sh.key+'_'));const dc2=entries.map(([k,v])=>{const dc=getDeskColor(v);return`<div style="background:${dc.bg};border:1px solid ${dc.border}40;border-radius:4px;padding:1px 3px;margin-bottom:1px;font-size:.62rem"><div style="font-size:.44rem;color:${dc.text}">${dc.label}</div><div style="color:${dc.text};font-weight:700">${v}</div></div>`;}).join('');return`<td style="min-width:72px;background:${d.isWeekend?'rgba(245,158,11,.02)':'transparent'}">${dc2}</td>`;}).join('')}</tr>`).join('');
-    return`<div style="margin-bottom:1rem"><div style="font-size:.68rem;color:#64748b;margin-bottom:.3rem">שבוע ${i+1}</div><div class="week-table-wrap"><table><thead><tr><th style="background:#080c14;position:sticky;right:0;z-index:3;min-width:68px;border:none"></th>${headers}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  const el=g('past-content');if(!el)return;
+  const schedJ=get_schedule();
+  const schedC=get_choufSched();
+  const readyJ=get_schedReady();
+  const readyC=get_choufReady();
+  const officialJ=get_schedOfficial();
+  const officialC=get_choufOfficial();
+
+  if(!readyJ&&!readyC){
+    el.innerHTML='<div class="card" style="text-align:center;color:#64748b;padding:2rem">אין סידור רשמי מאושר עדיין</div>';
+    return;
+  }
+
+  // Month switcher
+  if(!window._pastViewSite)window._pastViewSite='j';
+  const site=window._pastViewSite;
+
+  const sched=site==='j'?schedJ:schedC;
+  const ready=site==='j'?readyJ:readyC;
+  const official=site==='j'?officialJ:officialC;
+  const label=MONTH_LABEL;
+
+  const switcherHTML=`<div style="display:flex;gap:.5rem;margin-bottom:.75rem">
+    <button onclick="window._pastViewSite='j';initPast()" style="flex:1;padding:.45rem;border-radius:8px;background:${site==='j'?'rgba(37,99,235,.2)':'rgba(37,99,235,.05)'};border:1px solid rgba(37,99,235,.4);color:#93c5fd;font-family:Heebo,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer">🏙 ירושלים</button>
+    <button onclick="window._pastViewSite='c';initPast()" style="flex:1;padding:.45rem;border-radius:8px;background:${site==='c'?'rgba(16,185,129,.2)':'rgba(16,185,129,.05)'};border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-family:Heebo,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer">🌊 חוף</button>
+  </div>`;
+
+  if(!ready){
+    el.innerHTML=switcherHTML+'<div class="card" style="text-align:center;color:#64748b;padding:2rem">אין סידור מאושר עדיין</div>';
+    return;
+  }
+
+  const officialBadge=official
+    ?'<span style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);padding:.2rem .55rem;border-radius:6px;font-size:.72rem;font-weight:700">✅ רשמי</span>'
+    :'<span style="background:rgba(245,158,11,.1);color:#fcd34d;border:1px solid rgba(245,158,11,.3);padding:.2rem .55rem;border-radius:6px;font-size:.72rem;font-weight:700">⏳ טרם אושר רשמית</span>';
+
+  const weeks=getWeeks(SCHEDULE_DAYS);
+  const weeksHTML=weeks.map((wk,i)=>{
+    const headers=wk.map(d=>{
+      const h=d.holiday;
+      return`<th style="min-width:72px;background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.06)':d.isWeekend?'rgba(245,158,11,.04)':'#080c14'}">
+        <div style="font-weight:800;color:${h?HOLIDAY_TEXT[h.type]:d.isWeekend?'#fcd34d':'#e2e8f0'};font-size:.68rem">${HEB_DAYS[d.jsDay]}</div>
+        <div style="font-size:.55rem;color:#64748b">${d.label}</div>
+        ${h?`<div style="font-size:.48rem;color:${HOLIDAY_TEXT[h.type]}">${h.name}</div>`:''}
+      </th>`;
+    }).join('');
+    const rows=SHIFTS_K.map(sh=>`<tr>
+      <td style="background:#080c14;position:sticky;right:0;z-index:1;white-space:nowrap;padding:.35rem .4rem;min-width:68px">
+        <div style="font-weight:700;color:#e2e8f0;font-size:.68rem">משמרת ${sh.label}</div>
+        <div style="font-size:.52rem;color:#64748b">${sh.time}</div>
+      </td>
+      ${wk.map(d=>{
+        const sk=`${d.day}-${d.month}`;
+        const slot=sched[sk]||{};
+        const entries=Object.entries(slot).filter(([k,v])=>v&&k.startsWith(sh.key+'_'));
+        const cells=entries.map(([k,v])=>{
+          const dc=site==='j'?getDeskColor(v):{bg:'rgba(16,185,129,.12)',border:'#10b981',text:'#6ee7b7',label:'חוף'};
+          const isAch=k.includes('achmash');
+          return`<div class="cell-inner" style="background:${isAch?'rgba(16,185,129,.06)':dc.bg};border-color:${isAch?'rgba(16,185,129,.4)':dc.border}">
+            <div class="cell-label" style="color:${isAch?'#10b981':dc.text}">${isAch?'אחמ"ש':dc.label}</div>
+            <div style="color:${isAch?'#6ee7b7':dc.text};font-size:.7rem">${v}</div>
+          </div>`;
+        }).join('');
+        const h=d.holiday;
+        return`<td style="background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.04)':d.isWeekend?'rgba(245,158,11,.02)':'transparent'};min-width:72px">${cells}</td>`;
+      }).join('')}
+    </tr>`).join('');
+    return`<div style="margin-bottom:1rem">
+      <div style="font-size:.68rem;color:#64748b;font-weight:700;margin-bottom:.3rem">שבוע ${i+1}</div>
+      <div class="week-table-wrap"><table><thead><tr>
+        <th style="background:#080c14;position:sticky;right:0;z-index:3;min-width:68px;border:none"></th>${headers}
+      </tr></thead><tbody>${rows}</tbody></table></div>
+    </div>`;
   }).join('');
-  g('past-content').innerHTML=html;
+
+  el.innerHTML=switcherHTML+`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:.4rem">
+      <div style="font-weight:900;font-size:.9rem">${site==='j'?'🏙 ירושלים':'🌊 חוף'} — ${label}</div>
+      ${officialBadge}
+    </div>
+    ${weeksHTML}`;
 }
 
 
