@@ -3374,7 +3374,13 @@ function saveOfficialSched(){
   const data={schedule:sched,month,year,label,days:days.map(d=>({day:d.day,month:d.month,year:d.year})),savedAt:new Date().toISOString()};
   window._savedOfficialSched=data;
   setSyncing(true);
-  window._fbSet('official_sched',data).then(()=>{setSyncing(false);toast('💾 הסידור נשמר!');});
+  // מחק קודם, ואז שמור מחדש
+  window._fbSet('official_sched',null).then(()=>{
+    window._fbSet('official_sched',data).then(()=>{
+      setSyncing(false);
+      toast('💾 הסידור נשמר!');
+    });
+  });
 }
 function makeOfficial(){
   const isNextView=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
