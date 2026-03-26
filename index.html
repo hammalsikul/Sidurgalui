@@ -5221,8 +5221,17 @@ function initPast(){
 }
 function renderPastSched(key){
   pastViewKey=key;const past=get_pastSchedules();const p=past[key];if(!p)return;
-  const days=[];const m=p.month,y=p.year,dim=new Date(y,m,0).getDate();
-  for(let i=1;i<=dim;i++){const jd=new Date(y,m-1,i).getDay();days.push({day:i,month:m,year:y,label:`${i}/${m}`,jsDay:jd,isWeekend:jd===5||jd===6,isFri:jd===5,isSat:jd===6,holiday:getHoliday(i,m)});}
+  const m=p.month,y=p.year;
+  function _mkD(d,mo,yr){const jd=new Date(yr,mo-1,d).getDay();return{day:d,month:mo,year:yr,label:`${d}/${mo}`,jsDay:jd,isWeekend:jd===5||jd===6,isFri:jd===5,isSat:jd===6,realWeekend:jd===5||jd===6,holiday:getHoliday(d,mo)};}
+  function _nxt(d,mo,yr){const dim=new Date(yr,mo,0).getDate();if(d<dim)return{d:d+1,mo,yr};if(mo<12)return{d:1,mo:mo+1,yr};return{d:1,mo:1,yr:yr+1};}
+  function _prv(d,mo,yr){if(d>1)return{d:d-1,mo,yr};if(mo>1)return{d:new Date(yr,mo-1,0).getDate(),mo:mo-1,yr};return{d:31,mo:12,yr:yr-1};}
+  let {d:sd,mo:sm,yr:sy}={d:1,mo:m,yr:y};
+  while(new Date(sy,sm-1,sd).getDay()!==0){const p2=_prv(sd,sm,sy);sd=p2.d;sm=p2.mo;sy=p2.yr;}
+  const dim=new Date(y,m,0).getDate();
+  let {d:ed,mo:em,yr:ey}={d:dim,mo:m,yr:y};
+  while(new Date(ey,em-1,ed).getDay()!==6){const n=_nxt(ed,em,ey);ed=n.d;em=n.mo;ey=n.yr;}
+  const days=[];let cd=sd,cm=sm,cy=sy;
+  while(true){days.push(_mkD(cd,cm,cy));if(cd===ed&&cm===em&&cy===ey)break;const n=_nxt(cd,cm,cy);cd=n.d;cm=n.mo;cy=n.yr;if(days.length>45)break;}
   const weeks=getWeeks(days);let html=`<div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.75rem"><button class="btn btn-ghost" onclick="pastViewKey=null;initPast()">← חזרה לרשימה</button><div style="font-weight:700;font-size:.9rem">${p.label||key}</div></div>`;
   html+=weeks.map((wk,i)=>{
     const headers=wk.map(d=>{const h=d.holiday;return`<th style="min-width:72px;background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.06)':d.isWeekend?'rgba(245,158,11,.04)':'#080c14'}"><div style="font-weight:800;color:${h?HOLIDAY_TEXT[h.type]:d.isWeekend?'#fcd34d':'#e2e8f0'};font-size:.68rem">${HEB_DAYS[d.jsDay]}</div><div style="font-size:.55rem;color:#64748b">${d.label}</div>${h?`<div style="font-size:.48rem;color:${HOLIDAY_TEXT[h.type]}">${h.name}</div>`:''}</th>`;}).join('');
