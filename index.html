@@ -441,6 +441,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+window._db = db;
 
 window._fbSet = (path, data) => set(ref(db, path), data);
 window._fbListen = (path, cb) => onValue(ref(db, path), snap => cb(snap.val()));
@@ -514,8 +515,12 @@ window._fbListen('holiday_overrides', v => {
     else if(window._currentPage==='home')renderHome();
   }
 });
-window._fbListen('official_sched', v => {
-  window._savedOfficialSched=v||null;
+window._fbListen('official_sched_j', v => {
+  window._officialSchedJ=v||{};
+  if(window._appReady&&window._currentPage==='past')initPast();
+});
+window._fbListen('official_sched_c', v => {
+  window._officialSchedC=v||{};
   if(window._appReady&&window._currentPage==='past')initPast();
 });
 window._fbListen('duty_officer', v => {
@@ -3368,18 +3373,38 @@ function saveOfficialSched(){
   const label=isNext?NEXT_MONTH_LABEL:MONTH_LABEL;
   const days=get_active_days();
   const sched=isNext?(window._schedule_next||{}):(window._schedule||{});
-  if(!sched||Object.keys(sched).length===0){toast('❌ אין סידור לשמירה');return;}
-  const existing=window._savedOfficialSched&&window._savedOfficialSched.month===month&&window._savedOfficialSched.year===year;
+  const key=`${year}_${month}`;
+  const existing=(window._officialSchedJ||{})[key];
   if(existing){if(!confirm('⚠️ יש כבר סידור שמור לחודש '+label+'. להחליף?'))return;}
-  const data={schedule:sched,month,year,label,days:days.map(d=>({day:d.day,month:d.month,year:d.year})),savedAt:new Date().toISOString()};
-  window._savedOfficialSched=data;
+  const entry={schedule:sched,month,year,label,
+    days:days.map(d=>({day:d.day,month:d.month,year:d.year})),
+    savedAt:new Date().toISOString()};
+  const newJ={...(window._officialSchedJ||{}),[key]:entry};
+  window._officialSchedJ=newJ;
   setSyncing(true);
-  // מחק קודם, ואז שמור מחדש
-  window._fbSet('official_sched',null).then(()=>{
-    window._fbSet('official_sched',data).then(()=>{
-      setSyncing(false);
-      toast('💾 הסידור נשמר!');
-    });
+  window._fbSet('official_sched_j',newJ).then(()=>{
+    setSyncing(false);
+    toast('💾 הסידור נשמר!');
+    if(window._currentPage==='past')initPast();
+  });
+}
+function saveChoufOfficialSched(){
+  const month=SCHED_MONTH,year=CURRENT_YEAR,label=MONTH_LABEL;
+  const days=SCHEDULE_DAYS;
+  const sched=get_choufSched();
+  const key=`${year}_${month}`;
+  const existing=(window._officialSchedC||{})[key];
+  if(existing){if(!confirm('⚠️ יש כבר סידור חוף שמור לחודש '+label+'. להחליף?'))return;}
+  const entry={schedule:sched,month,year,label,
+    days:days.map(d=>({day:d.day,month:d.month,year:d.year})),
+    savedAt:new Date().toISOString()};
+  const newC={...(window._officialSchedC||{}),[key]:entry};
+  window._officialSchedC=newC;
+  setSyncing(true);
+  window._fbSet('official_sched_c',newC).then(()=>{
+    setSyncing(false);
+    toast('💾 סידור חוף נשמר!');
+    if(window._currentPage==='past')initPast();
   });
 }
 function makeOfficial(){
@@ -5244,42 +5269,34 @@ function initPast(){
   const el=g('past-content');if(!el)return;
   if(!window._pastViewSite)window._pastViewSite='j';
   const site=window._pastViewSite;
+  const allScheds=site==='j'?(window._officialSchedJ||{}):(window._officialSchedC||{});
+  const keys=Object.keys(allScheds).sort().reverse();
 
-  // Try current month, then next month
- const saved=window._savedOfficialSched||null;
-const schedJ=saved?saved.schedule:{};
-const activeDaysFromSaved=saved&&saved.days?saved.days.map(({day,month,year})=>{
-  const jd=new Date(year,month-1,day).getDay();
-  return{day,month,year,label:`${day}/${month}`,jsDay:jd,isWeekend:jd===5||jd===6,isFri:jd===5,isSat:jd===6,realWeekend:jd===5||jd===6,holiday:getHoliday(day,month)};
-}):SCHEDULE_DAYS;
-const savedLabel=saved?saved.label:MONTH_LABEL;
-  const schedC=Object.keys(window._choufSched||{}).length>0?window._choufSched:{};
-  const officialJ=window._schedOfficial||window._nextSchedOfficial||false;
-  const officialC=window._choufOfficial||false;
-  const readyJ=Object.keys(schedJ).length>0;
-  const readyC=Object.keys(schedC).length>0;
-
-  // Use correct days
+  // Month selector
+  if(!window._pastViewKey||!allScheds[window._pastViewKey])window._pastViewKey=keys[0]||null;
+  const currentKey=window._pastViewKey;
+  const entry=currentKey?allScheds[currentKey]:null;
 
   const switcherHTML=`<div style="display:flex;gap:.5rem;margin-bottom:.75rem">
-    <button onclick="window._pastViewSite='j';initPast()" style="flex:1;padding:.45rem;border-radius:8px;background:${site==='j'?'rgba(37,99,235,.2)':'rgba(37,99,235,.05)'};border:1px solid rgba(37,99,235,.4);color:#93c5fd;font-family:Heebo,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer">🏙 ירושלים</button>
-    <button onclick="window._pastViewSite='c';initPast()" style="flex:1;padding:.45rem;border-radius:8px;background:${site==='c'?'rgba(16,185,129,.2)':'rgba(16,185,129,.05)'};border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-family:Heebo,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer">🌊 חוף</button>
+    <button onclick="window._pastViewSite='j';window._pastViewKey=null;initPast()" style="flex:1;padding:.45rem;border-radius:8px;background:${site==='j'?'rgba(37,99,235,.2)':'rgba(37,99,235,.05)'};border:1px solid rgba(37,99,235,.4);color:#93c5fd;font-family:Heebo,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer">🏙 ירושלים</button>
+    <button onclick="window._pastViewSite='c';window._pastViewKey=null;initPast()" style="flex:1;padding:.45rem;border-radius:8px;background:${site==='c'?'rgba(16,185,129,.2)':'rgba(16,185,129,.05)'};border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-family:Heebo,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer">🌊 חוף</button>
   </div>`;
 
-  const sched=site==='j'?schedJ:schedC;
-  const ready=site==='j'?readyJ:readyC;
-  const official=site==='j'?officialJ:officialC;
-  const activeDays=site==='j'?activeDaysFromSaved:SCHEDULE_DAYS;
-  const label=savedLabel;
+  const monthSelector=keys.length?`<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.75rem">
+    ${keys.map(k=>`<button onclick="window._pastViewKey='${k}';initPast()" style="padding:.3rem .65rem;border-radius:7px;background:${k===currentKey?'rgba(99,102,241,.25)':'rgba(99,102,241,.08)'};border:1px solid rgba(99,102,241,.35);color:#a5b4fc;font-family:Heebo,sans-serif;font-size:.75rem;cursor:pointer">${allScheds[k].label}</button>`).join('')}
+  </div>`:'';
 
-  if(!ready){
-    el.innerHTML=switcherHTML+'<div class="card" style="text-align:center;color:#64748b;padding:2rem">אין סידור רשמי מאושר עדיין</div>';
+  if(!keys.length||!entry){
+    el.innerHTML=switcherHTML+'<div class="card" style="text-align:center;color:#64748b;padding:2rem">אין סידור רשמי שמור עדיין</div>';
     return;
   }
 
-  const officialBadge=official
-    ?'<span style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);padding:.2rem .55rem;border-radius:6px;font-size:.72rem;font-weight:700">✅ רשמי</span>'
-    :'<span style="background:rgba(245,158,11,.1);color:#fcd34d;border:1px solid rgba(245,158,11,.3);padding:.2rem .55rem;border-radius:6px;font-size:.72rem;font-weight:700">⏳ טרם אושר רשמית</span>';
+  const sched=entry.schedule||{};
+  const activeDays=entry.days?entry.days.map(({day,month,year})=>{
+    const jd=new Date(year,month-1,day).getDay();
+    return{day,month,year,label:`${day}/${month}`,jsDay:jd,isWeekend:jd===5||jd===6,
+      isFri:jd===5,isSat:jd===6,realWeekend:jd===5||jd===6,holiday:getHoliday(day,month)};
+  }):SCHEDULE_DAYS;
 
   const weeks=getWeeks(activeDays);
   const weeksHTML=weeks.map((wk,i)=>{
@@ -5320,10 +5337,10 @@ const savedLabel=saved?saved.label:MONTH_LABEL;
     </div>`;
   }).join('');
 
-  el.innerHTML=switcherHTML+`
+  el.innerHTML=switcherHTML+monthSelector+`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:.4rem">
-      <div style="font-weight:900;font-size:.9rem">${site==='j'?'🏙 ירושלים':'🌊 חוף'} — ${label}</div>
-      ${officialBadge}
+      <div style="font-weight:900;font-size:.9rem">${site==='j'?'🏙 ירושלים':'🌊 חוף'} — ${entry.label}</div>
+      <span style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);padding:.2rem .55rem;border-radius:6px;font-size:.72rem;font-weight:700">✅ שמור</span>
     </div>
     ${weeksHTML}`;
 }
