@@ -3367,12 +3367,13 @@ function doManualFill(sk,shKey,name){
   renderMgrSched();
 }
 function saveOfficialSched(){
+  console.log('saving...', window._currentViewSched);
   const isNext=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
   const month=isNext?CONS_MONTH:SCHED_MONTH;
   const year=isNext?CONS_YEAR:CURRENT_YEAR;
   const label=isNext?NEXT_MONTH_LABEL:MONTH_LABEL;
   const days=get_active_days();
-  const sched=isNext?(window._schedule_next||{}):(window._schedule||{});
+ const sched=window._currentViewSched||{};
   const key=`${year}_${month}`;
   const existing=(window._officialSchedJ||{})[key];
   if(existing){if(!confirm('⚠️ יש כבר סידור שמור לחודש '+label+'. להחליף?'))return;}
