@@ -3368,6 +3368,7 @@ function doManualFill(sk,shKey,name){
 }
 function saveOfficialSched(){
   console.log('saving...', window._currentViewSched);
+  console.log('29-3:', JSON.stringify(window._currentViewSched['29-3']));
   const isNext=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
   const month=isNext?CONS_MONTH:SCHED_MONTH;
   const year=isNext?CONS_YEAR:CURRENT_YEAR;
