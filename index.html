@@ -3367,20 +3367,23 @@ function doManualFill(sk,shKey,name){
   renderMgrSched();
 }
 function saveOfficialSched(){
-  console.log('saving...', window._currentViewSched);
-  console.log('29-3:', JSON.stringify(window._currentViewSched['29-3']));
+  // קח בדיוק את מה שמוצג על המסך עכשיו
+  const sched=JSON.parse(JSON.stringify(window._currentViewSched||{}));
+  if(!sched||Object.keys(sched).length===0){toast('❌ אין סידור לשמירה — לחץ צור סידור תחילה');return;}
   const isNext=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
   const month=isNext?CONS_MONTH:SCHED_MONTH;
   const year=isNext?CONS_YEAR:CURRENT_YEAR;
   const label=isNext?NEXT_MONTH_LABEL:MONTH_LABEL;
   const days=get_active_days();
- const sched=window._currentViewSched||{};
   const key=`${year}_${month}`;
   const existing=(window._officialSchedJ||{})[key];
   if(existing){if(!confirm('⚠️ יש כבר סידור שמור לחודש '+label+'. להחליף?'))return;}
-  const entry={schedule:sched,month,year,label,
+  const entry={
+    schedule:sched,
+    month,year,label,
     days:days.map(d=>({day:d.day,month:d.month,year:d.year})),
-    savedAt:new Date().toISOString()};
+    savedAt:new Date().toISOString()
+  };
   const newJ={...(window._officialSchedJ||{}),[key]:entry};
   window._officialSchedJ=newJ;
   setSyncing(true);
