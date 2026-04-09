@@ -5215,8 +5215,9 @@ function initPast(){
   const el=g('past-content');if(!el)return;
   if(!window._pastViewSite)window._pastViewSite='j';
   const site=window._pastViewSite;
-const sched=site==='j'?(window._schedule_next||window._schedule||{}):(window._choufSched||{});    <button onclick="window._pastViewSite='j';initPast()" style="flex:1;padding:.45rem;border-radius:8px;background:${site==='j'?'rgba(37,99,235,.2)':'rgba(37,99,235,.05)'};border:1px solid rgba(37,99,235,.4);color:#93c5fd;font-family:Heebo,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer">🏙 ירושלים</button>
-    <button onclick="window._pastViewSite='c';initPast()" style="flex:1;padding:.45rem;border-radius:8px;background:${site==='c'?'rgba(16,185,129,.2)':'rgba(16,185,129,.05)'};border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-family:Heebo,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer">🌊 חוף</button>
+const sched=site==='j'?(window._schedule_next||window._schedule||{}):(window._choufSched||{});
+  const switcherHTML=`<div style="display:flex;gap:.5rem;margin-bottom:.75rem">
+    <button onclick="window._pastViewSite='j';initPast()"    <button onclick="window._pastViewSite='c';initPast()" style="flex:1;padding:.45rem;border-radius:8px;background:${site==='c'?'rgba(16,185,129,.2)':'rgba(16,185,129,.05)'};border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-family:Heebo,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer">🌊 חוף</button>
   </div>`;
   if(!Object.keys(sched).length){el.innerHTML=switcherHTML+'<div class="card" style="text-align:center;color:#64748b;padding:2rem">אין סידור עדיין</div>';return;}
   const weeks=getWeeks(SCHEDULE_DAYS);
