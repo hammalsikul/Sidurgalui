@@ -446,8 +446,7 @@ window._db = db;
 window._fbSet = (path, data) => set(ref(db, path), data);
 window._fbListen = (path, cb) => onValue(ref(db, path), snap => cb(snap.val()));
 
-let loaded = {c:false, v:false, s:false, sk:false, p:false, t:false, b:false, cc:false, cs:false};
-let _loginShown = false;
+let loaded = {c:false, v:false, s:false, sk:false, p:false, t:false, b:false, cc:false, cs:false, sn:true};let _loginShown = false;
 function checkLoaded() {
   if(_loginShown) return;
   if(loaded.c && loaded.v && loaded.s && loaded.sk && loaded.p && loaded.t && loaded.b && loaded.cc && loaded.cs) {
@@ -515,14 +514,8 @@ window._fbListen('holiday_overrides', v => {
     else if(window._currentPage==='home')renderHome();
   }
 });
-window._fbListen('official_sched_j', v => {
-  window._officialSchedJ=v||{};
-  if(window._appReady&&window._currentPage==='past')initPast();
-});
-window._fbListen('official_sched_c', v => {
-  window._officialSchedC=v||{};
-  if(window._appReady&&window._currentPage==='past')initPast();
-});
+window._officialSchedJ=window._officialSchedJ||{};
+window._officialSchedC=window._officialSchedC||{};
 window._fbListen('duty_officer', v => {
   window._dutyOfficer=v||{j:null,c:null};
   if(window._appReady) renderDutyCard();
@@ -838,12 +831,9 @@ function saveS(s,r,official,warnIfOfficial){
   if(official!==undefined)window._schedOfficial=official;
   setSyncing(true);
   // Save to past_schedules ONLY when marking official
- if(official===true){
+if(official===true){
     const key=`${SCHEDULE_DAYS[0]?.year}_${SCHEDULE_DAYS[0]?.month}`;
     const past=get_pastSchedules();
-    delete past[key];
-    past[key]=null;
-delete past[key];
     past[key]={schedule:s,schedReady:r,month:SCHEDULE_DAYS[0]?.month,year:SCHEDULE_DAYS[0]?.year,label:MONTH_LABEL,official:true};
     window._fbSet('past_schedules',past).catch(()=>{});
   }
@@ -3258,8 +3248,7 @@ function renderMgrSched(){
     <button class="btn btn-blue" style="padding:.55rem 1rem;font-size:.88rem" onclick="runGenerateForMonth()">⚡ צור סידור</button>
     ${effectiveReady?`<button class="btn" style="background:rgba(245,158,11,.15);color:#fcd34d;border:1px solid rgba(245,158,11,.3);font-size:.78rem" onclick="recalcUnmet();toast('🔄 רשימת האילוצים עודכנה')">🔄 עדכן פערים</button>`:''}
     ${effectiveReady?`<button class="btn" style="background:#1e2a40;color:#94a3b8;font-size:.78rem" onclick="toggleSchedView()">${mgrSchedView==='week'?'🗓 חודשי':'📅 שבועי'}</button>`:''}
-${effectiveReady?`<button class="btn" style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);font-size:.78rem" onclick="saveOfficialSched()">💾 שמור</button>`:''}    ${effectiveReady?`<button class="btn" style="background:rgba(37,99,235,.15);color:#93c5fd;border:1px solid rgba(37,99,235,.4);font-size:.78rem" onclick="exportSchedPDF()">📄 הורד PDF</button>
-    <button class="btn" style="background:rgba(37,211,102,.12);color:#25d366;border:1px solid rgba(37,211,102,.3);font-size:.78rem" onclick="exportWhatsapp()">💬 שתף בוואטסאפ</button><button class="btn" style="background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.4);font-size:.78rem" onclick="downloadImage('sched-output','סידור ירושלים')">🖼 הורד תמונה</button>`:''}
+${effectiveReady?`<button class="btn" style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);font-size:.78rem" onclick="makeOfficial()">${official?'🔄 עדכן רשמי':'📌 הגדר כרשמי'}</button>`:''}    <button class="btn" style="background:rgba(37,211,102,.12);color:#25d366;border:1px solid rgba(37,211,102,.3);font-size:.78rem" onclick="exportWhatsapp()">💬 שתף בוואטסאפ</button><button class="btn" style="background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.4);font-size:.78rem" onclick="downloadImage('sched-output','סידור ירושלים')">🖼 הורד תמונה</button>`:''}
     <button class="btn" style="background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.3);font-size:.78rem" onclick="toggleHolidayVerify()">🗓 אמת חגים</button>
     ${effectiveReady?'<button class="btn" style="background:rgba(16,185,129,.1);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);font-size:.78rem" onclick="toggleShiftBalance()">⚖️ בדוק שוויון</button>':''}
     ${officialBadge}
@@ -3366,52 +3355,6 @@ function doManualFill(sk,shKey,name){
   const shLbl=shKey==='a'?'בוקר':shKey==='b'?'ערב':'לילה';toast('✏️ '+name+' שובץ — '+sk+' '+shLbl);
   renderMgrSched();
 }
-function saveOfficialSched(){
-  // קח בדיוק את מה שמוצג על המסך עכשיו
-  const sched=JSON.parse(JSON.stringify(window._currentViewSched||{}));
-  if(!sched||Object.keys(sched).length===0){toast('❌ אין סידור לשמירה — לחץ צור סידור תחילה');return;}
-  const isNext=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
-  const month=isNext?CONS_MONTH:SCHED_MONTH;
-  const year=isNext?CONS_YEAR:CURRENT_YEAR;
-  const label=isNext?NEXT_MONTH_LABEL:MONTH_LABEL;
-  const days=get_active_days();
-  const key=`${year}_${month}`;
-  const existing=(window._officialSchedJ||{})[key];
-  if(existing){if(!confirm('⚠️ יש כבר סידור שמור לחודש '+label+'. להחליף?'))return;}
-  const entry={
-    schedule:sched,
-    month,year,label,
-    days:days.map(d=>({day:d.day,month:d.month,year:d.year})),
-    savedAt:new Date().toISOString()
-  };
-  const newJ={...(window._officialSchedJ||{}),[key]:entry};
-  window._officialSchedJ=newJ;
-  setSyncing(true);
-  window._fbSet('official_sched_j',newJ).then(()=>{
-    setSyncing(false);
-    toast('💾 הסידור נשמר!');
-    if(window._currentPage==='past')initPast();
-  });
-}
-function saveChoufOfficialSched(){
-  const month=SCHED_MONTH,year=CURRENT_YEAR,label=MONTH_LABEL;
-  const days=SCHEDULE_DAYS;
-  const sched=get_choufSched();
-  const key=`${year}_${month}`;
-  const existing=(window._officialSchedC||{})[key];
-  if(existing){if(!confirm('⚠️ יש כבר סידור חוף שמור לחודש '+label+'. להחליף?'))return;}
-  const entry={schedule:sched,month,year,label,
-    days:days.map(d=>({day:d.day,month:d.month,year:d.year})),
-    savedAt:new Date().toISOString()};
-  const newC={...(window._officialSchedC||{}),[key]:entry};
-  window._officialSchedC=newC;
-  setSyncing(true);
-  window._fbSet('official_sched_c',newC).then(()=>{
-    setSyncing(false);
-    toast('💾 סידור חוף נשמר!');
-    if(window._currentPage==='past')initPast();
-  });
-}
 function makeOfficial(){
   const isNextView=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
   const sched=get_active_schedule();
@@ -3423,18 +3366,15 @@ function makeOfficial(){
     :`להגדיר את סידור ${mLabel} כרשמי?\nלאחר מכן כל שינוי ידני יציג אזהרה.`;
   if(!confirm(msg))return;
   const isNextOff=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
-  if(isNextOff){
+ if(isNextOff){
     window._nextSchedOfficial=true;
     window._schedule_next=sched;
     window._schedReady_next=true;
     const fbKey='schedule_'+CONS_MONTH+'_'+CONS_YEAR;
     window._fbSet(fbKey,{schedule:sched,schedReady:true,official:true}).then(()=>setSyncing(false));
-    delete past[key];
     const key=CONS_YEAR+'_'+CONS_MONTH;
     const past=get_pastSchedules();
-    past[key]=null;
-delete past[key];
-    past[key]={schedule:sched,schedReady:true,month:CONS_MONTH,year:CONS_YEAR,label:NEXT_MONTH_LABEL,official:true};
+   past[key]={schedule:sched,schedReady:true,month:CONS_MONTH,year:CONS_YEAR,label:NEXT_MONTH_LABEL,official:true};
     window._fbSet('past_schedules',past).catch(()=>{});
     window._pastSchedules=past;
   } else {
@@ -5274,138 +5214,13 @@ function initPast(){
   const el=g('past-content');if(!el)return;
   if(!window._pastViewSite)window._pastViewSite='j';
   const site=window._pastViewSite;
-  const allScheds=site==='j'?(window._officialSchedJ||{}):(window._officialSchedC||{});
-  const keys=Object.keys(allScheds).sort().reverse();
-
-  // Month selector
-  if(!window._pastViewKey||!allScheds[window._pastViewKey])window._pastViewKey=keys[0]||null;
-  const currentKey=window._pastViewKey;
-  const entry=currentKey?allScheds[currentKey]:null;
-
-  const switcherHTML=`<div style="display:flex;gap:.5rem;margin-bottom:.75rem">
-    <button onclick="window._pastViewSite='j';window._pastViewKey=null;initPast()" style="flex:1;padding:.45rem;border-radius:8px;background:${site==='j'?'rgba(37,99,235,.2)':'rgba(37,99,235,.05)'};border:1px solid rgba(37,99,235,.4);color:#93c5fd;font-family:Heebo,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer">🏙 ירושלים</button>
-    <button onclick="window._pastViewSite='c';window._pastViewKey=null;initPast()" style="flex:1;padding:.45rem;border-radius:8px;background:${site==='c'?'rgba(16,185,129,.2)':'rgba(16,185,129,.05)'};border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-family:Heebo,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer">🌊 חוף</button>
+const sched=site==='j'?(window._schedule_next||window._schedule||{}):(window._choufSched||{});    <button onclick="window._pastViewSite='j';initPast()" style="flex:1;padding:.45rem;border-radius:8px;background:${site==='j'?'rgba(37,99,235,.2)':'rgba(37,99,235,.05)'};border:1px solid rgba(37,99,235,.4);color:#93c5fd;font-family:Heebo,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer">🏙 ירושלים</button>
+    <button onclick="window._pastViewSite='c';initPast()" style="flex:1;padding:.45rem;border-radius:8px;background:${site==='c'?'rgba(16,185,129,.2)':'rgba(16,185,129,.05)'};border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-family:Heebo,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer">🌊 חוף</button>
   </div>`;
-
-  const monthSelector=keys.length?`<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.75rem">
-    ${keys.map(k=>`<button onclick="window._pastViewKey='${k}';initPast()" style="padding:.3rem .65rem;border-radius:7px;background:${k===currentKey?'rgba(99,102,241,.25)':'rgba(99,102,241,.08)'};border:1px solid rgba(99,102,241,.35);color:#a5b4fc;font-family:Heebo,sans-serif;font-size:.75rem;cursor:pointer">${allScheds[k].label}</button>`).join('')}
-  </div>`:'';
-
-  if(!keys.length||!entry){
-    el.innerHTML=switcherHTML+'<div class="card" style="text-align:center;color:#64748b;padding:2rem">אין סידור רשמי שמור עדיין</div>';
-    return;
-  }
-
-  const sched=entry.schedule||{};
-  const activeDays=entry.days?entry.days.map(({day,month,year})=>{
-    const jd=new Date(year,month-1,day).getDay();
-    return{day,month,year,label:`${day}/${month}`,jsDay:jd,isWeekend:jd===5||jd===6,
-      isFri:jd===5,isSat:jd===6,realWeekend:jd===5||jd===6,holiday:getHoliday(day,month)};
-  }):SCHEDULE_DAYS;
-
-  const weeks=getWeeks(activeDays);
-  const weeksHTML=weeks.map((wk,i)=>{
-    const headers=wk.map(d=>{
-      const h=d.holiday;
-      return`<th style="min-width:72px;background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.06)':d.isWeekend?'rgba(245,158,11,.04)':'#080c14'}">
-        <div style="font-weight:800;color:${h?HOLIDAY_TEXT[h.type]:d.isWeekend?'#fcd34d':'#e2e8f0'};font-size:.68rem">${HEB_DAYS[d.jsDay]}</div>
-        <div style="font-size:.55rem;color:#64748b">${d.label}</div>
-        ${h?`<div style="font-size:.48rem;color:${HOLIDAY_TEXT[h.type]}">${h.name}</div>`:''}
-      </th>`;
-    }).join('');
-    const rows=SHIFTS_K.map(sh=>`<tr>
-      <td style="background:#080c14;position:sticky;right:0;z-index:1;white-space:nowrap;padding:.35rem .4rem;min-width:68px">
-        <div style="font-weight:700;color:#e2e8f0;font-size:.68rem">משמרת ${sh.label}</div>
-        <div style="font-size:.52rem;color:#64748b">${sh.time}</div>
-      </td>
-      ${wk.map(d=>{
-        const sk=`${d.day}-${d.month}`;
-        const slot=sched[sk]||{};
-        const entries=Object.entries(slot).filter(([k,v])=>v&&k.startsWith(sh.key+'_'));
-        const cells=entries.map(([k,v])=>{
-          const dc=site==='j'?getDeskColor(v):{bg:'rgba(16,185,129,.12)',border:'#10b981',text:'#6ee7b7',label:'חוף'};
-          const isAch=k.includes('achmash');
-          return`<div class="cell-inner" style="background:${isAch?'rgba(16,185,129,.06)':dc.bg};border-color:${isAch?'rgba(16,185,129,.4)':dc.border}">
-            <div class="cell-label" style="color:${isAch?'#10b981':dc.text}">${isAch?'אחמ"ש':dc.label}</div>
-            <div style="color:${isAch?'#6ee7b7':dc.text};font-size:.7rem">${v}</div>
-          </div>`;
-        }).join('');
-        const h=d.holiday;
-        return`<td style="background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.04)':d.isWeekend?'rgba(245,158,11,.02)':'transparent'};min-width:72px">${cells}</td>`;
-      }).join('')}
-    </tr>`).join('');
-    return`<div style="margin-bottom:1rem">
-      <div style="font-size:.68rem;color:#64748b;font-weight:700;margin-bottom:.3rem">שבוע ${i+1}</div>
-      <div class="week-table-wrap"><table><thead><tr>
-        <th style="background:#080c14;position:sticky;right:0;z-index:3;min-width:68px;border:none"></th>${headers}
-      </tr></thead><tbody>${rows}</tbody></table></div>
-    </div>`;
-  }).join('');
-
-  el.innerHTML=switcherHTML+monthSelector+`
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:.4rem">
-      <div style="font-weight:900;font-size:.9rem">${site==='j'?'🏙 ירושלים':'🌊 חוף'} — ${entry.label}</div>
-      <span style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);padding:.2rem .55rem;border-radius:6px;font-size:.72rem;font-weight:700">✅ שמור</span>
-    </div>
-    ${weeksHTML}`;
-}
-
-
-// ══════════════════════ CONSTRAINT ANALYSIS ══════════════════════
-function renderConsAnalysis(){
-  const allC=get_allC();const choufC=get_choufC();
-  const blockCounts={};const preferCounts={};
-  [...Object.values(allC),...Object.values(choufC)].forEach(wd=>{
-    (wd?.constraints||[]).forEach(cx=>{
-      const key=cx.day+'-'+cx.month+'-'+cx.shiftKey;
-      if(cx.type==='block') blockCounts[key]=(blockCounts[key]||0)+1;
-      else preferCounts[key]=(preferCounts[key]||0)+1;
-    });
-  });
-  const shL={a:"א׳",b:"ב׳",c:"ג׳"};
-  const activeDays=NEXT_MONTH_DAYS||SCHEDULE_DAYS;
-  const hotspots=Object.entries(blockCounts).filter(([,v])=>v>=3).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  const popular=Object.entries(preferCounts).filter(([,v])=>v>=2).sort((a,b)=>b[1]-a[1]).slice(0,4);
-  const submittedJ=Object.values(allC).filter(w=>w.submitted).length;
-  const submittedC=Object.values(choufC).filter(w=>w.submitted).length;
-  const totalJ=ALL_WORKERS.length, totalC=CHOUF_ALL.length;
-  if(!hotspots.length&&!popular.length) return '<div style="background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);border-radius:10px;padding:.5rem .8rem;margin-bottom:.65rem;font-size:.75rem;color:#6ee7b7">✅ אין קונפליקטים באילוצים | הוגש: ירושלים '+submittedJ+'/'+totalJ+' חוף '+submittedC+'/'+totalC+'</div>';
-  let html='<div style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:.6rem .85rem;margin-bottom:.65rem">';
-  html+='<div style="font-weight:900;color:#fcd34d;font-size:.8rem;margin-bottom:.4rem">📊 ניתוח אילוצים | הוגש: ירושלים '+submittedJ+'/'+totalJ+' חוף '+submittedC+'/'+totalC+'</div>';
-  if(hotspots.length){
-    html+='<div style="font-size:.7rem;color:#fca5a5;font-weight:700;margin-bottom:.25rem">⚠️ משמרות עמוסות בחסימות:</div>';
-    hotspots.forEach(([k,v])=>{
-      const parts=k.split('-');const d=parts[0],m=parts[1],sh=parts[2];
-      const dObj=activeDays.find(x=>String(x.day)===d&&String(x.month)===m);
-      html+='<div style="display:flex;justify-content:space-between;padding:.15rem 0;border-bottom:1px solid rgba(245,158,11,.1);font-size:.73rem"><span style="color:#e2e8f0">'+(dObj?dObj.label:d+'/'+m)+' — משמרת '+shL[sh]+'</span><span style="color:#fca5a5;font-weight:700">'+v+' חסימות 🚨</span></div>';
-    });
-  }
-  if(popular.length){
-    html+='<div style="font-size:.7rem;color:#6ee7b7;font-weight:700;margin-top:.35rem;margin-bottom:.25rem">⭐ משמרות מבוקשות:</div>';
-    popular.forEach(([k,v])=>{
-      const parts=k.split('-');const d=parts[0],m=parts[1],sh=parts[2];
-      const dObj=activeDays.find(x=>String(x.day)===d&&String(x.month)===m);
-      html+='<div style="display:flex;justify-content:space-between;padding:.15rem 0;font-size:.73rem"><span style="color:#e2e8f0">'+(dObj?dObj.label:d+'/'+m)+' — '+shL[sh]+'</span><span style="color:#6ee7b7">'+v+' מעוניינים ✨</span></div>';
-    });
-  }
-  html+='</div>';
-  return html;
-}
-
-// ══════════════════════ SMART ASSIGNMENT SUGGESTION ══════════════════════
-function suggestForSlot(day,month,shKey){
-  const allC=get_allC();const schedule=get_schedule();
-  const sk=`${day}-${month}`;
-  const suggestions=ALL_WORKERS.map(name=>{
-    const wData=allC[name]||{};const cons=wData.constraints||[];
-    const prefersThis=cons.some(c=>c.day===day&&c.month===month&&c.shiftKey===shKey&&c.type==='prefer');
-    const blocksThis=cons.some(c=>c.day===day&&c.month===month&&c.shiftKey===shKey&&c.type==='block');
-    const alreadyScheduled=Object.values(schedule).some(slot=>Object.values(slot).includes(name));
-    if(blocksThis)return null;
-    const score=(prefersThis?10:0)+(alreadyScheduled?-3:0);
-    return{name,score,prefersThis};
-  }).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,5);
-  return suggestions;
+  if(!Object.keys(sched).length){el.innerHTML=switcherHTML+'<div class="card" style="text-align:center;color:#64748b;padding:2rem">אין סידור עדיין</div>';return;}
+  const weeks=getWeeks(SCHEDULE_DAYS);
+  const weeksHTML=weeks.map((wk,i)=>`<div style="margin-bottom:1rem"><div style="font-size:.68rem;color:#64748b;margin-bottom:.3rem">שבוע ${i+1}</div><div class="week-table-wrap"><table><thead><tr><th style="background:#080c14;position:sticky;right:0;z-index:3;min-width:68px;border:none"></th>${wk.map(d=>{const h=d.holiday;return`<th style="min-width:72px;background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.06)':d.isWeekend?'rgba(245,158,11,.04)':'#080c14'}"><div style="font-weight:800;color:${h?HOLIDAY_TEXT[h.type]:d.isWeekend?'#fcd34d':'#e2e8f0'};font-size:.68rem">${HEB_DAYS[d.jsDay]}</div><div style="font-size:.55rem;color:#64748b">${d.label}</div>${h?`<div style="font-size:.48rem;color:${HOLIDAY_TEXT[h.type]}">${h.name}</div>`:''}</th>`;}).join('')}</tr></thead><tbody>${SHIFTS_K.map(sh=>`<tr><td style="background:#080c14;position:sticky;right:0;z-index:1;white-space:nowrap;padding:.35rem .4rem;min-width:68px"><div style="font-weight:700;color:#e2e8f0;font-size:.68rem">משמרת ${sh.label}</div><div style="font-size:.52rem;color:#64748b">${sh.time}</div></td>${wk.map(d=>{const sk=`${d.day}-${d.month}`;const slot=sched[sk]||{};const cells=Object.entries(slot).filter(([k,v])=>v&&k.startsWith(sh.key+'_')).map(([k,v])=>{const dc=site==='j'?getDeskColor(v):{bg:'rgba(16,185,129,.12)',border:'#10b981',text:'#6ee7b7',label:'חוף'};const isAch=k.includes('achmash');return`<div class="cell-inner" style="background:${isAch?'rgba(16,185,129,.06)':dc.bg};border-color:${isAch?'rgba(16,185,129,.4)':dc.border}"><div class="cell-label" style="color:${isAch?'#10b981':dc.text}">${isAch?'אחמ"ש':dc.label}</div><div style="color:${isAch?'#6ee7b7':dc.text};font-size:.7rem">${v}</div></div>`;}).join('');const h=d.holiday;return`<td style="background:${h?HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.04)':d.isWeekend?'rgba(245,158,11,.02)':'transparent'};min-width:72px">${cells}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div></div>`).join('');
+  el.innerHTML=switcherHTML+`<div style="font-weight:900;font-size:.9rem;margin-bottom:.75rem">${site==='j'?'🏙 ירושלים':'🌊 חוף'} — ${MONTH_LABEL}</div>${weeksHTML}`;
 }
 
 // ══════════════════════ REMINDERS ══════════════════════
