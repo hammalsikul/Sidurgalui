@@ -446,7 +446,7 @@ window._db = db;
 window._fbSet = (path, data) => set(ref(db, path), data);
 window._fbListen = (path, cb) => onValue(ref(db, path), snap => cb(snap.val()));
 
-let loaded = {c:false, v:false, s:false, sk:false, p:false, t:false, b:false, cc:false, cs:false, sn:true};let _loginShown = false;
+let loaded = {c:false, v:false, s:false, sk:false, p:false, t:false, b:false, cc:false, cs:false};let _loginShown = false;
 function checkLoaded() {
   if(_loginShown) return;
   if(loaded.c && loaded.v && loaded.s && loaded.sk && loaded.p && loaded.t && loaded.b && loaded.cc && loaded.cs) {
