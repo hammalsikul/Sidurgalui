@@ -290,6 +290,7 @@ select option{background:#0f1623;color:#e2e8f0}
 <button class="btn" id="mgr-tab-swaps-btn" onclick="setMgrTab('swaps')" style="border:1px solid #243048;font-size:.75rem">🔄 החלפות</button>
 <button class="btn" id="mgr-tab-sick-report-btn" onclick="setMgrTab('sick-report')" style="border:1px solid #243048;font-size:.75rem">📊 מחלות</button>
 <button class="btn" id="mgr-tab-duty-btn" onclick="setMgrTab('duty')" style="border:1px solid #243048;font-size:.75rem">🎖 מפקד תורן</button>
+<button class="btn" id="mgr-tab-cons-window-btn" onclick="setMgrTab('cons-window')" style="border:1px solid #243048;font-size:.75rem">📅 חלון אילוצים</button>
 <button class="btn" id="mgr-tab-admin-btn" onclick="setMgrTab('admin')" style="border:1px solid #243048;font-size:.75rem">⚙️ ניהול</button>
         </div>
       </div>
@@ -305,6 +306,7 @@ select option{background:#0f1623;color:#e2e8f0}
 <div id="mgr-panel-swaps" class="hidden"></div>
 <div id="mgr-panel-sick-report" class="hidden"></div>
 <div id="mgr-panel-duty" class="hidden"></div>
+<div id="mgr-panel-cons-window" class="hidden"></div>
 <div id="mgr-panel-admin" class="hidden"></div>
     </div>
   </div>
@@ -493,6 +495,15 @@ window._fbListen('chouf_constraints_'+CONS_MONTH+'_'+CONS_YEAR, v => { window._c
 window._fbListen('chouf_schedule_'+SCHED_MONTH+'_'+CURRENT_YEAR, v => { const s=v||{}; window._choufSched=s.schedule||{}; window._choufReady=s.schedReady||false; window._choufOfficial=s.official||false; loaded.cs=true; checkLoaded(); });
 window._fbListen('ticker',     v => { window._ticker=Array.isArray(v)?v:Object.values(v||{}); loaded.t=true; checkLoaded(); if(window._appReady)renderTicker(); });
 window._fbListen('birthdays',  v => { window._birthdays=v||{}; loaded.b=true; checkLoaded(); if(window._appReady&&window._currentPage==='home')renderBirthdays(); });
+// Listener for constraint windows (per-month config set by manager)
+window._fbListen('constraint_windows', v => {
+  window._constraintWindows=v||{};
+  if(window._appReady){
+    if(window._currentPage==='emp')renderConsPanel();
+    if(window._currentPage==='home')renderHome();
+    if(window._currentPage==='mgr'&&mgrTab==='cons-window')renderMgrConsWindow();
+  }
+});
 window._effectiveHolidays={...JEWISH_HOLIDAYS};
 window._fbListen('holiday_overrides', v => {
   window._holidayOverrides=v||{};
@@ -556,11 +567,11 @@ window._fbListen('chats', v => {
 <script>
 
 // ══════ CONSTANTS ══════
-const WORKERS_BASHAL=['יוסף','ליאן','נועה','שירה נ','שירה ח','חנה','תהילה','נורית','לאה','עמית'];
+const WORKERS_BASHAL=['יוסף','ליאן','נועה','שירה נ','שירה ח','חנה','תהילה','נורית','לאה','עמית','איתי','שהם','אוריה'];
 const WORKERS_STUDENT=['עידו','נויה','לינור'];
 const WORKERS_KEVA=['שמואל','תמר','נועם','אוראל'];
 const ALL_WORKERS=[...WORKERS_BASHAL,...WORKERS_STUDENT,...WORKERS_KEVA];
-const DESK_MAP={'יוסף':'סד"צ','נורית':'סד"צ','תהילה':'סד"צ','לינור':'סד"צ','נועה':'פלילי','ליאן':'פלילי','שירה נ':'פלילי','חנה':'פלילי','נויה':'פלילי','שירה ח':'פח"ע','לאה':'פח"ע','עמית':'פח"ע','עידו':'פח"ע','שמואל':'מפקד','תמר':'מפקד','נועם':'מפקד','אוראל':'מפקד'};
+const DESK_MAP={'יוסף':'סד"צ','נורית':'סד"צ','תהילה':'סד"צ','לינור':'סד"צ','איתי':'סד"צ','נועה':'פלילי','ליאן':'פלילי','שירה נ':'פלילי','חנה':'פלילי','נויה':'פלילי','שהם':'פלילי','שירה ח':'פח"ע','לאה':'פח"ע','עמית':'פח"ע','עידו':'פח"ע','אוריה':'פח"ע','שמואל':'מפקד','תמר':'מפקד','נועם':'מפקד','אוראל':'מפקד'};
 const POP_MAP={...Object.fromEntries(WORKERS_BASHAL.map(n=>[n,'bashal'])),...Object.fromEntries(WORKERS_STUDENT.map(n=>[n,'student'])),...Object.fromEntries(WORKERS_KEVA.map(n=>[n,'keva']))};
 const POP_LABEL={bashal:'⭐ בש"ל',student:'🎓 סטודנט',keva:'👮 קבע'};
 const POP_COLOR={bashal:'#3b82f6',student:'#8b5cf6',keva:'#f59e0b'};
@@ -744,15 +755,17 @@ function buildScheduleDays(){
   return days;
 }
 let SCHEDULE_DAYS=buildScheduleDays();
-const MONTH_LABEL=`${HEB_MONTHS[(SCHEDULE_DAYS[0]?.month||1)-1]} ${SCHEDULE_DAYS[0]?.year||new Date().getFullYear()}`;
 const TODAY=new Date();
-const CURRENT_MONTH=TODAY.getMonth()+1; // actual current month (for birthdays)
+const CURRENT_MONTH=TODAY.getMonth()+1;
 const CURRENT_YEAR=TODAY.getFullYear();
-const SCHED_MONTH=SCHEDULE_DAYS[0]?.month||CURRENT_MONTH; // month being scheduled
+// חישוב חודש הסידור לפי החודש הנוכחי בפועל, לא לפי תחילת השבוע
+const _daysInCurrMo=new Date(CURRENT_YEAR,CURRENT_MONTH,0).getDate();
+const _todayDate=TODAY.getDate();
+const SCHED_MONTH=_todayDate>_daysInCurrMo?(CURRENT_MONTH===12?1:CURRENT_MONTH+1):CURRENT_MONTH;
+const SCHED_YEAR=_todayDate>_daysInCurrMo&&CURRENT_MONTH===12?CURRENT_YEAR+1:CURRENT_YEAR;
+const MONTH_LABEL=`${HEB_MONTHS[SCHED_MONTH-1]} ${SCHED_YEAR}`;
 // Month management
 const TODAY_D=TODAY.getDate();
-// Schedule month = current month (always)
-// Constraints month = next month (after 15th) or current month (before 15th)
 const CONS_MONTH=TODAY_D>=15?(SCHED_MONTH%12)+1:SCHED_MONTH;
 const CONS_YEAR=CONS_MONTH===1&&SCHED_MONTH===12?CURRENT_YEAR+1:CURRENT_YEAR;
 const NEXT_MONTH=CONS_MONTH;
@@ -780,6 +793,31 @@ function buildNextMonthDays(){
 }
 let NEXT_MONTH_DAYS=CONS_MONTH!==SCHED_MONTH?buildNextMonthDays():SCHEDULE_DAYS;
 const NEXT_MONTH_LABEL=`${HEB_MONTHS[(CONS_MONTH||1)-1]} ${CONS_YEAR}`;
+
+// ══════════ חלונות אילוצים (Constraint Windows) ══════════
+// המפקד מגדיר לכל חודש: תאריך התחלה, תאריך סיום, ו-deadline להגשה
+function getConstraintWindow(month,year){
+  const windows=window._constraintWindows||{};
+  const key=`${year}_${month}`;
+  return windows[key]||null;
+}
+// טווח ימי האילוצים בפועל — מסנן את NEXT_MONTH_DAYS לפי הגדרת המפקד
+function getEffectiveConsDays(){
+  const baseDays=CONS_MONTH!==SCHED_MONTH?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
+  const win=getConstraintWindow(CONS_MONTH,CONS_YEAR);
+  if(!win||!win.startDay||!win.endDay)return baseDays;
+  return baseDays.filter(d=>{
+    if(d.month===CONS_MONTH&&d.year===CONS_YEAR){
+      return d.day>=win.startDay&&d.day<=win.endDay;
+    }
+    return false;
+  });
+}
+// Deadline להגשה (יום בחודש הנוכחי שבו נסגר החלון). ברירת מחדל: 22
+function getConsDeadline(){
+  const win=getConstraintWindow(CONS_MONTH,CONS_YEAR);
+  return (win&&win.deadlineDay)?win.deadlineDay:22;
+}
 
 function get_allC(){return window._allC||{};}
 function get_allV(){return window._allV||[];}
@@ -820,6 +858,23 @@ function saveC(d){
   else if(window._currentPage==='home')renderHome();
   setSyncing(true);
   window._fbSet('constraints_'+CONS_MONTH+'_'+CONS_YEAR,d).then(()=>setSyncing(false));
+}
+// שמירה של אילוצים לחודש ספציפי (חודש נוכחי=SCHED או חודש הבא=CONS)
+function saveCForMonth(d,isNextMonth){
+  if(isNextMonth){
+    window._allC_next=d;
+    if(CONS_MONTH!==SCHED_MONTH)window._allC=d;
+    const m=CONS_MONTH,y=CONS_YEAR;
+    setSyncing(true);
+    window._fbSet('constraints_'+m+'_'+y,d).then(()=>setSyncing(false));
+  } else {
+    window._allC_curr=d;
+    if(CONS_MONTH===SCHED_MONTH)window._allC=d;
+    const m=SCHED_MONTH,y=SCHED_YEAR;
+    setSyncing(true);
+    window._fbSet('constraints_'+m+'_'+y,d).then(()=>setSyncing(false));
+  }
+  if(window._currentPage==='home')renderHome();
 }
 function get_schedC(){return window._allC_curr||{};}// constraints for CURRENT month (for schedule engine)
 function saveV(d){window._allV=d;setSyncing(true);window._fbSet('vacations',d).then(()=>setSyncing(false));}
@@ -977,15 +1032,16 @@ window._renderHome = function(){
   g('home-avatars').innerHTML=`<div style="width:100%;font-size:.58rem;color:#93c5fd;font-weight:700;margin-bottom:2px">🏙 ירושלים</div>${jAvatars}<div style="width:100%;font-size:.58rem;color:#6ee7b7;font-weight:700;margin-top:4px;margin-bottom:2px">🌊 חוף</div>${chAvatars}`;
   if(activeSick>0){show('home-sick-banner');g('home-sick-banner').textContent=`🚨 ${activeSick} דיווח מחלה פעיל — לחץ לפרטים`;}else hide('home-sick-banner');
   vacApproved>0?show('home-vac-badge'):hide('home-vac-badge');
-  // Alert: days 15-22 of month
+  // Alert: constraints submission window (configured by manager)
   const today=new Date(),d=today.getDate();
-  if(d>=15&&d<=22){
+  const _deadlineDay=getConsDeadline();
+  if(d>=15&&d<=_deadlineDay){
     show('home-alert-banner');
     // Check if current user hasn't submitted yet
     const empSel=g('emp-worker')||{value:window._empWorker};
     const currWorker=window._empWorker;
     const workerSubmitted=currWorker?(isChoufWorker(currWorker)?get_choufC()[currWorker]?.submitted:get_allC()[currWorker]?.submitted):true;
-    const daysLeft=22-d;
+    const daysLeft=_deadlineDay-d;
     if(currWorker&&!workerSubmitted){
       g('home-alert-banner').style.background='rgba(220,38,38,.15)';
       g('home-alert-banner').style.borderColor='rgba(220,38,38,.5)';
@@ -995,7 +1051,7 @@ window._renderHome = function(){
       g('home-alert-banner').style.background='rgba(245,158,11,.1)';
       g('home-alert-banner').style.borderColor='rgba(245,158,11,.5)';
       g('home-alert-banner').style.color='#fcd34d';
-      g('home-alert-text').textContent=`יש להזין אילוצים עד ה-22 לחודש! (נותרו ${daysLeft} ימים)`;
+      g('home-alert-text').textContent=`יש להזין אילוצים עד ה-${_deadlineDay} לחודש! (נותרו ${daysLeft} ימים)`;
     }
   } else hide('home-alert-banner');
 }
@@ -1181,11 +1237,14 @@ function renderConsPanel(){
   if(isChoufWorker(window._empWorker)){renderChoufConsPanel();return;}
   const allC=get_allC();const pop=POP_MAP[window._empWorker]||'bashal';
   const wData=allC[window._empWorker]||{constraints:[],submitted:false};const cons=wData.constraints||[];
-  // Use NEXT_MONTH_DAYS for constraint dates
-  const activeDays=NEXT_MONTH_DAYS||SCHEDULE_DAYS;
+  // Use constraint window from manager settings, or fallback to NEXT_MONTH_DAYS
+  const activeDays=getEffectiveConsDays();
   const wdDays=activeDays.filter(d=>!d.isWeekend),friDays=activeDays.filter(d=>d.isFri),satDays=activeDays.filter(d=>d.isSat);
   const shL={a:'א׳',b:'ב׳',c:'ג׳'};const totalH=pop==='student'?cons.filter(cx=>cx.type==='prefer').reduce((s,cx)=>(SHIFT_HOURS[cx.shiftKey]||8)+s,0):cons.reduce((s,cx)=>(SHIFT_HOURS[cx.shiftKey]||8)+s,0);
-  const monthBanner=CONS_MONTH!==SCHED_MONTH?`<div style="background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.35);border-radius:8px;padding:.4rem .7rem;margin-bottom:.6rem;font-size:.75rem;color:#a5b4fc;font-weight:700">📋 מגישים אילוצים ל<b>${NEXT_MONTH_LABEL}</b></div>`:'';
+  // Window info banner
+  const win=getConstraintWindow(CONS_MONTH,CONS_YEAR);
+  const rangeInfo=win&&win.startDay&&win.endDay?` (${win.startDay}/${CONS_MONTH} – ${win.endDay}/${CONS_MONTH})`:'';
+  const monthBanner=CONS_MONTH!==SCHED_MONTH?`<div style="background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.35);border-radius:8px;padding:.4rem .7rem;margin-bottom:.6rem;font-size:.75rem;color:#a5b4fc;font-weight:700">📋 מגישים אילוצים ל<b>${NEXT_MONTH_LABEL}</b>${rangeInfo}</div>`:'';
   const slotRows=(days,shifts)=>days.map(d=>{
     const h=d.holiday;
     return`<div class="dayslot-row" style="${h?`background:${HOLIDAY_COLORS[h.type]||'rgba(139,92,246,.07)'}`:''}">`+
@@ -1209,7 +1268,7 @@ function renderConsPanel(){
     html+=`<div style="display:flex;gap:.4rem;margin-bottom:.5rem;flex-wrap:wrap"><select class="sel" id="cons-day" style="flex:1;margin-bottom:0">${wdDays.map(d=>`<option value="${d.day}-${d.month}">${d.label} ${HEB_DAYS[d.jsDay]}</option>`).join('')}</select><select class="sel" id="cons-sh" style="width:90px;margin-bottom:0"><option value="a">א׳</option><option value="b">ב׳</option></select><button class="btn" style="background:#f59e0b;color:#080c14;padding:.4rem .7rem" onclick="addCons()">⛔</button></div>`;
   } else {
     html+=`<div style="font-weight:700;color:#93c5fd;font-size:.8rem;margin-bottom:.4rem">הוסף אילוץ</div>`;
-    html+=`<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:.35rem;align-items:center;margin-bottom:.5rem"><select class="sel" id="cons-day" style="margin-bottom:0">${NEXT_MONTH_DAYS.map(d=>`<option value="${d.day}-${d.month}">${d.label} ${HEB_DAYS[d.jsDay]}${d.holiday?' — '+d.holiday.name:''}</option>`).join('')}</select><select class="sel" id="cons-sh" style="width:75px;margin-bottom:0"><option value="a">א׳</option><option value="b">ב׳</option><option value="c">ג׳</option></select><select class="sel" id="cons-type" style="width:150px;margin-bottom:0"><option value="block">❌ מבקש לא לעבוד</option><option value="prefer">✅ מבקש לעבוד</option></select><button class="btn btn-blue" style="padding:.4rem .6rem" onclick="addCons()">➕</button></div>`;
+    html+=`<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:.35rem;align-items:center;margin-bottom:.5rem"><select class="sel" id="cons-day" style="margin-bottom:0">${activeDays.map(d=>`<option value="${d.day}-${d.month}">${d.label} ${HEB_DAYS[d.jsDay]}${d.holiday?' — '+d.holiday.name:''}</option>`).join('')}</select><select class="sel" id="cons-sh" style="width:75px;margin-bottom:0"><option value="a">א׳</option><option value="b">ב׳</option><option value="c">ג׳</option></select><select class="sel" id="cons-type" style="width:150px;margin-bottom:0"><option value="block">❌ מבקש לא לעבוד</option><option value="prefer">✅ מבקש לעבוד</option></select><button class="btn btn-blue" style="padding:.4rem .6rem" onclick="addCons()">➕</button></div>`;
   }
   if(cons.length){
     html+=`<div style="font-size:.7rem;color:#64748b;margin-bottom:.3rem">${pop==='student'?`${totalH}h${totalH>=80?' ✅':' ⚠️ מינימום 80h'}`:pop==='keva'?`${cons.length} אילוצים`:`${cons.length}/${MAX_C} אילוצים`}</div>`;
@@ -1547,7 +1606,7 @@ function mgrLogin(){if(g('mgr-pw').value===MGR_PW){window._mgrAuthed=true;hide('
 function renderMgrPanel(){const allSick=get_allSick();const active=allSick.filter(r=>!r.resolved);g('mgr-sick-banner').innerHTML=active.length?`<div style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.35);border-radius:10px;padding:.65rem;margin-bottom:.75rem;font-size:.78rem;color:#fca5a5">🚨 מחלה: ${active.map(r=>r.worker).join(', ')}</div>`:'';setMgrTab(mgrTab);}
 function setMgrTab(t){
   mgrTab=t;
-  ['cons','vacs','sched','chouf','combined','justice','xrep','chat','holidays','swaps','sick-report','duty','admin'].forEach(x=>{
+  ['cons','vacs','sched','chouf','combined','justice','xrep','chat','holidays','swaps','sick-report','duty','cons-window','admin'].forEach(x=>{
     const btn=g('mgr-tab-'+x+'-btn');if(!btn)return;
     btn.style.background=x===t?'#1e3a5f':'#1e2a40';
     btn.style.color=x===t?'#93c5fd':'#64748b';
@@ -1566,6 +1625,7 @@ function setMgrTab(t){
   else if(t==='swaps')renderMgrSwaps();
   else if(t==='sick-report')renderMgrSickReport();
   else if(t==='duty')renderMgrDuty();
+  else if(t==='cons-window')renderMgrConsWindow();
   else renderMgrAdmin();
 }
 function renderMgrCombined(){
@@ -1590,10 +1650,20 @@ function buildConsApproveBtn(sub,st,n,ci,isChouf){
   return '<button data-n="'+n+'" data-ci="'+ci+'" data-ic="'+isChouf+'" data-reset="1" onclick="mgrApproveByEl(this)" style="background:rgba(100,116,139,.1);color:#94a3b8;border:1px solid rgba(100,116,139,.3);padding:.15rem .4rem;border-radius:5px;font-size:.58rem;cursor:pointer;font-family:Heebo,sans-serif">↺ אפס</button>';
 }
 function renderMgrCons(){
-  renderConsAnalysis();
-  const allC=get_allC();const choufC=get_choufC();const shL={a:'א׳',b:'ב׳',c:'ג׳'};
-  // Month context banner
-  const monthBanner=CONS_MONTH!==SCHED_MONTH?`<div style="background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:9px;padding:.5rem .8rem;margin-bottom:.75rem;font-size:.78rem;color:#a5b4fc;font-weight:700">📋 אילוצים ל<b>${NEXT_MONTH_LABEL}</b> | סידור נוכחי: <b>${MONTH_LABEL}</b></div>`:'';
+  // Default: view 'next' month if different, else 'curr'
+  if(!window._mgrConsMonth) window._mgrConsMonth = (CONS_MONTH!==SCHED_MONTH)?'next':'curr';
+  const viewNext = window._mgrConsMonth==='next';
+  // Pick the right constraints source based on selected month
+  const allC = viewNext ? (window._allC_next||{}) : (window._allC_curr||{});
+  const choufC=get_choufC();const shL={a:'א׳',b:'ב׳',c:'ג׳'};
+  // Month toggle — always show both buttons
+  const nextLbl = NEXT_MONTH_LABEL;
+  const currLbl = MONTH_LABEL;
+  const monthToggleHTML = `<div style="display:flex;gap:.4rem;margin-bottom:.65rem;flex-wrap:wrap;align-items:center">
+    <button onclick="window._mgrConsMonth='next';renderMgrCons()" style="background:${viewNext?'rgba(99,102,241,.25)':'rgba(99,102,241,.08)'};color:#a5b4fc;border:1px solid rgba(99,102,241,.35);border-radius:7px;padding:.3rem .7rem;font-family:Heebo,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer">📋 אילוצים ל${nextLbl}</button>
+    <button onclick="window._mgrConsMonth='curr';renderMgrCons()" style="background:${!viewNext?'rgba(37,99,235,.25)':'rgba(37,99,235,.08)'};color:#93c5fd;border:1px solid rgba(37,99,235,.35);border-radius:7px;padding:.3rem .7rem;font-family:Heebo,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer">📋 אילוצים ל${currLbl}</button>
+  </div>`;
+  const monthBanner=`<div style="background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:9px;padding:.5rem .8rem;margin-bottom:.75rem;font-size:.78rem;color:#a5b4fc;font-weight:700">📋 מציג אילוצים ל<b>${viewNext?nextLbl:currLbl}</b> | סידור נוכחי: <b>${currLbl}</b></div>`;
   const groups=[
     {label:'⭐ בש"ל — ירושלים',list:WORKERS_BASHAL,color:'#3b82f6',data:allC,isChouf:false},
     {label:'🎓 סטודנטים — ירושלים',list:WORKERS_STUDENT,color:'#8b5cf6',data:allC,isChouf:false},
@@ -1649,8 +1719,7 @@ function renderMgrCons(){
       </div>`;
     }).join('')}
   </div>`).join('');
-  const analysisHTML=renderConsAnalysis();
-  g('mgr-panel-cons').innerHTML=analysisHTML+monthBanner+html;
+  g('mgr-panel-cons').innerHTML=monthToggleHTML+monthBanner+html;
 }
 function mgrApproveByEl(btn){
   const name=btn.dataset.n;
@@ -1660,12 +1729,14 @@ function mgrApproveByEl(btn){
   mgrApproveCon(name,ci,isChouf,action);
 }
 function mgrApproveCon(name,idx,isChouf,action){
-  const allC=isChouf?get_choufC():get_allC();
+  const viewNext=window._mgrConsMonth!=='curr'&&CONS_MONTH!==SCHED_MONTH;
+  const allC=isChouf?get_choufC():(viewNext?(window._allC_next||{}):(window._allC_curr||{}));
   const wd={...allC[name]};const cons=[...wd.constraints||[]];
   const newStatus=action==='reset'?'pending':action==='reject'?'rejected':'approved';
   cons[idx]={...cons[idx],approvalStatus:newStatus};
   wd.constraints=cons;
-  isChouf?saveChoufC({...allC,[name]:wd}):saveC({...allC,[name]:wd});
+  if(isChouf) saveChoufC({...allC,[name]:wd});
+  else saveCForMonth({...allC,[name]:wd},viewNext);
   const msg=action==='reset'?'↺ אופס':action==='reject'?'❌ נדחה':'✅ אושר';
   toast(msg);renderMgrCons();
 }
@@ -1674,19 +1745,23 @@ function mgrApproveAllCons(btn){
   const name=btn.dataset.n;
   const isChouf=btn.dataset.ic==='true';
   const isReject=!!btn.dataset.reject;
-  const allC=isChouf?get_choufC():get_allC();
+  const viewNext=window._mgrConsMonth!=='curr'&&CONS_MONTH!==SCHED_MONTH;
+  const allC=isChouf?get_choufC():(viewNext?(window._allC_next||{}):(window._allC_curr||{}));
   const wd={...allC[name]};const cons=[...wd.constraints||[]];
   const newStatus=isReject?'rejected':'approved';
   wd.constraints=cons.map(cx=>({...cx,approvalStatus:newStatus}));
   // If no constraints, mark the submission itself
   if(cons.length===0) wd.submissionStatus=newStatus;
-  isChouf?saveChoufC({...allC,[name]:wd}):saveC({...allC,[name]:wd});
+  if(isChouf) saveChoufC({...allC,[name]:wd});
+  else saveCForMonth({...allC,[name]:wd},viewNext);
   toast(isReject?'❌ הגשת '+name+' נדחתה':'✅ הגשת '+name+' אושרה');renderMgrCons();
 }
 function mgrDeleteCons(name,isChouf){
   if(!confirm(`למחוק את כל האילוצים של ${name} ולהחזיר למילוי מחדש?`))return;
-  const allC=isChouf?get_choufC():get_allC();
-  isChouf?saveChoufC({...allC,[name]:{constraints:[],submitted:false}}):saveC({...allC,[name]:{constraints:[],submitted:false}});
+  const viewNext=window._mgrConsMonth!=='curr'&&CONS_MONTH!==SCHED_MONTH;
+  const allC=isChouf?get_choufC():(viewNext?(window._allC_next||{}):(window._allC_curr||{}));
+  if(isChouf) saveChoufC({...allC,[name]:{constraints:[],submitted:false}});
+  else saveCForMonth({...allC,[name]:{constraints:[],submitted:false}},viewNext);
   toast(`🗑 אילוצי ${name} נמחקו`);renderMgrCons();
 }
 function renderMgrVacs(){
@@ -2914,6 +2989,137 @@ function saveDutyOfficer(field,value){
   renderMgrDuty();
   toast(value?`✅ מפקד תורן עודכן: ${value}`:'🔄 מפקד תורן נוקה');
 }
+// ══════════════════════ חלון אילוצים — הגדרה ע"י המפקד ══════════════════════
+function renderMgrConsWindow(){
+  const el=g('mgr-panel-cons-window');if(!el)return;
+  const windows=window._constraintWindows||{};
+  // רשימת חודשים לבחירה: חודש נוכחי + 2 הבאים
+  const monthOptions=[];
+  for(let i=0;i<3;i++){
+    let m=CONS_MONTH+i,y=CONS_YEAR;
+    while(m>12){m-=12;y++;}
+    monthOptions.push({month:m,year:y,label:`${HEB_MONTHS[m-1]} ${y}`});
+  }
+  // גם אפשר לערוך את החודשים הקיימים
+  Object.keys(windows).forEach(k=>{
+    const [y,m]=k.split('_').map(Number);
+    if(!monthOptions.find(o=>o.month===m&&o.year===y)){
+      monthOptions.push({month:m,year:y,label:`${HEB_MONTHS[m-1]} ${y}`});
+    }
+  });
+  monthOptions.sort((a,b)=>(a.year-b.year)||(a.month-b.month));
+
+  if(!window._consWindowEditMonth){
+    window._consWindowEditMonth=`${CONS_YEAR}_${CONS_MONTH}`;
+  }
+  const selKey=window._consWindowEditMonth;
+  const [selY,selM]=selKey.split('_').map(Number);
+  const selLabel=`${HEB_MONTHS[selM-1]} ${selY}`;
+  const existing=windows[selKey]||{};
+  const daysInMonth=new Date(selY,selM,0).getDate();
+
+  let html=`
+  <div class="card">
+    <div style="font-weight:900;font-size:1rem;margin-bottom:.4rem;color:#a5b4fc">📅 חלון אילוצים — הגדרה</div>
+    <div style="font-size:.78rem;color:#94a3b8;margin-bottom:1rem">הגדר/י לכל חודש את טווח התאריכים שהעובדים יוכלו להגיש אליהם אילוצים, ואת התאריך האחרון להגשה.</div>
+
+    <div style="margin-bottom:.75rem">
+      <div style="font-size:.78rem;color:#94a3b8;margin-bottom:.3rem">בחר/י חודש:</div>
+      <select class="sel" id="cons-window-month-sel" onchange="window._consWindowEditMonth=this.value;renderMgrConsWindow()">
+        ${monthOptions.map(o=>`<option value="${o.year}_${o.month}" ${(`${o.year}_${o.month}`===selKey)?'selected':''}>${o.label}</option>`).join('')}
+      </select>
+    </div>
+
+    <div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.25);border-radius:9px;padding:.75rem;margin-bottom:.5rem">
+      <div style="font-weight:800;color:#a5b4fc;margin-bottom:.55rem">⚙️ הגדרות ל${selLabel}</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem">
+        <div>
+          <div style="font-size:.72rem;color:#94a3b8;margin-bottom:.2rem">יום התחלה בחודש</div>
+          <input type="number" min="1" max="${daysInMonth}" id="cons-window-start" value="${existing.startDay||1}" class="sel" style="width:100%">
+        </div>
+        <div>
+          <div style="font-size:.72rem;color:#94a3b8;margin-bottom:.2rem">יום סיום בחודש</div>
+          <input type="number" min="1" max="${daysInMonth}" id="cons-window-end" value="${existing.endDay||daysInMonth}" class="sel" style="width:100%">
+        </div>
+      </div>
+
+      <div style="margin-bottom:.5rem">
+        <div style="font-size:.72rem;color:#94a3b8;margin-bottom:.2rem">יום אחרון להגשה (ב<b>חודש הקודם</b>):</div>
+        <input type="number" min="15" max="31" id="cons-window-deadline" value="${existing.deadlineDay||22}" class="sel" style="width:100%">
+      </div>
+
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn btn-blue" style="padding:.4rem .9rem" onclick="saveConstraintWindow()">💾 שמור</button>
+        ${existing.startDay?`<button class="btn" style="background:rgba(220,38,38,.1);color:#fca5a5;border:1px solid rgba(220,38,38,.3);padding:.4rem .9rem" onclick="deleteConstraintWindow()">🗑 מחק הגדרות</button>`:''}
+      </div>
+
+      ${existing.startDay?`<div style="margin-top:.6rem;font-size:.72rem;color:#6ee7b7;background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.25);border-radius:7px;padding:.45rem .6rem">
+        ✅ מוגדר: העובדים יוכלו להגיש אילוצים ל-${selLabel} <b>בימים ${existing.startDay}/${selM} עד ${existing.endDay}/${selM}</b>, עד ל-<b>${existing.deadlineDay||22}/${selM===1?12:selM-1}</b>
+      </div>`:`<div style="margin-top:.6rem;font-size:.72rem;color:#94a3b8;background:rgba(100,116,139,.08);border-radius:7px;padding:.45rem .6rem">
+        טרם הוגדרו הגדרות לחודש זה — המערכת תשתמש בברירת המחדל (כל החודש, עד ה-22).
+      </div>`}
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:900;color:#e2e8f0;margin-bottom:.5rem">📋 כל ההגדרות הקיימות</div>
+    ${Object.keys(windows).length===0?`<div style="color:#64748b;font-size:.8rem">אין הגדרות שמורות. כל ההגשות פתוחות לפי ברירת המחדל.</div>`:
+      Object.keys(windows).sort().map(k=>{
+        const [y,m]=k.split('_').map(Number);
+        const w=windows[k];
+        const lbl=`${HEB_MONTHS[m-1]} ${y}`;
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:.45rem .55rem;border-bottom:1px solid #1e2a40;flex-wrap:wrap;gap:.3rem">
+          <div>
+            <div style="font-weight:700;font-size:.82rem">${lbl}</div>
+            <div style="font-size:.68rem;color:#94a3b8">${w.startDay}/${m} – ${w.endDay}/${m} | deadline: ${w.deadlineDay||22}/${m===1?12:m-1}</div>
+          </div>
+          <button onclick="window._consWindowEditMonth='${k}';renderMgrConsWindow()" style="background:rgba(99,102,241,.12);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);padding:.25rem .6rem;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:Heebo,sans-serif">✏️ ערוך</button>
+        </div>`;
+      }).join('')
+    }
+  </div>`;
+
+  el.innerHTML=html;
+}
+
+function saveConstraintWindow(){
+  const startDay=parseInt(g('cons-window-start').value);
+  const endDay=parseInt(g('cons-window-end').value);
+  const deadlineDay=parseInt(g('cons-window-deadline').value);
+  const selKey=window._consWindowEditMonth;
+  if(!selKey){toast('❌ לא נבחר חודש');return;}
+  const [y,m]=selKey.split('_').map(Number);
+  const daysInMonth=new Date(y,m,0).getDate();
+  if(!startDay||startDay<1||startDay>daysInMonth){toast(`❌ יום התחלה חייב להיות בין 1 ל-${daysInMonth}`);return;}
+  if(!endDay||endDay<startDay||endDay>daysInMonth){toast(`❌ יום סיום חייב להיות בין ${startDay} ל-${daysInMonth}`);return;}
+  if(!deadlineDay||deadlineDay<15||deadlineDay>31){toast('❌ deadline חייב להיות בין 15 ל-31');return;}
+  const windows={...(window._constraintWindows||{})};
+  windows[selKey]={startDay,endDay,deadlineDay};
+  window._constraintWindows=windows;
+  setSyncing(true);
+  window._fbSet('constraint_windows',windows).then(()=>{
+    setSyncing(false);
+    toast('💾 הגדרות חלון האילוצים נשמרו!');
+    renderMgrConsWindow();
+  });
+}
+
+function deleteConstraintWindow(){
+  const selKey=window._consWindowEditMonth;
+  if(!selKey)return;
+  if(!confirm('למחוק את הגדרות חלון האילוצים לחודש זה? המערכת תחזור להשתמש בברירת מחדל.'))return;
+  const windows={...(window._constraintWindows||{})};
+  delete windows[selKey];
+  window._constraintWindows=windows;
+  setSyncing(true);
+  window._fbSet('constraint_windows',windows).then(()=>{
+    setSyncing(false);
+    toast('🗑 ההגדרות נמחקו');
+    renderMgrConsWindow();
+  });
+}
+
 function renderMgrAdmin(){
   const ticker=window._ticker||[];
   const bdays=window._birthdays||{};
@@ -5229,8 +5435,9 @@ const sched=site==='j'?(window._schedule_next||window._schedule||{}):(window._ch
 // ══════════════════════ REMINDERS ══════════════════════
 function sendReminders(){
   const allC=get_allC();const choufC=get_choufC();const d=new Date().getDate();
-  if(d<15||d>21){toast('⚠️ ניתן לשלוח תזכורות רק בין ה-15 ל-21 לחודש');return;}
-  const daysLeft=22-d;
+  const _dl=getConsDeadline();
+  if(d<15||d>=_dl){toast(`⚠️ ניתן לשלוח תזכורות רק בין ה-15 ל-${_dl-1} לחודש`);return;}
+  const daysLeft=_dl-d;
   const notSubmittedJ=ALL_WORKERS.filter(n=>!allC[n]?.submitted);
   const notSubmittedC=CHOUF_ALL.filter(n=>!choufC[n]?.submitted);
   const allNotSubmitted=[...notSubmittedJ,...notSubmittedC];
@@ -5515,8 +5722,9 @@ function botSmartReply(text,name,pop,isChouf){
 
   // ── מתי להגיש ──
   if(has('מתי','עד מתי','מועד','לוח זמנים','חלון','מתי צריך','מתי אפשר','מתי מגישים') && has('אילוצ','הגשה','לשלוח')){
-    const status=d>=15&&d<=22?`✅ החלון פתוח! נותרו ${22-d} ימים`:d<15?`⏳ ייפתח ב-15 לחודש (עוד ${15-d} ימים)`:`🔒 נסגר. יש לחכות ל-15 בחודש הבא`;
-    return `חלון הגשת האילוצים: 15–22 לכל חודש 📅
+    const _dl=getConsDeadline();
+    const status=d>=15&&d<=_dl?`✅ החלון פתוח! נותרו ${_dl-d} ימים`:d<15?`⏳ ייפתח ב-15 לחודש (עוד ${15-d} ימים)`:`🔒 נסגר. יש לחכות ל-15 בחודש הבא`;
+    return `חלון הגשת האילוצים: 15–${_dl} לחודש 📅
 
 ${status}`;
   }
@@ -5551,7 +5759,10 @@ ${status}`;
 
   // ── אילוצים כלל ──
   if(has('אילוצ')){
-    if(has('לא הגשתי','לא שלחתי','שכחתי','פספסתי')) return `אם עברת ה-22 — לא ניתן לשנות. פנה/י לפיקוד דרך הצ'אט לסיוע 💙`;
+    if(has('לא הגשתי','לא שלחתי','שכחתי','פספסתי')){
+      const _dl=getConsDeadline();
+      return `אם עברת ה-${_dl} — לא ניתן לשנות. פנה/י לפיקוד דרך הצ'אט לסיוע 💙`;
+    }
     if(has('אישור','אושר','אושרו','מאושר')) return `לאחר שליחת האילוצים — הפיקוד יאשר כל אחד בנפרד. תקבל/י עדכון סטטוס בממשק 😊`;
     if(has('לבטל','למחוק','לשנות','לערוך')) return `כל עוד לא לחצת "שלח למפקד" — ניתן לערוך בחופשיות 😊
 אחרי השליחה — פנה/י לפיקוד בצ'אט לבקש שינוי.`;
