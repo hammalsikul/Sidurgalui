@@ -568,7 +568,7 @@ window._fbListen('chats', v => {
 
 // ══════ CONSTANTS ══════
 const WORKERS_BASHAL=['יוסף','ליאן','נועה','שירה נ','שירה ח','חנה','תהילה','נורית','לאה','עמית','איתי','שהם','אוריה'];
-const WORKERS_STUDENT=['עידו','נויה','לינור'];
+const WORKERS_STUDENT=['עידו','נויה','לינור','עוז','אווה','לביא','בניה'];
 const WORKERS_KEVA=['שמואל','תמר','נועם','אוראל'];
 const ALL_WORKERS=[...WORKERS_BASHAL,...WORKERS_STUDENT,...WORKERS_KEVA];
 const DESK_MAP={'יוסף':'סד"צ','נורית':'סד"צ','תהילה':'סד"צ','לינור':'סד"צ','איתי':'סד"צ','נועה':'פלילי','ליאן':'פלילי','שירה נ':'פלילי','חנה':'פלילי','נויה':'פלילי','שהם':'פלילי','שירה ח':'פח"ע','לאה':'פח"ע','עמית':'פח"ע','עידו':'פח"ע','אוריה':'פח"ע','שמואל':'מפקד','תמר':'מפקד','נועם':'מפקד','אוראל':'מפקד'};
@@ -576,8 +576,8 @@ const POP_MAP={...Object.fromEntries(WORKERS_BASHAL.map(n=>[n,'bashal'])),...Obj
 const POP_LABEL={bashal:'⭐ בש"ל',student:'🎓 סטודנט',keva:'👮 קבע'};
 const POP_COLOR={bashal:'#3b82f6',student:'#8b5cf6',keva:'#f59e0b'};
 const NO_SAT_NIGHT=['תהילה','נורית','שירה ח','עמית'];// שירה נ ולאה הוסרו — יכולות לעבוד מוצ"ש (עם ליווי)
-// לבד בלילה (לא יכולים עם אחרים): נועה, ליאן, יוסף, עמית
-const NIGHT_ALONE=['נועה','ליאן','יוסף','עמית'];
+// לבד בלילה (לא יכולים עם אחרים): נועה, ליאן, יוסף, עמית, איתי (בנים — לא עם בנות)
+const NIGHT_ALONE=['נועה','ליאן','יוסף','עמית','איתי'];
 // מכסת משמרות שבועית לפי עובד (ברירת מחדל: 5, חריגים: 4)
 const WEEKLY_CAP_OVERRIDE={'נועם':4};
 function weeklyCapFor(name){return WEEKLY_CAP_OVERRIDE[name]||5;}
@@ -3405,24 +3405,45 @@ function recalcUnmet(){
   // A shift is "unfilled" if it has NO non-achmash, non-keva workers assigned
   var unfilled=[];
   activeDays.forEach(function(d){
-    if(d.isFri||d.isSat||isChagSat(d.holiday)||isChagFri(d.holiday))return;// skip weekends
     var sk=d.day+'-'+d.month;
     var slot=sched[sk]||{};
-    ['a','b'].forEach(function(shKey){
-      // Count non-management workers in this shift
-      var workers=Object.entries(slot).filter(function(e){
-        return e[1]&&e[0].startsWith(shKey+'_')&&!e[0].includes('keva')&&!e[0].includes('achmash');
+    var isLikeFri=d.isFri||isChagFri(d.holiday);
+    var isLikeSat=d.isSat||isChagSat(d.holiday);
+    // משמרת בוקר (a) — במקרה של שישי: a_fri_worker; בכל יום אחר: כולל את כולם
+    if(isLikeFri){
+      // שישי: רק תפקיד fri_worker (קבע)
+      var friAm=Object.entries(slot).filter(function(e){return e[1]&&e[0].startsWith('a_fri_');});
+      if(friAm.length===0)unfilled.push({day:d.day,month:d.month,label:d.label,shKey:'a',reason:'\u05de\u05e9\u05de\u05e8\u05ea \u05e9\u05d9\u05e9\u05d9 \u05d1\u05d5\u05e7\u05e8'});
+      var friPm=Object.entries(slot).filter(function(e){return e[1]&&e[0].startsWith('b_fri_');});
+      if(friPm.length===0)unfilled.push({day:d.day,month:d.month,label:d.label,shKey:'b',reason:'\u05de\u05e9\u05de\u05e8\u05ea \u05e9\u05d9\u05e9\u05d9 \u05e6\u05d4\u05e8\u05d9\u05d9\u05dd'});
+      // שישי לילה (c) — בש"ל / סטודנט
+      var friNight=Object.entries(slot).filter(function(e){return e[1]&&e[0].startsWith('c_')&&!e[0].includes('achmash');});
+      if(friNight.length===0)unfilled.push({day:d.day,month:d.month,label:d.label,shKey:'c',reason:'\u05de\u05e9\u05de\u05e8\u05ea \u05e9\u05d9\u05e9\u05d9 \u05dc\u05d9\u05dc\u05d4'});
+    } else if(isLikeSat){
+      // שבת: a_sat_worker / b_sat_worker (קבע) + לילה (c) בש"ל
+      var satAm=Object.entries(slot).filter(function(e){return e[1]&&e[0].startsWith('a_sat_');});
+      if(satAm.length===0)unfilled.push({day:d.day,month:d.month,label:d.label,shKey:'a',reason:'\u05de\u05e9\u05de\u05e8\u05ea \u05e9\u05d1\u05ea \u05d1\u05d5\u05e7\u05e8'});
+      var satPm=Object.entries(slot).filter(function(e){return e[1]&&e[0].startsWith('b_sat_');});
+      if(satPm.length===0)unfilled.push({day:d.day,month:d.month,label:d.label,shKey:'b',reason:'\u05de\u05e9\u05de\u05e8\u05ea \u05e9\u05d1\u05ea \u05e6\u05d4\u05e8\u05d9\u05d9\u05dd'});
+      var satNight=Object.entries(slot).filter(function(e){return e[1]&&e[0].startsWith('c_')&&!e[0].includes('achmash');});
+      if(satNight.length===0)unfilled.push({day:d.day,month:d.month,label:d.label,shKey:'c',reason:'\u05de\u05e9\u05de\u05e8\u05ea \u05e9\u05d1\u05ea \u05dc\u05d9\u05dc\u05d4'});
+    } else {
+      // יום חול
+      ['a','b'].forEach(function(shKey){
+        var workers=Object.entries(slot).filter(function(e){
+          return e[1]&&e[0].startsWith(shKey+'_')&&!e[0].includes('keva')&&!e[0].includes('achmash');
+        });
+        if(workers.length===0){
+          unfilled.push({day:d.day,month:d.month,label:d.label,shKey:shKey,reason:'\u05dc\u05d0 \u05d0\u05d5\u05d9\u05d9\u05e9'});
+        }
       });
-      if(workers.length===0){
-        unfilled.push({day:d.day,month:d.month,label:d.label,shKey:shKey,reason:'\u05dc\u05d0 \u05d0\u05d5\u05d9\u05d9\u05e9'});
+      // משמרת לילה (c)
+      var nightWorkers=Object.entries(slot).filter(function(e){
+        return e[1]&&e[0].startsWith('c_')&&!e[0].includes('achmash');
+      });
+      if(nightWorkers.length===0){
+        unfilled.push({day:d.day,month:d.month,label:d.label,shKey:'c',reason:'\u05dc\u05d0 \u05d0\u05d5\u05d9\u05d9\u05e9'});
       }
-    });
-    // Night shift
-    var nightWorkers=Object.entries(slot).filter(function(e){
-      return e[1]&&e[0].startsWith('c_')&&!e[0].includes('achmash');
-    });
-    if(nightWorkers.length===0){
-      unfilled.push({day:d.day,month:d.month,label:d.label,shKey:'c',reason:'\u05dc\u05d0 \u05d0\u05d5\u05d9\u05d9\u05e9'});
     }
   });
   window._unfilledShifts=unfilled;
@@ -4008,7 +4029,12 @@ function canAssign(name,day,month,shKey,usedToday,monthC,wkC,lastS,stuH,sunOff){
   const isLikeSat=isSat||isChagDay;
   const isLikeFri=isFri||isErevChag;
   if(allV.some(v=>v.status==='approved'&&v.worker===name&&v.days?.some(d=>d.day===day&&d.month===month)))return false;
+  // כיבוד מקסימלי של אילוצים: חוסם כל אילוץ block (מאושר או ממתין) — עדיפות לאילוצים על שיבוץ
   if((allC[name]?.constraints||[]).some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey===shKey&&cx.type==='block'))return false;
+  // כיבוד אילוץ "כל היום" — block ביום זה לכל המשמרות
+  if((allC[name]?.constraints||[]).some(cx=>cx.day===day&&cx.month===month&&cx.shiftKey==='all'&&cx.type==='block'))return false;
+  // כיבוד חופשה ממתינה (גם לא מאושרת) — אם יש חופשה pending נשתדל לא לשבץ
+  if(allV.some(v=>v.status==='pending'&&v.worker===name&&v.days?.some(d=>d.day===day&&d.month===month)))return false;
   // no א after ג (morning after night) — check both lastS AND previous day in sched
   if(shKey==='a'&&lastS[name]==='c')return false;
   // Also check: did worker work ג' YESTERDAY? (lastS might not reflect if multiple shifts)
@@ -4166,9 +4192,10 @@ function runGenerateForMonth(){
   // Generate schedule for the currently viewed month (current or next)
   const isNext=window._schedViewMonth==='next'&&CONS_MONTH!==SCHED_MONTH;
   if(isNext){
-    // Temporarily swap SCHEDULE_DAYS to next month, generate, restore
+    // Use effective constraint days (filtered to manager's window) instead of full NEXT_MONTH_DAYS
+    const effectiveDays=getEffectiveConsDays();
     window._savedSchedDays=SCHEDULE_DAYS;
-    window._activeSchedDays=NEXT_MONTH_DAYS;
+    window._activeSchedDays=effectiveDays.length?effectiveDays:NEXT_MONTH_DAYS;
     window._activeSchedKey='schedule_'+CONS_MONTH+'_'+CONS_YEAR;
     window._activeConsKey='constraints_'+CONS_MONTH+'_'+CONS_YEAR;
     window._isNextMonthSchedule=true;
