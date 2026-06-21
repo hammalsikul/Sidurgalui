@@ -806,17 +806,73 @@ function getEffectiveConsDays(){
   const baseDays=CONS_MONTH!==SCHED_MONTH?NEXT_MONTH_DAYS:SCHEDULE_DAYS;
   const win=getConstraintWindow(CONS_MONTH,CONS_YEAR);
   if(!win||!win.startDay||!win.endDay)return baseDays;
-  return baseDays.filter(d=>{
-    if(d.month===CONS_MONTH&&d.year===CONS_YEAR){
-      return d.day>=win.startDay&&d.day<=win.endDay;
+  // טווח התחלה
+  const startDate=new Date(CONS_YEAR,CONS_MONTH-1,win.startDay);
+  // טווח סיום — תומך בחודש שגולש
+  const endM=win.endMonth||CONS_MONTH;
+  const endY=win.endYear||CONS_YEAR;
+  const endDate=new Date(endY,endM-1,win.endDay);
+  // אם הטווח גולש לחודש הבא — נצטרך לבנות גם את ימי החודש הבא
+  let allDays=[...baseDays];
+  if(endM!==CONS_MONTH||endY!==CONS_YEAR){
+    // הוסף ימי החודש הבא
+    const daysInNext=new Date(endY,endM,0).getDate();
+    for(let dd=1;dd<=daysInNext;dd++){
+      const dt=new Date(endY,endM-1,dd);
+      const jsDay=dt.getDay();
+      const dayObj={
+        day:dd,month:endM,year:endY,
+        label:`${dd}/${endM}`,
+        jsDay,
+        isWeekend:jsDay===5||jsDay===6,
+        isFri:jsDay===5,
+        isSat:jsDay===6,
+        realWeekend:jsDay===5||jsDay===6,
+        holiday:getHoliday(dd,endM)
+      };
+      if(!allDays.find(x=>x.day===dd&&x.month===endM&&x.year===endY)){
+        allDays.push(dayObj);
+      }
     }
-    return false;
+  }
+  return allDays.filter(d=>{
+    const dDate=new Date(d.year||CONS_YEAR,d.month-1,d.day);
+    return dDate>=startDate&&dDate<=endDate;
   });
 }
-// Deadline להגשה (יום בחודש הנוכחי שבו נסגר החלון). ברירת מחדל: 22
+// Deadline להגשה. מחזיר אובייקט עם יום, חודש, ושנה. ברירת מחדל: 22 בחודש הקודם
 function getConsDeadline(){
   const win=getConstraintWindow(CONS_MONTH,CONS_YEAR);
-  return (win&&win.deadlineDay)?win.deadlineDay:22;
+  const today=new Date();
+  if(win&&win.deadlineDay){
+    return {
+      day:win.deadlineDay,
+      month:win.deadlineMonth||(CONS_MONTH===1?12:CONS_MONTH-1),
+      year:win.deadlineYear||(CONS_MONTH===1?CONS_YEAR-1:CONS_YEAR)
+    };
+  }
+  // ברירת מחדל: 22 בחודש הקודם
+  return {
+    day:22,
+    month:CONS_MONTH===1?12:CONS_MONTH-1,
+    year:CONS_MONTH===1?CONS_YEAR-1:CONS_YEAR
+  };
+}
+// עזר: האם היום עדיין בחלון הגשה?
+function isWithinSubmissionWindow(){
+  const dl=getConsDeadline();
+  const today=new Date();
+  const deadline=new Date(dl.year,dl.month-1,dl.day);
+  // התחלה: 15 בחודש שהדדליין חל בו (או 15 בחודש הקודם של CONS_MONTH)
+  const start=new Date(dl.year,dl.month-1,15);
+  return today>=start&&today<=deadline;
+}
+// עזר: כמה ימים נותרו עד הדדליין?
+function daysUntilConsDeadline(){
+  const dl=getConsDeadline();
+  const today=new Date();today.setHours(0,0,0,0);
+  const deadline=new Date(dl.year,dl.month-1,dl.day);deadline.setHours(0,0,0,0);
+  return Math.round((deadline-today)/(1000*60*60*24));
 }
 
 function get_allC(){return window._allC||{};}
@@ -1033,25 +1089,24 @@ window._renderHome = function(){
   if(activeSick>0){show('home-sick-banner');g('home-sick-banner').textContent=`🚨 ${activeSick} דיווח מחלה פעיל — לחץ לפרטים`;}else hide('home-sick-banner');
   vacApproved>0?show('home-vac-badge'):hide('home-vac-badge');
   // Alert: constraints submission window (configured by manager)
-  const today=new Date(),d=today.getDate();
-  const _deadlineDay=getConsDeadline();
-  if(d>=15&&d<=_deadlineDay){
+  const _dlInfo=getConsDeadline();
+  const _withinWindow=isWithinSubmissionWindow();
+  const _daysLeft=daysUntilConsDeadline();
+  if(_withinWindow&&_daysLeft>=0){
     show('home-alert-banner');
-    // Check if current user hasn't submitted yet
-    const empSel=g('emp-worker')||{value:window._empWorker};
     const currWorker=window._empWorker;
     const workerSubmitted=currWorker?(isChoufWorker(currWorker)?get_choufC()[currWorker]?.submitted:get_allC()[currWorker]?.submitted):true;
-    const daysLeft=_deadlineDay-d;
+    const dlLabel=`${_dlInfo.day}/${_dlInfo.month}`;
     if(currWorker&&!workerSubmitted){
       g('home-alert-banner').style.background='rgba(220,38,38,.15)';
       g('home-alert-banner').style.borderColor='rgba(220,38,38,.5)';
       g('home-alert-banner').style.color='#fca5a5';
-      g('home-alert-text').textContent=`${currWorker}, טרם הגשת אילוצים ל${NEXT_MONTH_LABEL}! נותרו ${daysLeft} ימים — לחץ/י "אילוצים" עכשיו`;
+      g('home-alert-text').textContent=`${currWorker}, טרם הגשת אילוצים ל${NEXT_MONTH_LABEL}! נותרו ${_daysLeft} ימים (עד ${dlLabel}) — לחץ/י "אילוצים" עכשיו`;
     } else {
       g('home-alert-banner').style.background='rgba(245,158,11,.1)';
       g('home-alert-banner').style.borderColor='rgba(245,158,11,.5)';
       g('home-alert-banner').style.color='#fcd34d';
-      g('home-alert-text').textContent=`יש להזין אילוצים עד ה-${_deadlineDay} לחודש! (נותרו ${daysLeft} ימים)`;
+      g('home-alert-text').textContent=`יש להזין אילוצים עד ${dlLabel}! (נותרו ${_daysLeft} ימים)`;
     }
   } else hide('home-alert-banner');
 }
@@ -3017,11 +3072,23 @@ function renderMgrConsWindow(){
   const selLabel=`${HEB_MONTHS[selM-1]} ${selY}`;
   const existing=windows[selKey]||{};
   const daysInMonth=new Date(selY,selM,0).getDate();
+  // חודש הבא (לסיום שגולש)
+  const nextM=selM===12?1:selM+1;
+  const nextY=selM===12?selY+1:selY;
+  const daysInNextMonth=new Date(nextY,nextM,0).getDate();
+  // החודש הקודם (לדדליין)
+  const prevM=selM===1?12:selM-1;
+  const prevY=selM===1?selY-1:selY;
+  // ברירות מחדל לסיום: אם יש endMonth/endYear שמורים — השתמש בהם
+  const endM=existing.endMonth||selM;
+  const endY=existing.endYear||selY;
+  const dlM=existing.deadlineMonth||prevM;
+  const dlY=existing.deadlineYear||prevY;
 
   let html=`
   <div class="card">
     <div style="font-weight:900;font-size:1rem;margin-bottom:.4rem;color:#a5b4fc">📅 חלון אילוצים — הגדרה</div>
-    <div style="font-size:.78rem;color:#94a3b8;margin-bottom:1rem">הגדר/י לכל חודש את טווח התאריכים שהעובדים יוכלו להגיש אליהם אילוצים, ואת התאריך האחרון להגשה.</div>
+    <div style="font-size:.78rem;color:#94a3b8;margin-bottom:1rem">הגדר/י לכל חודש את טווח התאריכים שהעובדים יוכלו להגיש אליהם אילוצים, ואת התאריך האחרון להגשה.<br>💡 ניתן לגלוש לחודש הבא (למשל יולי שמסתיים בשבת 1/8).</div>
 
     <div style="margin-bottom:.75rem">
       <div style="font-size:.78rem;color:#94a3b8;margin-bottom:.3rem">בחר/י חודש:</div>
@@ -3033,20 +3100,36 @@ function renderMgrConsWindow(){
     <div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.25);border-radius:9px;padding:.75rem;margin-bottom:.5rem">
       <div style="font-weight:800;color:#a5b4fc;margin-bottom:.55rem">⚙️ הגדרות ל${selLabel}</div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem">
-        <div>
-          <div style="font-size:.72rem;color:#94a3b8;margin-bottom:.2rem">יום התחלה בחודש</div>
-          <input type="number" min="1" max="${daysInMonth}" id="cons-window-start" value="${existing.startDay||1}" class="sel" style="width:100%">
-        </div>
-        <div>
-          <div style="font-size:.72rem;color:#94a3b8;margin-bottom:.2rem">יום סיום בחודש</div>
-          <input type="number" min="1" max="${daysInMonth}" id="cons-window-end" value="${existing.endDay||daysInMonth}" class="sel" style="width:100%">
+      <div style="margin-bottom:.6rem">
+        <div style="font-size:.72rem;color:#94a3b8;margin-bottom:.2rem">📅 תאריך התחלה:</div>
+        <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:.4rem">
+          <input type="number" min="1" max="${daysInMonth}" id="cons-window-start" value="${existing.startDay||1}" class="sel" style="width:100%" placeholder="יום">
+          <select class="sel" id="cons-window-start-month" disabled style="opacity:.6">
+            <option>${HEB_MONTHS[selM-1]} ${selY}</option>
+          </select>
         </div>
       </div>
 
-      <div style="margin-bottom:.5rem">
-        <div style="font-size:.72rem;color:#94a3b8;margin-bottom:.2rem">יום אחרון להגשה (ב<b>חודש הקודם</b>):</div>
-        <input type="number" min="15" max="31" id="cons-window-deadline" value="${existing.deadlineDay||22}" class="sel" style="width:100%">
+      <div style="margin-bottom:.6rem">
+        <div style="font-size:.72rem;color:#94a3b8;margin-bottom:.2rem">📅 תאריך סיום (יכול לגלוש לחודש הבא):</div>
+        <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:.4rem">
+          <input type="number" min="1" max="31" id="cons-window-end" value="${existing.endDay||daysInMonth}" class="sel" style="width:100%" placeholder="יום">
+          <select class="sel" id="cons-window-end-month">
+            <option value="${selM}_${selY}" ${endM===selM&&endY===selY?'selected':''}>${HEB_MONTHS[selM-1]} ${selY}</option>
+            <option value="${nextM}_${nextY}" ${endM===nextM&&endY===nextY?'selected':''}>${HEB_MONTHS[nextM-1]} ${nextY}</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:.6rem">
+        <div style="font-size:.72rem;color:#94a3b8;margin-bottom:.2rem">⏰ יום אחרון להגשה (בדרך כלל בחודש הקודם):</div>
+        <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:.4rem">
+          <input type="number" min="1" max="31" id="cons-window-deadline" value="${existing.deadlineDay||22}" class="sel" style="width:100%" placeholder="יום">
+          <select class="sel" id="cons-window-deadline-month">
+            <option value="${prevM}_${prevY}" ${dlM===prevM&&dlY===prevY?'selected':''}>${HEB_MONTHS[prevM-1]} ${prevY}</option>
+            <option value="${selM}_${selY}" ${dlM===selM&&dlY===selY?'selected':''}>${HEB_MONTHS[selM-1]} ${selY}</option>
+          </select>
+        </div>
       </div>
 
       <div style="display:flex;gap:.5rem;flex-wrap:wrap">
@@ -3055,7 +3138,7 @@ function renderMgrConsWindow(){
       </div>
 
       ${existing.startDay?`<div style="margin-top:.6rem;font-size:.72rem;color:#6ee7b7;background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.25);border-radius:7px;padding:.45rem .6rem">
-        ✅ מוגדר: העובדים יוכלו להגיש אילוצים ל-${selLabel} <b>בימים ${existing.startDay}/${selM} עד ${existing.endDay}/${selM}</b>, עד ל-<b>${existing.deadlineDay||22}/${selM===1?12:selM-1}</b>
+        ✅ מוגדר: העובדים יוכלו להגיש אילוצים ל-${selLabel} <b>בימים ${existing.startDay}/${selM} עד ${existing.endDay}/${endM}</b>, עד ל-<b>${existing.deadlineDay||22}/${dlM}</b>
       </div>`:`<div style="margin-top:.6rem;font-size:.72rem;color:#94a3b8;background:rgba(100,116,139,.08);border-radius:7px;padding:.45rem .6rem">
         טרם הוגדרו הגדרות לחודש זה — המערכת תשתמש בברירת המחדל (כל החודש, עד ה-22).
       </div>`}
@@ -3069,10 +3152,12 @@ function renderMgrConsWindow(){
         const [y,m]=k.split('_').map(Number);
         const w=windows[k];
         const lbl=`${HEB_MONTHS[m-1]} ${y}`;
+        const _endM=w.endMonth||m;
+        const _dlM=w.deadlineMonth||(m===1?12:m-1);
         return `<div style="display:flex;justify-content:space-between;align-items:center;padding:.45rem .55rem;border-bottom:1px solid #1e2a40;flex-wrap:wrap;gap:.3rem">
           <div>
             <div style="font-weight:700;font-size:.82rem">${lbl}</div>
-            <div style="font-size:.68rem;color:#94a3b8">${w.startDay}/${m} – ${w.endDay}/${m} | deadline: ${w.deadlineDay||22}/${m===1?12:m-1}</div>
+            <div style="font-size:.68rem;color:#94a3b8">${w.startDay}/${m} – ${w.endDay}/${_endM} | deadline: ${w.deadlineDay||22}/${_dlM}</div>
           </div>
           <button onclick="window._consWindowEditMonth='${k}';renderMgrConsWindow()" style="background:rgba(99,102,241,.12);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);padding:.25rem .6rem;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:Heebo,sans-serif">✏️ ערוך</button>
         </div>`;
@@ -3090,12 +3175,34 @@ function saveConstraintWindow(){
   const selKey=window._consWindowEditMonth;
   if(!selKey){toast('❌ לא נבחר חודש');return;}
   const [y,m]=selKey.split('_').map(Number);
-  const daysInMonth=new Date(y,m,0).getDate();
-  if(!startDay||startDay<1||startDay>daysInMonth){toast(`❌ יום התחלה חייב להיות בין 1 ל-${daysInMonth}`);return;}
-  if(!endDay||endDay<startDay||endDay>daysInMonth){toast(`❌ יום סיום חייב להיות בין ${startDay} ל-${daysInMonth}`);return;}
-  if(!deadlineDay||deadlineDay<15||deadlineDay>31){toast('❌ deadline חייב להיות בין 15 ל-31');return;}
+  // קבלת חודש/שנה של סיום ושל deadline
+  const endMonthVal=g('cons-window-end-month').value;
+  const [endM,endY]=endMonthVal.split('_').map(Number);
+  const dlMonthVal=g('cons-window-deadline-month').value;
+  const [dlM,dlY]=dlMonthVal.split('_').map(Number);
+
+  const daysInStartMonth=new Date(y,m,0).getDate();
+  const daysInEndMonth=new Date(endY,endM,0).getDate();
+  const daysInDlMonth=new Date(dlY,dlM,0).getDate();
+
+  if(!startDay||startDay<1||startDay>daysInStartMonth){toast(`❌ יום התחלה חייב להיות בין 1 ל-${daysInStartMonth}`);return;}
+  if(!endDay||endDay<1||endDay>daysInEndMonth){toast(`❌ יום סיום חייב להיות בין 1 ל-${daysInEndMonth}`);return;}
+  // ודא שהסיום לא לפני ההתחלה
+  const startDate=new Date(y,m-1,startDay);
+  const endDate=new Date(endY,endM-1,endDay);
+  if(endDate<startDate){toast('❌ תאריך הסיום חייב להיות אחרי תאריך ההתחלה');return;}
+  if(!deadlineDay||deadlineDay<1||deadlineDay>daysInDlMonth){toast(`❌ יום deadline חייב להיות בין 1 ל-${daysInDlMonth}`);return;}
+
   const windows={...(window._constraintWindows||{})};
-  windows[selKey]={startDay,endDay,deadlineDay};
+  windows[selKey]={
+    startDay,
+    endDay,
+    endMonth:endM,
+    endYear:endY,
+    deadlineDay,
+    deadlineMonth:dlM,
+    deadlineYear:dlY
+  };
   window._constraintWindows=windows;
   setSyncing(true);
   window._fbSet('constraint_windows',windows).then(()=>{
@@ -5461,17 +5568,18 @@ const sched=site==='j'?(window._schedule_next||window._schedule||{}):(window._ch
 
 // ══════════════════════ REMINDERS ══════════════════════
 function sendReminders(){
-  const allC=get_allC();const choufC=get_choufC();const d=new Date().getDate();
+  const allC=get_allC();const choufC=get_choufC();
+  const _within=isWithinSubmissionWindow();
+  const _daysLeft=daysUntilConsDeadline();
   const _dl=getConsDeadline();
-  if(d<15||d>=_dl){toast(`⚠️ ניתן לשלוח תזכורות רק בין ה-15 ל-${_dl-1} לחודש`);return;}
-  const daysLeft=_dl-d;
+  if(!_within||_daysLeft<=0){toast(`⚠️ ניתן לשלוח תזכורות רק בחלון ההגשה (עד ${_dl.day}/${_dl.month})`);return;}
   const notSubmittedJ=ALL_WORKERS.filter(n=>!allC[n]?.submitted);
   const notSubmittedC=CHOUF_ALL.filter(n=>!choufC[n]?.submitted);
   const allNotSubmitted=[...notSubmittedJ,...notSubmittedC];
-  const msg=`⏰ תזכורת: נותרו ${daysLeft} ימים להגשת אילוצים ל${NEXT_MONTH_LABEL}. לחץ/י "אילוצים" כדי להגיש!`;
+  const msg=`⏰ תזכורת: נותרו ${_daysLeft} ימים להגשת אילוצים ל${NEXT_MONTH_LABEL}. לחץ/י "אילוצים" כדי להגיש!`;
   allNotSubmitted.forEach(name=>notifyWorker(name,msg));
   // Save reminder flag in Firebase so banner shows on home
-  window._fbSet('pending_reminder',{msg,sentAt:new Date().toISOString(),daysLeft});
+  window._fbSet('pending_reminder',{msg,sentAt:new Date().toISOString(),daysLeft:_daysLeft});
   toast(`📨 נשלחו תזכורות ל-${allNotSubmitted.length} עובדים (${notSubmittedJ.length} ירושלים + ${notSubmittedC.length} חוף)`);
 }
 
@@ -5750,8 +5858,10 @@ function botSmartReply(text,name,pop,isChouf){
   // ── מתי להגיש ──
   if(has('מתי','עד מתי','מועד','לוח זמנים','חלון','מתי צריך','מתי אפשר','מתי מגישים') && has('אילוצ','הגשה','לשלוח')){
     const _dl=getConsDeadline();
-    const status=d>=15&&d<=_dl?`✅ החלון פתוח! נותרו ${_dl-d} ימים`:d<15?`⏳ ייפתח ב-15 לחודש (עוד ${15-d} ימים)`:`🔒 נסגר. יש לחכות ל-15 בחודש הבא`;
-    return `חלון הגשת האילוצים: 15–${_dl} לחודש 📅
+    const _within=isWithinSubmissionWindow();
+    const _daysLeft=daysUntilConsDeadline();
+    const status=_within&&_daysLeft>=0?`✅ החלון פתוח! נותרו ${_daysLeft} ימים (עד ${_dl.day}/${_dl.month})`:`🔒 החלון סגור כרגע.`;
+    return `חלון הגשת האילוצים נסגר ב-${_dl.day}/${_dl.month} 📅
 
 ${status}`;
   }
@@ -5788,7 +5898,7 @@ ${status}`;
   if(has('אילוצ')){
     if(has('לא הגשתי','לא שלחתי','שכחתי','פספסתי')){
       const _dl=getConsDeadline();
-      return `אם עברת ה-${_dl} — לא ניתן לשנות. פנה/י לפיקוד דרך הצ'אט לסיוע 💙`;
+      return `אם עברת את ${_dl.day}/${_dl.month} — לא ניתן לשנות. פנה/י לפיקוד דרך הצ'אט לסיוע 💙`;
     }
     if(has('אישור','אושר','אושרו','מאושר')) return `לאחר שליחת האילוצים — הפיקוד יאשר כל אחד בנפרד. תקבל/י עדכון סטטוס בממשק 😊`;
     if(has('לבטל','למחוק','לשנות','לערוך')) return `כל עוד לא לחצת "שלח למפקד" — ניתן לערוך בחופשיות 😊
