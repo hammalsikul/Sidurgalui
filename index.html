@@ -291,6 +291,7 @@ select option{background:#0f1623;color:#e2e8f0}
 <button class="btn" id="mgr-tab-sick-report-btn" onclick="setMgrTab('sick-report')" style="border:1px solid #243048;font-size:.75rem">📊 מחלות</button>
 <button class="btn" id="mgr-tab-duty-btn" onclick="setMgrTab('duty')" style="border:1px solid #243048;font-size:.75rem">🎖 מפקד תורן</button>
 <button class="btn" id="mgr-tab-cons-window-btn" onclick="setMgrTab('cons-window')" style="border:1px solid #243048;font-size:.75rem">📅 חלון אילוצים</button>
+<button class="btn" id="mgr-tab-worker-mgmt-btn" onclick="setMgrTab('worker-mgmt')" style="border:1px solid #243048;font-size:.75rem">👥 ניהול עובדים</button>
 <button class="btn" id="mgr-tab-admin-btn" onclick="setMgrTab('admin')" style="border:1px solid #243048;font-size:.75rem">⚙️ ניהול</button>
         </div>
       </div>
@@ -307,6 +308,7 @@ select option{background:#0f1623;color:#e2e8f0}
 <div id="mgr-panel-sick-report" class="hidden"></div>
 <div id="mgr-panel-duty" class="hidden"></div>
 <div id="mgr-panel-cons-window" class="hidden"></div>
+<div id="mgr-panel-worker-mgmt" class="hidden"></div>
 <div id="mgr-panel-admin" class="hidden"></div>
     </div>
   </div>
@@ -504,6 +506,33 @@ window._fbListen('constraint_windows', v => {
     if(window._currentPage==='mgr'&&mgrTab==='cons-window')renderMgrConsWindow();
   }
 });
+// Listener for worker rosters (editable by manager via "ניהול עובדים" tab)
+// Structure: { jerusalem: {bashal:[], student:[], keva:[]}, chouf: {bashal:[], student:[]}, deskMap: {} }
+window._fbListen('worker_rosters', v => {
+  if(v){
+    // ירושלים
+    if(v.jerusalem){
+      if(Array.isArray(v.jerusalem.bashal)) WORKERS_BASHAL=[...v.jerusalem.bashal];
+      if(Array.isArray(v.jerusalem.student)) WORKERS_STUDENT=[...v.jerusalem.student];
+      if(Array.isArray(v.jerusalem.keva)) WORKERS_KEVA=[...v.jerusalem.keva];
+      rebuildWorkerLists();
+    }
+    // חוף
+    if(v.chouf){
+      if(Array.isArray(v.chouf.bashal)) CHOUF_BASHAL=[...v.chouf.bashal];
+      if(Array.isArray(v.chouf.student)) CHOUF_STUDENT=[...v.chouf.student];
+      rebuildChoufLists();
+    }
+    // דסק
+    if(v.deskMap&&typeof v.deskMap==='object'){
+      DESK_MAP={...v.deskMap};
+    }
+  }
+  if(window._appReady){
+    if(window._currentPage==='mgr'&&mgrTab==='worker-mgmt')renderMgrWorkerMgmt();
+    if(window._currentPage==='home')renderHome();
+  }
+});
 window._effectiveHolidays={...JEWISH_HOLIDAYS};
 window._fbListen('holiday_overrides', v => {
   window._holidayOverrides=v||{};
@@ -567,36 +596,49 @@ window._fbListen('chats', v => {
 <script>
 
 // ══════ CONSTANTS ══════
-const WORKERS_BASHAL=['יוסף','ליאן','נועה','שירה נ','שירה ח','חנה','תהילה','נורית','לאה','עמית','איתי','שהם','אוריה'];
-const WORKERS_STUDENT=['עידו','נויה','לינור','עוז','אווה','לביא','בניה'];
-const WORKERS_KEVA=['שמואל','תמר','נועם','אוראל'];
-const ALL_WORKERS=[...WORKERS_BASHAL,...WORKERS_STUDENT,...WORKERS_KEVA];
-const DESK_MAP={'יוסף':'סד"צ','נורית':'סד"צ','תהילה':'סד"צ','לינור':'סד"צ','איתי':'סד"צ','נועה':'פלילי','ליאן':'פלילי','שירה נ':'פלילי','חנה':'פלילי','נויה':'פלילי','שהם':'פלילי','שירה ח':'פח"ע','לאה':'פח"ע','עמית':'פח"ע','עידו':'פח"ע','אוריה':'פח"ע','שמואל':'מפקד','תמר':'מפקד','נועם':'מפקד','אוראל':'מפקד'};
-const POP_MAP={...Object.fromEntries(WORKERS_BASHAL.map(n=>[n,'bashal'])),...Object.fromEntries(WORKERS_STUDENT.map(n=>[n,'student'])),...Object.fromEntries(WORKERS_KEVA.map(n=>[n,'keva']))};
+// ═══ ברירות מחדל של רשימות עובדים ═══
+// הרשימות האמיתיות ניתנות לעריכה דרך המפקד (טאב "ניהול עובדים") ונשמרות ב-Firebase
+// אם אין נתון ב-Firebase, המערכת משתמשת בברירות המחדל האלה
+const DEFAULT_WORKERS_BASHAL=['שירה נ','שירה ח','לאה','איתי','שהם','אוריה'];
+const DEFAULT_WORKERS_STUDENT=['עידו','נויה','לינור','עוז','אווה','לביא','בניה','שקד'];
+const DEFAULT_WORKERS_KEVA=['שמואל','תמר','נועם','אוראל','נועה','ליאן'];
+const DEFAULT_DESK_MAP={'לינור':'סד"צ','איתי':'סד"צ','שירה נ':'פלילי','נויה':'פלילי','שהם':'פלילי','שירה ח':'פח"ע','לאה':'פח"ע','עידו':'פח"ע','אוריה':'פח"ע','שמואל':'מפקד','תמר':'מפקד','נועם':'מפקד','אוראל':'מפקד','נועה':'מפקד','ליאן':'מפקד'};
+// let כדי שיוכלו להתעדכן מ-Firebase
+let WORKERS_BASHAL=[...DEFAULT_WORKERS_BASHAL];
+let WORKERS_STUDENT=[...DEFAULT_WORKERS_STUDENT];
+let WORKERS_KEVA=[...DEFAULT_WORKERS_KEVA];
+let ALL_WORKERS=[...WORKERS_BASHAL,...WORKERS_STUDENT,...WORKERS_KEVA];
+let DESK_MAP={...DEFAULT_DESK_MAP};
+let POP_MAP={...Object.fromEntries(WORKERS_BASHAL.map(n=>[n,'bashal'])),...Object.fromEntries(WORKERS_STUDENT.map(n=>[n,'student'])),...Object.fromEntries(WORKERS_KEVA.map(n=>[n,'keva']))};
 const POP_LABEL={bashal:'⭐ בש"ל',student:'🎓 סטודנט',keva:'👮 קבע'};
 const POP_COLOR={bashal:'#3b82f6',student:'#8b5cf6',keva:'#f59e0b'};
-const NO_SAT_NIGHT=['תהילה','נורית','שירה ח','עמית'];// שירה נ ולאה הוסרו — יכולות לעבוד מוצ"ש (עם ליווי)
-// לבד בלילה (לא יכולים עם אחרים): נועה, ליאן, יוסף, עמית, איתי (בנים — לא עם בנות)
-const NIGHT_ALONE=['נועה','ליאן','יוסף','עמית','איתי'];
+// פונקציה לרענון רשימות נגזרות אחרי שינוי
+function rebuildWorkerLists(){
+  ALL_WORKERS=[...WORKERS_BASHAL,...WORKERS_STUDENT,...WORKERS_KEVA];
+  POP_MAP={...Object.fromEntries(WORKERS_BASHAL.map(n=>[n,'bashal'])),...Object.fromEntries(WORKERS_STUDENT.map(n=>[n,'student'])),...Object.fromEntries(WORKERS_KEVA.map(n=>[n,'keva']))};
+}
+const NO_SAT_NIGHT=['שירה ח'];// שירה נ ולאה יכולות לעבוד מוצ"ש (עם ליווי)
+// לבד בלילה (לא יכולים עם אחרים): איתי (בן — לא עם בנות)
+const NIGHT_ALONE=['איתי'];
 // מכסת משמרות שבועית לפי עובד (ברירת מחדל: 5, חריגים: 4)
 const WEEKLY_CAP_OVERRIDE={'נועם':4};
 function weeklyCapFor(name){return WEEKLY_CAP_OVERRIDE[name]||5;}
-// חייבות עם עוד מישהו בלילה: חנה, שירה ח, שירה נ, תהילה, נורית
-const NIGHT_NEED_COMPANION=['חנה','שירה ח','שירה נ','תהילה','נורית','לאה'];
+// חייבות עם עוד מישהו בלילה
+const NIGHT_NEED_COMPANION=['שירה ח','שירה נ','לאה'];
 // תאימות לאחורה
 const NIGHT_1=NIGHT_ALONE;
 const NIGHT_2=NIGHT_NEED_COMPANION;
-const ACHMASH=['נועה','ליאן','יוסף','עמית'];
+const ACHMASH=['נועה','ליאן'];
 // שירה ח — ליווי לא יכול להיות יוסף/עידו/שמואל
-const SHIRA_NIGHT_COMPANION_EXCLUDE=['יוסף','עידו','שמואל'];
+const SHIRA_NIGHT_COMPANION_EXCLUDE=['עידו','שמואל'];
 // יוסף — לא יכול להיות עם אף אחד בלילה (לבד תמיד)
 const YOSEF_ALONE=true;
 // ראשון: בנות שירות אלה — בוקר בלבד (לא ערב/לילה)
-const SUN_MORNING_10=['נורית','שירה ח']; // משעה 10:00
-const SUN_MORNING_9=['תהילה']; // משעה 09:00
+const SUN_MORNING_10=['שירה ח']; // משעה 10:00
+const SUN_MORNING_9=[]; // משעה 09:00
 const SUN_MORNING_ONLY=[...SUN_MORNING_10,...SUN_MORNING_9];
 // חמישי ערב — משתחררות ב-20:00
-const THU_EARLY_RELEASE=['נורית','שירה ח','עמית','תהילה'];
+const THU_EARLY_RELEASE=['שירה ח'];
 const MGR_PW='7100';
 const MAX_C=8;
 const SHIFT_HOURS={a:8,b:6.5,c:9.5};
@@ -633,11 +675,18 @@ const REASONS_NEED_FORM=['טיסה'];
 const ROSTER=ALL_WORKERS.map(n=>{const pop=POP_MAP[n];const dh=DESK_MAP[n]||'';const desk=dh==='סד"צ'?'sadatz':dh==='פלילי'?'plili':dh==='פח"ע'?'paha':'keva';return{name:n,pop,desk};});
 
 // ══════ חמ"ל חוף CONSTANTS ══════
-const CHOUF_BASHAL=['מנאר',"ע'די",'רזאן ו','רזאן א','רהף','לונה','דאנה','יאנה'];
-const CHOUF_STUDENT=["סטפני",'רפאל',"רוז'ה"];
-const CHOUF_ALL=[...CHOUF_BASHAL,...CHOUF_STUDENT];
-const CHOUF_POP_MAP={...Object.fromEntries(CHOUF_BASHAL.map(n=>[n,'bashal'])),...Object.fromEntries(CHOUF_STUDENT.map(n=>[n,'student']))};
-const CHOUF_ROSTER=CHOUF_ALL.map(n=>({name:n,pop:CHOUF_POP_MAP[n]}));
+const DEFAULT_CHOUF_BASHAL=['מנאר',"ע'די",'רזאן ו','רזאן א','רהף','לונה','דאנה','יאנה'];
+const DEFAULT_CHOUF_STUDENT=["סטפני",'רפאל',"רוז'ה"];
+let CHOUF_BASHAL=[...DEFAULT_CHOUF_BASHAL];
+let CHOUF_STUDENT=[...DEFAULT_CHOUF_STUDENT];
+let CHOUF_ALL=[...CHOUF_BASHAL,...CHOUF_STUDENT];
+let CHOUF_POP_MAP={...Object.fromEntries(CHOUF_BASHAL.map(n=>[n,'bashal'])),...Object.fromEntries(CHOUF_STUDENT.map(n=>[n,'student']))};
+let CHOUF_ROSTER=CHOUF_ALL.map(n=>({name:n,pop:CHOUF_POP_MAP[n]}));
+function rebuildChoufLists(){
+  CHOUF_ALL=[...CHOUF_BASHAL,...CHOUF_STUDENT];
+  CHOUF_POP_MAP={...Object.fromEntries(CHOUF_BASHAL.map(n=>[n,'bashal'])),...Object.fromEntries(CHOUF_STUDENT.map(n=>[n,'student']))};
+  CHOUF_ROSTER=CHOUF_ALL.map(n=>({name:n,pop:CHOUF_POP_MAP[n]}));
+}
 
 // ══════ JEWISH HOLIDAYS 2025-2026 ══════
 // Format: 'day-month' (Gregorian)
@@ -1661,7 +1710,7 @@ function mgrLogin(){if(g('mgr-pw').value===MGR_PW){window._mgrAuthed=true;hide('
 function renderMgrPanel(){const allSick=get_allSick();const active=allSick.filter(r=>!r.resolved);g('mgr-sick-banner').innerHTML=active.length?`<div style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.35);border-radius:10px;padding:.65rem;margin-bottom:.75rem;font-size:.78rem;color:#fca5a5">🚨 מחלה: ${active.map(r=>r.worker).join(', ')}</div>`:'';setMgrTab(mgrTab);}
 function setMgrTab(t){
   mgrTab=t;
-  ['cons','vacs','sched','chouf','combined','justice','xrep','chat','holidays','swaps','sick-report','duty','cons-window','admin'].forEach(x=>{
+  ['cons','vacs','sched','chouf','combined','justice','xrep','chat','holidays','swaps','sick-report','duty','cons-window','worker-mgmt','admin'].forEach(x=>{
     const btn=g('mgr-tab-'+x+'-btn');if(!btn)return;
     btn.style.background=x===t?'#1e3a5f':'#1e2a40';
     btn.style.color=x===t?'#93c5fd':'#64748b';
@@ -1681,6 +1730,7 @@ function setMgrTab(t){
   else if(t==='sick-report')renderMgrSickReport();
   else if(t==='duty')renderMgrDuty();
   else if(t==='cons-window')renderMgrConsWindow();
+  else if(t==='worker-mgmt')renderMgrWorkerMgmt();
   else renderMgrAdmin();
 }
 function renderMgrCombined(){
@@ -3045,6 +3095,222 @@ function saveDutyOfficer(field,value){
   toast(value?`✅ מפקד תורן עודכן: ${value}`:'🔄 מפקד תורן נוקה');
 }
 // ══════════════════════ חלון אילוצים — הגדרה ע"י המפקד ══════════════════════
+// ══════════════════════ ניהול עובדים ══════════════════════
+function renderMgrWorkerMgmt(){
+  const el=g('mgr-panel-worker-mgmt');if(!el)return;
+
+  // בונים את המבנה של החמ"לים
+  const jerusalem=[
+    {key:'bashal',label:'⭐ בש"ל',color:'#3b82f6',bg:'rgba(59,130,246,.08)',border:'rgba(59,130,246,.3)',list:WORKERS_BASHAL},
+    {key:'student',label:'🎓 סטודנטים',color:'#8b5cf6',bg:'rgba(139,92,246,.08)',border:'rgba(139,92,246,.3)',list:WORKERS_STUDENT},
+    {key:'keva',label:'👮 קבע',color:'#f59e0b',bg:'rgba(245,158,11,.08)',border:'rgba(245,158,11,.3)',list:WORKERS_KEVA}
+  ];
+  const chouf=[
+    {key:'bashal',label:'⭐ בש"ל חוף',color:'#10b981',bg:'rgba(16,185,129,.08)',border:'rgba(16,185,129,.3)',list:CHOUF_BASHAL},
+    {key:'student',label:'🎓 סטודנטים חוף',color:'#6ee7b7',bg:'rgba(110,231,183,.08)',border:'rgba(110,231,183,.3)',list:CHOUF_STUDENT}
+  ];
+
+  const desks=['סד"צ','פלילי','פח"ע','מפקד'];
+
+  // פונקציית עזר לרינדור אדם ברשימה
+  const renderWorkerRow=(name,siteKey,popKey,color)=>{
+    const desk=DESK_MAP[name]||'';
+    const isJer=siteKey==='jerusalem';
+    // תפריט העברה
+    const targetOptions=isJer
+      ? [{k:'bashal',l:'⭐ בש"ל'},{k:'student',l:'🎓 סטודנט'},{k:'keva',l:'👮 קבע'}].filter(o=>o.k!==popKey)
+      : [{k:'bashal',l:'⭐ בש"ל'},{k:'student',l:'🎓 סטודנט'}].filter(o=>o.k!==popKey);
+
+    // נשתמש ב-data attributes כדי להימנע מבעיות ציטוט (למשל שמות עם גרש כמו ע'די, רוז'ה)
+    const escName=String(name).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return `<div style="display:flex;align-items:center;gap:.4rem;padding:.4rem .55rem;background:rgba(30,42,64,.4);border-radius:7px;margin-bottom:.35rem;flex-wrap:wrap">
+      <div style="flex:1;min-width:80px">
+        <div style="font-weight:700;font-size:.85rem;color:#e2e8f0">${escName}</div>
+        ${isJer?`<div style="font-size:.65rem;color:#94a3b8">דסק: <select data-name="${escName}" onchange="updateWorkerDesk(this.dataset.name,this.value)" style="background:#1a2438;color:#cbd5e1;border:1px solid #334155;border-radius:5px;padding:.15rem .35rem;font-size:.7rem;font-family:Heebo,sans-serif">
+          <option value="" ${!desk?'selected':''}>ללא</option>
+          ${desks.map(d=>`<option value="${d}" ${desk===d?'selected':''}>${d}</option>`).join('')}
+        </select></div>`:''}
+      </div>
+      <select data-name="${escName}" data-site="${siteKey}" data-pop="${popKey}" onchange="moveWorker(this.dataset.name,this.dataset.site,this.dataset.pop,this.value)" style="background:#1a2438;color:#cbd5e1;border:1px solid #334155;border-radius:5px;padding:.25rem .45rem;font-size:.72rem;font-family:Heebo,sans-serif">
+        <option value="">↔️ העבר...</option>
+        ${targetOptions.map(o=>`<option value="${o.k}">${o.l}</option>`).join('')}
+      </select>
+      <button data-name="${escName}" data-site="${siteKey}" data-pop="${popKey}" onclick="removeWorker(this.dataset.name,this.dataset.site,this.dataset.pop)" style="background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.35);border-radius:5px;padding:.25rem .5rem;cursor:pointer;font-size:.72rem;font-family:Heebo,sans-serif">🗑</button>
+    </div>`;
+  };
+
+  // רינדור קבוצה
+  const renderGroup=(group,siteKey,siteLabel)=>{
+    return `<div style="background:${group.bg};border:1px solid ${group.border};border-radius:9px;padding:.55rem .7rem;margin-bottom:.55rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;flex-wrap:wrap;gap:.3rem">
+        <div style="font-weight:800;color:${group.color};font-size:.85rem">${group.label} <span style="color:#94a3b8;font-weight:400">(${group.list.length})</span></div>
+      </div>
+      ${group.list.length===0?`<div style="color:#64748b;font-size:.75rem;text-align:center;padding:.5rem">אין עובדים בקטגוריה זו</div>`:group.list.map(n=>renderWorkerRow(n,siteKey,group.key,group.color)).join('')}
+    </div>`;
+  };
+
+  // טופס הוספת עובד חדש
+  const addFormHTML=`<div class="card" style="background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.3)">
+    <div style="font-weight:900;color:#93c5fd;margin-bottom:.55rem">➕ הוסף עובד חדש</div>
+    <div style="display:grid;grid-template-columns:1fr;gap:.5rem">
+      <input type="text" id="new-worker-name" placeholder="שם העובד" class="sel" style="width:100%">
+      <select id="new-worker-site" class="sel" style="width:100%" onchange="renderMgrWorkerMgmt._syncDeskVisibility&&renderMgrWorkerMgmt._syncDeskVisibility()">
+        <option value="jerusalem">🏙 חמ"ל ירושלים</option>
+        <option value="chouf">🌊 חמ"ל חוף</option>
+      </select>
+      <select id="new-worker-pop" class="sel" style="width:100%">
+        <option value="bashal">⭐ בש"ל</option>
+        <option value="student">🎓 סטודנט</option>
+        <option value="keva">👮 קבע (רק ירושלים)</option>
+      </select>
+      <select id="new-worker-desk" class="sel" style="width:100%">
+        <option value="">ללא דסק</option>
+        ${desks.map(d=>`<option value="${d}">${d}</option>`).join('')}
+      </select>
+      <button class="btn btn-blue" onclick="addWorker()" style="padding:.5rem">➕ הוסף</button>
+    </div>
+    <div style="font-size:.7rem;color:#94a3b8;margin-top:.4rem">💡 דסק רלוונטי רק לירושלים. בחוף — יתעלמו ממנו.</div>
+  </div>`;
+
+  const html=`
+    <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:9px;padding:.55rem .7rem;margin-bottom:.7rem;font-size:.75rem;color:#fcd34d">
+      ⚠️ שינויים כאן משפיעים על <b>כל המערכת</b> ונשמרים ב-Firebase. מומלץ להימנע משינויים אמצע חודש.
+    </div>
+
+    ${addFormHTML}
+
+    <div class="card">
+      <div style="font-weight:900;font-size:1rem;color:#93c5fd;margin-bottom:.55rem">🏙 חמ"ל ירושלים <span style="color:#94a3b8;font-weight:400;font-size:.8rem">(${WORKERS_BASHAL.length+WORKERS_STUDENT.length+WORKERS_KEVA.length} עובדים)</span></div>
+      ${jerusalem.map(g=>renderGroup(g,'jerusalem','ירושלים')).join('')}
+    </div>
+
+    <div class="card">
+      <div style="font-weight:900;font-size:1rem;color:#6ee7b7;margin-bottom:.55rem">🌊 חמ"ל חוף <span style="color:#94a3b8;font-weight:400;font-size:.8rem">(${CHOUF_BASHAL.length+CHOUF_STUDENT.length} עובדים)</span></div>
+      ${chouf.map(g=>renderGroup(g,'chouf','חוף')).join('')}
+    </div>
+  `;
+
+  el.innerHTML=html;
+}
+
+// שמירת רשימות ל-Firebase
+function saveWorkerRosters(){
+  const data={
+    jerusalem:{
+      bashal:WORKERS_BASHAL,
+      student:WORKERS_STUDENT,
+      keva:WORKERS_KEVA
+    },
+    chouf:{
+      bashal:CHOUF_BASHAL,
+      student:CHOUF_STUDENT
+    },
+    deskMap:DESK_MAP
+  };
+  setSyncing(true);
+  window._fbSet('worker_rosters',data).then(()=>{
+    setSyncing(false);
+  });
+}
+
+// הוספת עובד חדש
+function addWorker(){
+  const name=g('new-worker-name').value.trim();
+  const site=g('new-worker-site').value;
+  const pop=g('new-worker-pop').value;
+  const desk=g('new-worker-desk').value;
+
+  if(!name){toast('❌ יש להזין שם');return;}
+  // ולידציה - האם השם כבר קיים
+  const existsJer=[...WORKERS_BASHAL,...WORKERS_STUDENT,...WORKERS_KEVA].includes(name);
+  const existsChouf=[...CHOUF_BASHAL,...CHOUF_STUDENT].includes(name);
+  if(existsJer||existsChouf){toast('❌ שם זה כבר קיים במערכת');return;}
+  if(site==='chouf'&&pop==='keva'){toast('❌ בחוף אין קטגוריית קבע');return;}
+
+  // הוספה
+  if(site==='jerusalem'){
+    if(pop==='bashal')WORKERS_BASHAL.push(name);
+    else if(pop==='student')WORKERS_STUDENT.push(name);
+    else if(pop==='keva')WORKERS_KEVA.push(name);
+    if(desk)DESK_MAP[name]=desk;
+    rebuildWorkerLists();
+  } else {
+    if(pop==='bashal')CHOUF_BASHAL.push(name);
+    else if(pop==='student')CHOUF_STUDENT.push(name);
+    rebuildChoufLists();
+  }
+
+  saveWorkerRosters();
+  toast(`✅ ${name} נוסף בהצלחה!`);
+  renderMgrWorkerMgmt();
+}
+
+// הסרת עובד
+function removeWorker(name,site,pop){
+  const pw=prompt(`להסיר את ${name}? הזן/י סיסמת מנהל ראשי:`);
+  if(pw===null)return;
+  if(pw!=='9211'){toast('❌ סיסמה שגויה');return;}
+  if(!confirm(`⚠️ להסיר את ${name} מהמערכת לצמיתות?\nהאילוצים והחופשות של העובד יישארו במערכת אך לא יופיעו בממשק.`))return;
+
+  if(site==='jerusalem'){
+    if(pop==='bashal')WORKERS_BASHAL=WORKERS_BASHAL.filter(n=>n!==name);
+    else if(pop==='student')WORKERS_STUDENT=WORKERS_STUDENT.filter(n=>n!==name);
+    else if(pop==='keva')WORKERS_KEVA=WORKERS_KEVA.filter(n=>n!==name);
+    if(DESK_MAP[name])delete DESK_MAP[name];
+    rebuildWorkerLists();
+  } else {
+    if(pop==='bashal')CHOUF_BASHAL=CHOUF_BASHAL.filter(n=>n!==name);
+    else if(pop==='student')CHOUF_STUDENT=CHOUF_STUDENT.filter(n=>n!==name);
+    rebuildChoufLists();
+  }
+
+  saveWorkerRosters();
+  toast(`🗑 ${name} הוסר`);
+  renderMgrWorkerMgmt();
+}
+
+// העברה לקטגוריה אחרת
+function moveWorker(name,site,fromPop,toPop){
+  if(!toPop)return;
+  if(!confirm(`להעביר את ${name} ל${toPop==='bashal'?'בש"ל':toPop==='student'?'סטודנט':'קבע'}?`)){
+    renderMgrWorkerMgmt();// כדי לאפס את ה-select
+    return;
+  }
+
+  if(site==='jerusalem'){
+    // הסרה מהקטגוריה הישנה
+    if(fromPop==='bashal')WORKERS_BASHAL=WORKERS_BASHAL.filter(n=>n!==name);
+    else if(fromPop==='student')WORKERS_STUDENT=WORKERS_STUDENT.filter(n=>n!==name);
+    else if(fromPop==='keva')WORKERS_KEVA=WORKERS_KEVA.filter(n=>n!==name);
+    // הוספה לקטגוריה החדשה
+    if(toPop==='bashal')WORKERS_BASHAL.push(name);
+    else if(toPop==='student')WORKERS_STUDENT.push(name);
+    else if(toPop==='keva')WORKERS_KEVA.push(name);
+    rebuildWorkerLists();
+  } else {
+    if(fromPop==='bashal')CHOUF_BASHAL=CHOUF_BASHAL.filter(n=>n!==name);
+    else if(fromPop==='student')CHOUF_STUDENT=CHOUF_STUDENT.filter(n=>n!==name);
+    if(toPop==='bashal')CHOUF_BASHAL.push(name);
+    else if(toPop==='student')CHOUF_STUDENT.push(name);
+    rebuildChoufLists();
+  }
+
+  saveWorkerRosters();
+  toast(`↔️ ${name} הועבר בהצלחה`);
+  renderMgrWorkerMgmt();
+}
+
+// עדכון דסק של עובד
+function updateWorkerDesk(name,desk){
+  if(desk){
+    DESK_MAP[name]=desk;
+  } else {
+    delete DESK_MAP[name];
+  }
+  saveWorkerRosters();
+  toast(`✅ דסק של ${name} עודכן`);
+}
+
 function renderMgrConsWindow(){
   const el=g('mgr-panel-cons-window');if(!el)return;
   const windows=window._constraintWindows||{};
