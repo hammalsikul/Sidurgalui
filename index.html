@@ -70,10 +70,11 @@ select option{background:#0f1623;color:#e2e8f0}
 
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#080c14">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <!-- v20260323_1012 -->
+  <!-- v20260811_1400 -->
+  <meta name="app-version" content="20260811_1400">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="הסידור הגלוי">
@@ -86,6 +87,33 @@ select option{background:#0f1623;color:#e2e8f0}
   <div class="spinner"></div>
   <div style="color:#64748b;font-size:.85rem">מתחבר ל-Firebase...</div>
 </div>
+
+<script>
+// ═════ מנגנון עדכון גרסה אוטומטי ═════
+// אם הגרסה הנוכחית באתר שונה מהשמורה בדפדפן — לאלץ טעינה מלאה
+(function(){
+  try{
+    const currentVersion=document.querySelector('meta[name="app-version"]')?.content||'unknown';
+    const savedVersion=localStorage.getItem('app_version');
+    if(savedVersion&&savedVersion!==currentVersion){
+      // גרסה חדשה זוהתה - נקה cache ורענן
+      localStorage.setItem('app_version',currentVersion);
+      // ניקוי caches אם קיים
+      if('caches' in window){
+        caches.keys().then(names=>{
+          names.forEach(n=>caches.delete(n));
+        });
+      }
+      // רענון עם שבירת cache
+      const url=new URL(window.location.href);
+      url.searchParams.set('_v',currentVersion);
+      window.location.replace(url.toString());
+    } else if(!savedVersion){
+      localStorage.setItem('app_version',currentVersion);
+    }
+  }catch(e){console.log('Version check failed:',e);}
+})();
+</script>
 
 <div class="sync-dot" id="sync-dot">●</div>
 <div id="toast"></div>
@@ -824,8 +852,9 @@ const SCHED_YEAR=_todayDate>_daysInCurrMo&&CURRENT_MONTH===12?CURRENT_YEAR+1:CUR
 const MONTH_LABEL=`${HEB_MONTHS[SCHED_MONTH-1]} ${SCHED_YEAR}`;
 // Month management
 const TODAY_D=TODAY.getDate();
-const CONS_MONTH=TODAY_D>=15?(SCHED_MONTH%12)+1:SCHED_MONTH;
-const CONS_YEAR=CONS_MONTH===1&&SCHED_MONTH===12?CURRENT_YEAR+1:CURRENT_YEAR;
+// חלון האילוצים לחודש הבא פתוח מיידית מה-1 בחודש הנוכחי (במקום מה-15)
+const CONS_MONTH=(SCHED_MONTH%12)+1;
+const CONS_YEAR=CONS_MONTH===1?CURRENT_YEAR+1:CURRENT_YEAR;
 const NEXT_MONTH=CONS_MONTH;
 const NEXT_YEAR=CONS_YEAR;
 // Firebase keys per month
@@ -921,8 +950,8 @@ function isWithinSubmissionWindow(){
   const dl=getConsDeadline();
   const today=new Date();
   const deadline=new Date(dl.year,dl.month-1,dl.day);
-  // התחלה: 15 בחודש שהדדליין חל בו (או 15 בחודש הקודם של CONS_MONTH)
-  const start=new Date(dl.year,dl.month-1,15);
+  // התחלה: ה-1 בחודש שהדדליין חל בו (או ה-1 בחודש הקודם של CONS_MONTH)
+  const start=new Date(dl.year,dl.month-1,1);
   return today>=start&&today<=deadline;
 }
 // עזר: כמה ימים נותרו עד הדדליין?
@@ -5928,15 +5957,15 @@ const BOT_SYSTEM = (name,pop,popLabel,maxCons,isChouf)=>`אתה עוזר חכם 
 ${pop==='bashal'?`- מקסימום ${maxCons} אילוצים (חסימות/העדפות) לחודש
 - אילוצים ל: ימי חול + סוף שבוע
 - לא ניתן להגיש ביום שישי/ערב חג אם נקבע "לא בשישי"
-- הגשת אילוצים: בין ה-15 ל-22 לחודש`
+- הגשת אילוצים: מה-1 בחודש ועד הדדליין שקבע המפקד`
 :pop==='student'?`- חייב לסמן לפחות 2 שישי ו-2 שבת
 - חייב לצבור לפחות 80 שעות
 - אין מכסת אילוצים
-- הגשת אילוצים: בין ה-15 ל-22 לחודש`
+- הגשת אילוצים: מה-1 בחודש ועד הדדליין שקבע המפקד`
 :pop==='keva'?`- חייב לבחור לפחות שישי אחד ושבת אחד
 - יכול להוסיף חסימות לימי חול
 - לא עובד בשישי/שבת/חג כרגיל
-- הגשת אילוצים: בין ה-15 ל-22 לחודש`
+- הגשת אילוצים: מה-1 בחודש ועד הדדליין שקבע המפקד`
 :`- כללי חמ"ל חוף: 7 ימים בשבוע, משמרות א' ו-ב' בלבד (ג' ידנית)`}
 
 מידע כללי על המערכת:
