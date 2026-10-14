@@ -70,16 +70,39 @@ select option{background:#0f1623;color:#e2e8f0}
 
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#080c14">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <!-- v20260323_1012 -->
+  <!-- v20261014_1400 -->
+  <meta name="app-version" content="20261014_1400">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="הסידור הגלוי">
   <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
+
+<script>
+// ═════ מנגנון עדכון גרסה אוטומטי ═════
+// אם הגרסה הנוכחית באתר שונה מהשמורה בדפדפן — לאלץ טעינה מלאה
+(function(){
+  try{
+    const currentVersion=document.querySelector('meta[name="app-version"]')?.content||'unknown';
+    const savedVersion=localStorage.getItem('app_version');
+    if(savedVersion&&savedVersion!==currentVersion){
+      localStorage.setItem('app_version',currentVersion);
+      if('caches' in window){
+        caches.keys().then(names=>{names.forEach(n=>caches.delete(n));});
+      }
+      const url=new URL(window.location.href);
+      url.searchParams.set('_v',currentVersion);
+      window.location.replace(url.toString());
+    } else if(!savedVersion){
+      localStorage.setItem('app_version',currentVersion);
+    }
+  }catch(e){console.log('Version check failed:',e);}
+})();
+</script>
 
 <div id="loading-screen">
   <div style="font-size:2rem">⬡</div>
@@ -133,7 +156,7 @@ select option{background:#0f1623;color:#e2e8f0}
         </svg>
       </div>
       <div style="font-size:1.8rem;font-weight:900;margin-top:.1rem">הסידור הגלוי</div>
-      <div style="color:#6ee7b7;font-size:.7rem;font-weight:700;margin-top:.1rem">חמ"ל ירושלים + חמ"ל חוף</div>
+      <div style="color:#6ee7b7;font-size:.7rem;font-weight:700;margin-top:.1rem">ראשית · כרמל · תבור · פלילי · מפקדים</div>
       <div style="color:#94a3b8;font-weight:600;font-size:.82rem;margin-top:.2rem">שקוף • שווה • חכם</div>
       <div style="font-size:.78rem;color:#475569;margin-top:.15rem" id="home-month"></div>
     </div>
@@ -289,8 +312,11 @@ select option{background:#0f1623;color:#e2e8f0}
         <div style="display:flex;flex-wrap:wrap;gap:.35rem">
           <button class="btn" id="mgr-tab-cons-btn" onclick="setMgrTab('cons')" style="border:1px solid #3b82f6;background:#1e3a5f;color:#93c5fd;font-size:.75rem">📋 אילוצים</button>
           <button class="btn" id="mgr-tab-vacs-btn" onclick="setMgrTab('vacs')" style="border:1px solid #243048;font-size:.75rem">🏖 חופשות</button>
-          <button class="btn" id="mgr-tab-sched-btn" onclick="setMgrTab('sched')" style="border:1px solid #243048;font-size:.75rem">🏙 ירושלים</button>
-          <button class="btn" id="mgr-tab-chouf-btn" onclick="setMgrTab('chouf')" style="border:1px solid #243048;font-size:.75rem">🌊 חוף</button>
+          <button class="btn" id="mgr-tab-sched-btn" onclick="setMgrTab('sched')" style="border:1px solid #243048;font-size:.75rem">🏙 שלוחה ראשית</button>
+          <button class="btn" id="mgr-tab-chouf-btn" onclick="setMgrTab('chouf')" style="border:1px solid #243048;font-size:.75rem">🌊 כרמל</button>
+          <button class="btn" id="mgr-tab-tavor-btn" onclick="setMgrTab('tavor')" style="border:1px solid #243048;font-size:.75rem">🏔 תבור</button>
+          <button class="btn" id="mgr-tab-plili-btn" onclick="setMgrTab('plili')" style="border:1px solid #243048;font-size:.75rem">🔍 פלילי</button>
+          <button class="btn" id="mgr-tab-commanders-btn" onclick="setMgrTab('commanders')" style="border:1px solid #243048;font-size:.75rem">👮 מפקדים</button>
           <button class="btn" id="mgr-tab-combined-btn" onclick="setMgrTab('combined')" style="border:1px solid #243048;font-size:.75rem">🗂 מאוחד</button>
           <button class="btn" id="mgr-tab-justice-btn" onclick="setMgrTab('justice')" style="border:1px solid #243048;font-size:.75rem">⚖️ טבלת צדק</button>
           <button class="btn" id="mgr-tab-xrep-btn" onclick="setMgrTab('xrep')" style="border:1px solid #243048;font-size:.75rem">📊 דו"ח איקסים</button>
@@ -308,6 +334,9 @@ select option{background:#0f1623;color:#e2e8f0}
       <div id="mgr-panel-vacs" class="hidden"></div>
       <div id="mgr-panel-sched" class="hidden"></div>
       <div id="mgr-panel-chouf" class="hidden"></div>
+      <div id="mgr-panel-tavor" class="hidden"></div>
+      <div id="mgr-panel-plili" class="hidden"></div>
+      <div id="mgr-panel-commanders" class="hidden"></div>
       <div id="mgr-panel-combined" class="hidden"></div>
       <div id="mgr-panel-justice" class="hidden"></div>
       <div id="mgr-panel-xrep" class="hidden"></div>
@@ -504,6 +533,10 @@ window._fbListen('sick',           v => { window._allSick=Array.isArray(v)?v:Obj
 window._fbListen('past_schedules', v => { window._pastSchedules=v||{}; loaded.p=true; checkLoaded(); });
 window._fbListen('chouf_constraints_'+CONS_MONTH+'_'+CONS_YEAR, v => { window._choufC=v||{}; loaded.cc=true; checkLoaded(); });
 window._fbListen('chouf_schedule_'+SCHED_MONTH+'_'+CURRENT_YEAR, v => { const s=v||{}; window._choufSched=s.schedule||{}; window._choufReady=s.schedReady||false; window._choufOfficial=s.official||false; loaded.cs=true; checkLoaded(); });
+// Listeners לסידורי חמ"לים חדשים — תבור, פלילי, מפקדים (עבור חודש האילוצים הנוכחי)
+window._fbListen('schedule_tavor_'+CONS_MONTH+'_'+CONS_YEAR, v => { const s=v||{}; window._schedule_tavor=s.schedule||{}; window._schedule_tavor_ready=s.ready||false; window._schedule_tavor_official=s.official||false; if(window._appReady&&mgrTab==='tavor')renderMgrSchedSite('tavor'); });
+window._fbListen('schedule_plili_'+CONS_MONTH+'_'+CONS_YEAR, v => { const s=v||{}; window._schedule_plili=s.schedule||{}; window._schedule_plili_ready=s.ready||false; window._schedule_plili_official=s.official||false; if(window._appReady&&mgrTab==='plili')renderMgrSchedSite('plili'); });
+window._fbListen('schedule_commanders_'+CONS_MONTH+'_'+CONS_YEAR, v => { const s=v||{}; window._schedule_commanders=s.schedule||{}; window._schedule_commanders_ready=s.ready||false; window._schedule_commanders_official=s.official||false; if(window._appReady&&mgrTab==='commanders')renderMgrCommandersSched(); });
 window._fbListen('ticker',     v => { window._ticker=Array.isArray(v)?v:Object.values(v||{}); loaded.t=true; checkLoaded(); if(window._appReady)renderTicker(); });
 window._fbListen('birthdays',  v => { window._birthdays=v||{}; loaded.b=true; checkLoaded(); if(window._appReady&&window._currentPage==='home')renderBirthdays(); });
 // Listener for constraint windows (per-month config set by manager)
@@ -516,21 +549,38 @@ window._fbListen('constraint_windows', v => {
   }
 });
 // Listener for worker rosters (editable by manager via "ניהול עובדים" tab)
-// Structure: { jerusalem: {bashal:[], student:[], keva:[]}, chouf: {bashal:[], student:[]}, deskMap: {} }
+// Structure: { jerusalem:{bashal:[],student:[],keva:[]}, chouf/carmel:{bashal:[],student:[]}, tavor:{bashal:[],student:[]}, plili:{bashal:[],student:[]}, commanders:[], deskMap:{} }
 window._fbListen('worker_rosters', v => {
   if(v){
-    // ירושלים
+    // שלוחה ראשית (ירושלים)
     if(v.jerusalem){
       if(Array.isArray(v.jerusalem.bashal)) WORKERS_BASHAL=[...v.jerusalem.bashal];
       if(Array.isArray(v.jerusalem.student)) WORKERS_STUDENT=[...v.jerusalem.student];
       if(Array.isArray(v.jerusalem.keva)) WORKERS_KEVA=[...v.jerusalem.keva];
       rebuildWorkerLists();
     }
-    // חוף
-    if(v.chouf){
-      if(Array.isArray(v.chouf.bashal)) CHOUF_BASHAL=[...v.chouf.bashal];
-      if(Array.isArray(v.chouf.student)) CHOUF_STUDENT=[...v.chouf.student];
-      rebuildChoufLists();
+    // שלוחת כרמל (חוף) — תומך גם במפתח carmel וגם chouf לתאימות
+    const carmelData=v.carmel||v.chouf;
+    if(carmelData){
+      if(Array.isArray(carmelData.bashal)) CHOUF_BASHAL=[...carmelData.bashal];
+      if(Array.isArray(carmelData.student)) CHOUF_STUDENT=[...carmelData.student];
+      if(typeof rebuildChoufLists==='function')rebuildChoufLists();
+    }
+    // שלוחת תבור (חדש)
+    if(v.tavor){
+      if(Array.isArray(v.tavor.bashal)) TAVOR_BASHAL=[...v.tavor.bashal];
+      if(Array.isArray(v.tavor.student)) TAVOR_STUDENT=[...v.tavor.student];
+      rebuildTavorLists();
+    }
+    // חמ"ל פלילי (חדש)
+    if(v.plili){
+      if(Array.isArray(v.plili.bashal)) PLILI_BASHAL=[...v.plili.bashal];
+      if(Array.isArray(v.plili.student)) PLILI_STUDENT=[...v.plili.student];
+      rebuildPliliLists();
+    }
+    // סידור מפקדים
+    if(Array.isArray(v.commanders)){
+      COMMANDERS=[...v.commanders];
     }
     // דסק
     if(v.deskMap&&typeof v.deskMap==='object'){
@@ -607,11 +657,24 @@ window._fbListen('chats', v => {
 // ══════ CONSTANTS ══════
 // ═══ ברירות מחדל של רשימות עובדים ═══
 // הרשימות האמיתיות ניתנות לעריכה דרך המפקד (טאב "ניהול עובדים") ונשמרות ב-Firebase
-// אם אין נתון ב-Firebase, המערכת משתמשת בברירות המחדל האלה
+
+// ═══ חמ"לים (אוקטובר 2026): 4 חמ"לים + סידור מפקדים ═══
+// 1. שלוחה ראשית (formerly ירושלים) — WORKERS_BASHAL/STUDENT/KEVA + DESK_MAP
+// 2. שלוחת כרמל (formerly חוף) — CHOUF_BASHAL/STUDENT (ראה למטה)
+// 3. שלוחת תבור (חדש) — TAVOR_BASHAL/STUDENT
+// 4. חמ"ל פלילי (חדש) — PLILI_BASHAL/STUDENT
+// 5. סידור מפקדים — COMMANDERS (רק משמרות א ו-ב)
 const DEFAULT_WORKERS_BASHAL=['שירה נ','שירה ח','לאה','איתי','שהם','אוריה'];
 const DEFAULT_WORKERS_STUDENT=['עידו','נויה','לינור','עוז','אווה','לביא','בניה','שקד'];
-const DEFAULT_WORKERS_KEVA=['שמואל','תמר','נועם','אוראל','נועה','ליאן'];
-const DEFAULT_DESK_MAP={'לינור':'סד"צ','איתי':'סד"צ','שירה נ':'פלילי','נויה':'פלילי','שהם':'פלילי','שירה ח':'פח"ע','לאה':'פח"ע','עידו':'פח"ע','אוריה':'פח"ע','שמואל':'מפקד','תמר':'מפקד','נועם':'מפקד','אוראל':'מפקד','נועה':'מפקד','ליאן':'מפקד'};
+const DEFAULT_WORKERS_KEVA=['שמואל','תמר','נועה','ליאן']; // נועם ואוראל הוסרו
+const DEFAULT_DESK_MAP={'לינור':'סד"צ','איתי':'סד"צ','שירה נ':'פלילי','נויה':'פלילי','שהם':'פלילי','שירה ח':'פח"ע','לאה':'פח"ע','עידו':'פח"ע','אוריה':'פח"ע','שמואל':'מפקד','תמר':'מפקד','נועה':'מפקד','ליאן':'מפקד'};
+// שלוחות חדשות — ריקות כברירת מחדל, יתמלאו דרך "ניהול עובדים"
+const DEFAULT_TAVOR_BASHAL=[];
+const DEFAULT_TAVOR_STUDENT=[];
+const DEFAULT_PLILI_BASHAL=[];
+const DEFAULT_PLILI_STUDENT=[];
+// סידור מפקדים — 8 מפקדים, רק משמרות א ו-ב
+const DEFAULT_COMMANDERS=['שמואל','תמר','נועה','ליאן','רן','רהב','נתנאל','נועם בר'];
 // let כדי שיוכלו להתעדכן מ-Firebase
 let WORKERS_BASHAL=[...DEFAULT_WORKERS_BASHAL];
 let WORKERS_STUDENT=[...DEFAULT_WORKERS_STUDENT];
@@ -619,18 +682,55 @@ let WORKERS_KEVA=[...DEFAULT_WORKERS_KEVA];
 let ALL_WORKERS=[...WORKERS_BASHAL,...WORKERS_STUDENT,...WORKERS_KEVA];
 let DESK_MAP={...DEFAULT_DESK_MAP};
 let POP_MAP={...Object.fromEntries(WORKERS_BASHAL.map(n=>[n,'bashal'])),...Object.fromEntries(WORKERS_STUDENT.map(n=>[n,'student'])),...Object.fromEntries(WORKERS_KEVA.map(n=>[n,'keva']))};
+let TAVOR_BASHAL=[...DEFAULT_TAVOR_BASHAL];
+let TAVOR_STUDENT=[...DEFAULT_TAVOR_STUDENT];
+let TAVOR_ALL=[...TAVOR_BASHAL,...TAVOR_STUDENT];
+let TAVOR_POP_MAP={...Object.fromEntries(TAVOR_BASHAL.map(n=>[n,'bashal'])),...Object.fromEntries(TAVOR_STUDENT.map(n=>[n,'student']))};
+let PLILI_BASHAL=[...DEFAULT_PLILI_BASHAL];
+let PLILI_STUDENT=[...DEFAULT_PLILI_STUDENT];
+let PLILI_ALL=[...PLILI_BASHAL,...PLILI_STUDENT];
+let PLILI_POP_MAP={...Object.fromEntries(PLILI_BASHAL.map(n=>[n,'bashal'])),...Object.fromEntries(PLILI_STUDENT.map(n=>[n,'student']))};
+let COMMANDERS=[...DEFAULT_COMMANDERS];
 const POP_LABEL={bashal:'⭐ בש"ל',student:'🎓 סטודנט',keva:'👮 קבע'};
 const POP_COLOR={bashal:'#3b82f6',student:'#8b5cf6',keva:'#f59e0b'};
+// הגדרת חמ"לים — טבלת המטא
+const SITES={
+  jerusalem:{key:'jerusalem',label:'🏙 שלוחה ראשית',shortLabel:'ראשית',color:'#3b82f6',hasKeva:true,hasDesks:true,nightOptional:false},
+  carmel:{key:'carmel',label:'🌊 שלוחת כרמל',shortLabel:'כרמל',color:'#10b981',hasKeva:false,hasDesks:false,nightOptional:true},
+  tavor:{key:'tavor',label:'🏔 שלוחת תבור',shortLabel:'תבור',color:'#f59e0b',hasKeva:false,hasDesks:false,nightOptional:true},
+  plili:{key:'plili',label:'🔍 חמ"ל פלילי',shortLabel:'פלילי',color:'#ef4444',hasKeva:false,hasDesks:false,nightOptional:true},
+  commanders:{key:'commanders',label:'👮 סידור מפקדים',shortLabel:'פיקוד',color:'#8b5cf6',hasKeva:false,hasDesks:false,nightOptional:false,noNight:true,noStudents:true}
+};
+const SITE_KEYS=['jerusalem','carmel','tavor','plili','commanders'];
 // פונקציה לרענון רשימות נגזרות אחרי שינוי
 function rebuildWorkerLists(){
   ALL_WORKERS=[...WORKERS_BASHAL,...WORKERS_STUDENT,...WORKERS_KEVA];
   POP_MAP={...Object.fromEntries(WORKERS_BASHAL.map(n=>[n,'bashal'])),...Object.fromEntries(WORKERS_STUDENT.map(n=>[n,'student'])),...Object.fromEntries(WORKERS_KEVA.map(n=>[n,'keva']))};
 }
+function rebuildTavorLists(){
+  TAVOR_ALL=[...TAVOR_BASHAL,...TAVOR_STUDENT];
+  TAVOR_POP_MAP={...Object.fromEntries(TAVOR_BASHAL.map(n=>[n,'bashal'])),...Object.fromEntries(TAVOR_STUDENT.map(n=>[n,'student']))};
+}
+function rebuildPliliLists(){
+  PLILI_ALL=[...PLILI_BASHAL,...PLILI_STUDENT];
+  PLILI_POP_MAP={...Object.fromEntries(PLILI_BASHAL.map(n=>[n,'bashal'])),...Object.fromEntries(PLILI_STUDENT.map(n=>[n,'student']))};
+}
+// זיהוי לאיזה חמ"ל שייך עובד
+function getWorkerSite(name){
+  if(WORKERS_BASHAL.includes(name)||WORKERS_STUDENT.includes(name)||WORKERS_KEVA.includes(name))return 'jerusalem';
+  if(CHOUF_BASHAL&&CHOUF_BASHAL.includes(name))return 'carmel';
+  if(CHOUF_STUDENT&&CHOUF_STUDENT.includes(name))return 'carmel';
+  if(TAVOR_BASHAL.includes(name)||TAVOR_STUDENT.includes(name))return 'tavor';
+  if(PLILI_BASHAL.includes(name)||PLILI_STUDENT.includes(name))return 'plili';
+  return null;
+}
+// זיהוי האם מפקד (יכול להיות גם בחמ"ל אחר)
+function isCommander(name){return COMMANDERS.includes(name);}
 const NO_SAT_NIGHT=['שירה ח'];// שירה נ ולאה יכולות לעבוד מוצ"ש (עם ליווי)
 // לבד בלילה (לא יכולים עם אחרים): איתי (בן — לא עם בנות)
 const NIGHT_ALONE=['איתי'];
 // מכסת משמרות שבועית לפי עובד (ברירת מחדל: 5, חריגים: 4)
-const WEEKLY_CAP_OVERRIDE={'נועם':4};
+const WEEKLY_CAP_OVERRIDE={};
 function weeklyCapFor(name){return WEEKLY_CAP_OVERRIDE[name]||5;}
 // חייבות עם עוד מישהו בלילה
 const NIGHT_NEED_COMPANION=['שירה ח','שירה נ','לאה'];
@@ -1018,15 +1118,19 @@ function mkTag(text,bg,color,border){return`<span class="tag" style="background:
 function dayOptsHTML(days){days=days||SCHEDULE_DAYS;return days.map(d=>{const h=d.holiday;return`<option value="${d.day}-${d.month}">${d.label} ${HEB_DAYS[d.jsDay]}${h?' — '+h.name:''}</option>`;}).join('');}
 function workerSelHTML(id,onchange,showDesk,includeChouf){
   const grps=[
-    {l:'⭐ בשל — ירושלים',list:WORKERS_BASHAL,getShort:n=>DESK_MAP[n]||'בשל'},
-    {l:'🎓 סטודנטים — ירושלים',list:WORKERS_STUDENT,getShort:n=>DESK_MAP[n]||'סטודנט'},
-    {l:'👮 קבע',list:WORKERS_KEVA,getShort:n=>DESK_MAP[n]||'קבע'}
+    {l:'⭐ בש"ל — שלוחה ראשית',list:WORKERS_BASHAL,getShort:n=>DESK_MAP[n]||'בש"ל'},
+    {l:'🎓 סטודנטים — שלוחה ראשית',list:WORKERS_STUDENT,getShort:n=>DESK_MAP[n]||'סטודנט'},
+    {l:'👮 קבע — שלוחה ראשית',list:WORKERS_KEVA,getShort:n=>DESK_MAP[n]||'קבע'}
   ];
-  const choufGrps=includeChouf?[
-    {l:'🌊 בשל — חוף',list:CHOUF_BASHAL,getShort:n=>'חוף'},
-    {l:'🌊 סטודנטים — חוף',list:CHOUF_STUDENT,getShort:n=>'חוף סטודנט'}
+  const extraGrps=includeChouf?[
+    {l:'🌊 בש"ל — שלוחת כרמל',list:CHOUF_BASHAL,getShort:n=>'כרמל'},
+    {l:'🌊 סטודנטים — שלוחת כרמל',list:CHOUF_STUDENT,getShort:n=>'כרמל סטודנט'},
+    {l:'🏔 בש"ל — שלוחת תבור',list:TAVOR_BASHAL,getShort:n=>'תבור'},
+    {l:'🏔 סטודנטים — שלוחת תבור',list:TAVOR_STUDENT,getShort:n=>'תבור סטודנט'},
+    {l:'🔍 בש"ל — חמ"ל פלילי',list:PLILI_BASHAL,getShort:n=>'פלילי'},
+    {l:'🔍 סטודנטים — חמ"ל פלילי',list:PLILI_STUDENT,getShort:n=>'פלילי סטודנט'}
   ]:[];
-  return`<select class="sel" id="${id}" onchange="${onchange}"><option value="">— בחר/י שם —</option>${[...grps,...choufGrps].map(gr=>`<optgroup label="${gr.l}">${gr.list.map(n=>`<option value="${n}">${n}${showDesk?' — '+gr.getShort(n):''}</option>`).join('')}</optgroup>`).join('')}</select>`;
+  return`<select class="sel" id="${id}" onchange="${onchange}"><option value="">— בחר/י שם —</option>${[...grps,...extraGrps].map(gr=>gr.list.length?`<optgroup label="${gr.l}">${gr.list.map(n=>`<option value="${n}">${n}${showDesk?' — '+gr.getShort(n):''}</option>`).join('')}</optgroup>`:'').join('')}</select>`;
 }
 function getWeeks(days){days=days||SCHEDULE_DAYS;const weeks=[];let week=[];days.forEach(d=>{if(d.jsDay===0&&week.length){weeks.push(week);week=[];}week.push(d);});if(week.length)weeks.push(week);return weeks;}
 let toastT;
@@ -1110,7 +1214,7 @@ window._renderHome = function(){
   const consApproved=allConsAll.filter(cx=>cx.approvalStatus==='approved').length;
   const consTotal=allConsAll.length;
   const consPct=consTotal>0?Math.round(consApproved/consTotal*100):0;
-  g('home-month').textContent=MONTH_LABEL+' | חמ"ל ירושלים + חוף';
+  g('home-month').textContent=MONTH_LABEL+' | ראשית + כרמל + תבור + פלילי';
   // Show which month constraints are being collected
   const consLabel=CONS_MONTH!==SCHED_MONTH?`אילוצים ל${NEXT_MONTH_LABEL}`:MONTH_LABEL;
   if(g('home-cons-label'))g('home-cons-label').textContent=consLabel;
@@ -1118,8 +1222,11 @@ window._renderHome = function(){
   renderTicker();renderBirthdays();
   renderOfficialSchedCard();
   renderDutyCard();
-  g('home-stat-c').textContent=`${sub}/${total}`;
-  if(g('home-stat-c-split'))g('home-stat-c-split').innerHTML=`<span style="color:#93c5fd">🏙 ${subJ}/${totalJ}</span>&nbsp;&nbsp;<span style="color:#6ee7b7">🌊 ${subCh}/${totalCh}</span>`;
+  // חישוב מורחב: סטטיסטיקה לכל 4 החמ"לים
+  const totalTavor=TAVOR_ALL.length,totalPlili=PLILI_ALL.length;
+  const grandTotal=totalJ+totalCh+totalTavor+totalPlili;
+  g('home-stat-c').textContent=`${sub}/${grandTotal}`;
+  if(g('home-stat-c-split'))g('home-stat-c-split').innerHTML=`<span style="color:#93c5fd">🏙 ${subJ}/${totalJ}</span>&nbsp;<span style="color:#6ee7b7">🌊 ${subCh}/${totalCh}</span>${totalTavor>0?`&nbsp;<span style="color:#fcd34d">🏔 0/${totalTavor}</span>`:''}${totalPlili>0?`&nbsp;<span style="color:#fca5a5">🔍 0/${totalPlili}</span>`:''}`;
   g('home-stat-v').textContent=allV.length;
   if(g('home-stat-v-approved'))g('home-stat-v-approved').innerHTML=vacApproved>0?`<span style="color:#6ee7b7">✅ ${vacApproved} אושרו</span>`:(vacPending>0?`<span style="color:#fcd34d">⏳ ${vacPending} ממתינות</span>`:'');
   g('home-stat-p').textContent=consPct+'%';
@@ -1326,6 +1433,15 @@ function initEmp(){
   if(window._empWorker){g('emp-worker').value=window._empWorker;empWorkerChange();}
 }
 function isChoufWorker(name){return CHOUF_ALL.includes(name);}
+// עזר חדש: בדיקה אם עובד שייך לאחד החמ"לים המשניים (כרמל/תבור/פלילי) — לא לשלוחה ראשית
+function isAlternateSiteWorker(name){
+  return CHOUF_ALL.includes(name)||TAVOR_ALL.includes(name)||PLILI_ALL.includes(name);
+}
+// עזר: מחזיר את תווית החמ"ל של העובד
+function getWorkerSiteLabel(name){
+  const site=getWorkerSite(name);
+  return site?SITES[site].shortLabel:'';
+}
 function empWorkerChange(){
   window._empWorker=g('emp-worker').value;
   if(!window._empWorker){hide('emp-content');hide('emp-worker-info');return;}
@@ -1346,9 +1462,26 @@ function setEmpTab(t){
   t==='cons'?renderConsPanel():renderMySchedPanel();
 }
 function renderConsPanel(){
-  // If chouf worker — use chouf constraints panel
-  if(isChoufWorker(window._empWorker)){renderChoufConsPanel();return;}
-  const allC=get_allC();const pop=POP_MAP[window._empWorker]||'bashal';
+  const empWorker=window._empWorker;
+  // זיהוי אוטומטי של חמ"ל העובד + הפניה לפאנל המתאים
+  if(isChoufWorker(empWorker)){renderChoufConsPanel();return;}
+  // עובדי תבור/פלילי — זמנית משתמשים באותו פאנל כמו של ירושלים (עם האילוצים הייעודיים)
+  if(TAVOR_ALL.includes(empWorker)||PLILI_ALL.includes(empWorker)){
+    const siteKey=TAVOR_ALL.includes(empWorker)?'tavor':'plili';
+    const siteName=SITES[siteKey].shortLabel;
+    const el=g('emp-panel-cons');
+    if(el){
+      el.innerHTML=`<div style="background:${SITES[siteKey].color}15;border:1px solid ${SITES[siteKey].color}50;border-radius:10px;padding:1rem;margin-bottom:.75rem">
+        <div style="font-weight:900;color:${SITES[siteKey].color};font-size:.9rem;margin-bottom:.3rem">${SITES[siteKey].label}</div>
+        <div style="font-size:.78rem;color:#94a3b8;line-height:1.6">
+          שלום ${empWorker}! הגשת אילוצים לשלוחה זו תתווסף בקרוב.<br>
+          כרגע — דברו עם מפקד השלוחה שלכם לגבי אילוצים.
+        </div>
+      </div>`;
+    }
+    return;
+  }
+  const allC=get_allC();const pop=POP_MAP[empWorker]||'bashal';
   const wData=allC[window._empWorker]||{constraints:[],submitted:false};const cons=wData.constraints||[];
   // Use constraint window from manager settings, or fallback to NEXT_MONTH_DAYS
   const activeDays=getEffectiveConsDays();
@@ -1719,7 +1852,7 @@ function mgrLogin(){if(g('mgr-pw').value===MGR_PW){window._mgrAuthed=true;hide('
 function renderMgrPanel(){const allSick=get_allSick();const active=allSick.filter(r=>!r.resolved);g('mgr-sick-banner').innerHTML=active.length?`<div style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.35);border-radius:10px;padding:.65rem;margin-bottom:.75rem;font-size:.78rem;color:#fca5a5">🚨 מחלה: ${active.map(r=>r.worker).join(', ')}</div>`:'';setMgrTab(mgrTab);}
 function setMgrTab(t){
   mgrTab=t;
-  ['cons','vacs','sched','chouf','combined','justice','xrep','chat','holidays','swaps','sick-report','duty','cons-window','worker-mgmt','admin'].forEach(x=>{
+  ['cons','vacs','sched','chouf','tavor','plili','commanders','combined','justice','xrep','chat','holidays','swaps','sick-report','duty','cons-window','worker-mgmt','admin'].forEach(x=>{
     const btn=g('mgr-tab-'+x+'-btn');if(!btn)return;
     btn.style.background=x===t?'#1e3a5f':'#1e2a40';
     btn.style.color=x===t?'#93c5fd':'#64748b';
@@ -1730,6 +1863,9 @@ function setMgrTab(t){
   else if(t==='vacs')renderMgrVacs();
   else if(t==='sched')renderMgrSched();
   else if(t==='chouf')renderMgrSchedChouf();
+  else if(t==='tavor')renderMgrSchedSite('tavor');
+  else if(t==='plili')renderMgrSchedSite('plili');
+  else if(t==='commanders')renderMgrCommandersSched();
   else if(t==='combined')renderMgrCombined();
   else if(t==='justice')renderMgrJustice();
   else if(t==='xrep')renderMgrXReport();
@@ -3108,48 +3244,86 @@ function saveDutyOfficer(field,value){
 function renderMgrWorkerMgmt(){
   const el=g('mgr-panel-worker-mgmt');if(!el)return;
 
-  // בונים את המבנה של החמ"לים
-  const jerusalem=[
-    {key:'bashal',label:'⭐ בש"ל',color:'#3b82f6',bg:'rgba(59,130,246,.08)',border:'rgba(59,130,246,.3)',list:WORKERS_BASHAL},
-    {key:'student',label:'🎓 סטודנטים',color:'#8b5cf6',bg:'rgba(139,92,246,.08)',border:'rgba(139,92,246,.3)',list:WORKERS_STUDENT},
-    {key:'keva',label:'👮 קבע',color:'#f59e0b',bg:'rgba(245,158,11,.08)',border:'rgba(245,158,11,.3)',list:WORKERS_KEVA}
-  ];
-  const chouf=[
-    {key:'bashal',label:'⭐ בש"ל חוף',color:'#10b981',bg:'rgba(16,185,129,.08)',border:'rgba(16,185,129,.3)',list:CHOUF_BASHAL},
-    {key:'student',label:'🎓 סטודנטים חוף',color:'#6ee7b7',bg:'rgba(110,231,183,.08)',border:'rgba(110,231,183,.3)',list:CHOUF_STUDENT}
-  ];
+  // 4 חמ"לים + סידור מפקדים
+  const sitesStructure={
+    jerusalem:{
+      meta:SITES.jerusalem,
+      groups:[
+        {key:'bashal',label:'⭐ בש"ל',color:'#3b82f6',bg:'rgba(59,130,246,.08)',border:'rgba(59,130,246,.3)',list:WORKERS_BASHAL},
+        {key:'student',label:'🎓 סטודנטים',color:'#8b5cf6',bg:'rgba(139,92,246,.08)',border:'rgba(139,92,246,.3)',list:WORKERS_STUDENT},
+        {key:'keva',label:'👮 קבע',color:'#f59e0b',bg:'rgba(245,158,11,.08)',border:'rgba(245,158,11,.3)',list:WORKERS_KEVA}
+      ]
+    },
+    carmel:{
+      meta:SITES.carmel,
+      groups:[
+        {key:'bashal',label:'⭐ בש"ל',color:'#10b981',bg:'rgba(16,185,129,.08)',border:'rgba(16,185,129,.3)',list:CHOUF_BASHAL},
+        {key:'student',label:'🎓 סטודנטים',color:'#6ee7b7',bg:'rgba(110,231,183,.08)',border:'rgba(110,231,183,.3)',list:CHOUF_STUDENT}
+      ]
+    },
+    tavor:{
+      meta:SITES.tavor,
+      groups:[
+        {key:'bashal',label:'⭐ בש"ל',color:'#f59e0b',bg:'rgba(245,158,11,.08)',border:'rgba(245,158,11,.3)',list:TAVOR_BASHAL},
+        {key:'student',label:'🎓 סטודנטים',color:'#fcd34d',bg:'rgba(252,211,77,.08)',border:'rgba(252,211,77,.3)',list:TAVOR_STUDENT}
+      ]
+    },
+    plili:{
+      meta:SITES.plili,
+      groups:[
+        {key:'bashal',label:'⭐ בש"ל',color:'#ef4444',bg:'rgba(239,68,68,.08)',border:'rgba(239,68,68,.3)',list:PLILI_BASHAL},
+        {key:'student',label:'🎓 סטודנטים',color:'#fca5a5',bg:'rgba(252,165,165,.08)',border:'rgba(252,165,165,.3)',list:PLILI_STUDENT}
+      ]
+    },
+    commanders:{
+      meta:SITES.commanders,
+      groups:[
+        {key:'commander',label:'👮 מפקדים',color:'#8b5cf6',bg:'rgba(139,92,246,.08)',border:'rgba(139,92,246,.3)',list:COMMANDERS}
+      ]
+    }
+  };
 
   const desks=['סד"צ','פלילי','פח"ע','מפקד'];
 
-  // פונקציית עזר לרינדור אדם ברשימה
+  // רינדור שורת עובד
   const renderWorkerRow=(name,siteKey,popKey,color)=>{
     const desk=DESK_MAP[name]||'';
+    const siteMeta=SITES[siteKey];
     const isJer=siteKey==='jerusalem';
-    // תפריט העברה
-    const targetOptions=isJer
-      ? [{k:'bashal',l:'⭐ בש"ל'},{k:'student',l:'🎓 סטודנט'},{k:'keva',l:'👮 קבע'}].filter(o=>o.k!==popKey)
-      : [{k:'bashal',l:'⭐ בש"ל'},{k:'student',l:'🎓 סטודנט'}].filter(o=>o.k!==popKey);
+    const isCmdrSchedule=siteKey==='commanders';
+    const isAlsoCommander=siteKey!=='commanders'&&isCommander(name);
 
-    // נשתמש ב-data attributes כדי להימנע מבעיות ציטוט (למשל שמות עם גרש כמו ע'די, רוז'ה)
+    // תפריט העברה (רק בתוך אותו חמ"ל)
+    let targetOptions=[];
+    if(isCmdrSchedule){
+      targetOptions=[];// במפקדים אין פופ אחר
+    } else if(isJer){
+      targetOptions=[{k:'bashal',l:'⭐ בש"ל'},{k:'student',l:'🎓 סטודנט'},{k:'keva',l:'👮 קבע'}].filter(o=>o.k!==popKey);
+    } else {
+      targetOptions=[{k:'bashal',l:'⭐ בש"ל'},{k:'student',l:'🎓 סטודנט'}].filter(o=>o.k!==popKey);
+    }
+
     const escName=String(name).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const cmdrBadge=isAlsoCommander?' <span style="background:rgba(139,92,246,.2);color:#c4b5fd;border:1px solid rgba(139,92,246,.4);padding:.08rem .35rem;border-radius:4px;font-size:.6rem;font-weight:700">👮 מפקד</span>':'';
+
     return `<div style="display:flex;align-items:center;gap:.4rem;padding:.4rem .55rem;background:rgba(30,42,64,.4);border-radius:7px;margin-bottom:.35rem;flex-wrap:wrap">
       <div style="flex:1;min-width:80px">
-        <div style="font-weight:700;font-size:.85rem;color:#e2e8f0">${escName}</div>
+        <div style="font-weight:700;font-size:.85rem;color:#e2e8f0">${escName}${cmdrBadge}</div>
         ${isJer?`<div style="font-size:.65rem;color:#94a3b8">דסק: <select data-name="${escName}" onchange="updateWorkerDesk(this.dataset.name,this.value)" style="background:#1a2438;color:#cbd5e1;border:1px solid #334155;border-radius:5px;padding:.15rem .35rem;font-size:.7rem;font-family:Heebo,sans-serif">
           <option value="" ${!desk?'selected':''}>ללא</option>
           ${desks.map(d=>`<option value="${d}" ${desk===d?'selected':''}>${d}</option>`).join('')}
         </select></div>`:''}
       </div>
-      <select data-name="${escName}" data-site="${siteKey}" data-pop="${popKey}" onchange="moveWorker(this.dataset.name,this.dataset.site,this.dataset.pop,this.value)" style="background:#1a2438;color:#cbd5e1;border:1px solid #334155;border-radius:5px;padding:.25rem .45rem;font-size:.72rem;font-family:Heebo,sans-serif">
+      ${targetOptions.length>0?`<select data-name="${escName}" data-site="${siteKey}" data-pop="${popKey}" onchange="moveWorker(this.dataset.name,this.dataset.site,this.dataset.pop,this.value)" style="background:#1a2438;color:#cbd5e1;border:1px solid #334155;border-radius:5px;padding:.25rem .45rem;font-size:.72rem;font-family:Heebo,sans-serif">
         <option value="">↔️ העבר...</option>
         ${targetOptions.map(o=>`<option value="${o.k}">${o.l}</option>`).join('')}
-      </select>
+      </select>`:''}
       <button data-name="${escName}" data-site="${siteKey}" data-pop="${popKey}" onclick="removeWorker(this.dataset.name,this.dataset.site,this.dataset.pop)" style="background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.35);border-radius:5px;padding:.25rem .5rem;cursor:pointer;font-size:.72rem;font-family:Heebo,sans-serif">🗑</button>
     </div>`;
   };
 
   // רינדור קבוצה
-  const renderGroup=(group,siteKey,siteLabel)=>{
+  const renderGroup=(group,siteKey)=>{
     return `<div style="background:${group.bg};border:1px solid ${group.border};border-radius:9px;padding:.55rem .7rem;margin-bottom:.55rem">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;flex-wrap:wrap;gap:.3rem">
         <div style="font-weight:800;color:${group.color};font-size:.85rem">${group.label} <span style="color:#94a3b8;font-weight:400">(${group.list.length})</span></div>
@@ -3158,27 +3332,43 @@ function renderMgrWorkerMgmt(){
     </div>`;
   };
 
+  // רינדור חמ"ל שלם
+  const renderSite=(siteKey,siteData)=>{
+    const totalWorkers=siteData.groups.reduce((s,g)=>s+g.list.length,0);
+    return `<div class="card">
+      <div style="font-weight:900;font-size:1rem;color:${siteData.meta.color};margin-bottom:.55rem">${siteData.meta.label} <span style="color:#94a3b8;font-weight:400;font-size:.8rem">(${totalWorkers} ${siteData.meta.key==='commanders'?'מפקדים':'עובדים'})</span></div>
+      ${siteData.groups.map(g=>renderGroup(g,siteKey)).join('')}
+    </div>`;
+  };
+
   // טופס הוספת עובד חדש
   const addFormHTML=`<div class="card" style="background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.3)">
     <div style="font-weight:900;color:#93c5fd;margin-bottom:.55rem">➕ הוסף עובד חדש</div>
     <div style="display:grid;grid-template-columns:1fr;gap:.5rem">
       <input type="text" id="new-worker-name" placeholder="שם העובד" class="sel" style="width:100%">
-      <select id="new-worker-site" class="sel" style="width:100%" onchange="renderMgrWorkerMgmt._syncDeskVisibility&&renderMgrWorkerMgmt._syncDeskVisibility()">
-        <option value="jerusalem">🏙 חמ"ל ירושלים</option>
-        <option value="chouf">🌊 חמ"ל חוף</option>
+      <select id="new-worker-site" class="sel" style="width:100%" onchange="onNewWorkerSiteChange()">
+        <option value="jerusalem">🏙 שלוחה ראשית</option>
+        <option value="carmel">🌊 שלוחת כרמל</option>
+        <option value="tavor">🏔 שלוחת תבור</option>
+        <option value="plili">🔍 חמ"ל פלילי</option>
+        <option value="commanders">👮 סידור מפקדים (נוסף גם)</option>
       </select>
       <select id="new-worker-pop" class="sel" style="width:100%">
         <option value="bashal">⭐ בש"ל</option>
         <option value="student">🎓 סטודנט</option>
-        <option value="keva">👮 קבע (רק ירושלים)</option>
+        <option value="keva">👮 קבע (רק שלוחה ראשית)</option>
       </select>
       <select id="new-worker-desk" class="sel" style="width:100%">
         <option value="">ללא דסק</option>
         ${desks.map(d=>`<option value="${d}">${d}</option>`).join('')}
       </select>
+      <label style="display:flex;align-items:center;gap:.4rem;padding:.4rem;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.25);border-radius:7px;cursor:pointer">
+        <input type="checkbox" id="new-worker-is-commander" style="width:1.1rem;height:1.1rem;cursor:pointer">
+        <span style="font-size:.78rem;color:#c4b5fd;font-weight:700">👮 להוסיף גם לסידור מפקדים</span>
+      </label>
       <button class="btn btn-blue" onclick="addWorker()" style="padding:.5rem">➕ הוסף</button>
     </div>
-    <div style="font-size:.7rem;color:#94a3b8;margin-top:.4rem">💡 דסק רלוונטי רק לירושלים. בחוף — יתעלמו ממנו.</div>
+    <div style="font-size:.7rem;color:#94a3b8;margin-top:.4rem">💡 דסק רלוונטי רק לשלוחה ראשית. סמן את התיבה כדי להוסיף את העובד <b>גם</b> לסידור המפקדים (ניתן להיות גם דסקאי וגם מפקד).</div>
   </div>`;
 
   const html=`
@@ -3188,18 +3378,37 @@ function renderMgrWorkerMgmt(){
 
     ${addFormHTML}
 
-    <div class="card">
-      <div style="font-weight:900;font-size:1rem;color:#93c5fd;margin-bottom:.55rem">🏙 חמ"ל ירושלים <span style="color:#94a3b8;font-weight:400;font-size:.8rem">(${WORKERS_BASHAL.length+WORKERS_STUDENT.length+WORKERS_KEVA.length} עובדים)</span></div>
-      ${jerusalem.map(g=>renderGroup(g,'jerusalem','ירושלים')).join('')}
-    </div>
-
-    <div class="card">
-      <div style="font-weight:900;font-size:1rem;color:#6ee7b7;margin-bottom:.55rem">🌊 חמ"ל חוף <span style="color:#94a3b8;font-weight:400;font-size:.8rem">(${CHOUF_BASHAL.length+CHOUF_STUDENT.length} עובדים)</span></div>
-      ${chouf.map(g=>renderGroup(g,'chouf','חוף')).join('')}
-    </div>
+    ${['jerusalem','carmel','tavor','plili','commanders'].map(sk=>renderSite(sk,sitesStructure[sk])).join('')}
   `;
 
   el.innerHTML=html;
+}
+
+// עדכון הצגת שדות בטופס לפי החמ"ל שנבחר
+function onNewWorkerSiteChange(){
+  const site=g('new-worker-site').value;
+  const popSel=g('new-worker-pop');
+  const deskSel=g('new-worker-desk');
+  const cmdrCheck=g('new-worker-is-commander');
+  if(!popSel)return;
+  // עדכון אפשרויות pop לפי החמ"ל
+  if(site==='commanders'){
+    popSel.innerHTML='<option value="commander">👮 מפקד</option>';
+    popSel.disabled=true;
+    if(deskSel)deskSel.disabled=true;
+    if(cmdrCheck){cmdrCheck.checked=false;cmdrCheck.disabled=true;}
+  } else if(site==='jerusalem'){
+    popSel.innerHTML='<option value="bashal">⭐ בש"ל</option><option value="student">🎓 סטודנט</option><option value="keva">👮 קבע</option>';
+    popSel.disabled=false;
+    if(deskSel)deskSel.disabled=false;
+    if(cmdrCheck)cmdrCheck.disabled=false;
+  } else {
+    // carmel/tavor/plili — בש"ל/סטודנט בלבד, בלי דסק
+    popSel.innerHTML='<option value="bashal">⭐ בש"ל</option><option value="student">🎓 סטודנט</option>';
+    popSel.disabled=false;
+    if(deskSel){deskSel.value='';deskSel.disabled=true;}
+    if(cmdrCheck)cmdrCheck.disabled=false;
+  }
 }
 
 // שמירת רשימות ל-Firebase
@@ -3210,10 +3419,24 @@ function saveWorkerRosters(){
       student:WORKERS_STUDENT,
       keva:WORKERS_KEVA
     },
+    carmel:{
+      bashal:CHOUF_BASHAL,
+      student:CHOUF_STUDENT
+    },
+    // תאימות לאחורה — שומר גם במפתח הישן
     chouf:{
       bashal:CHOUF_BASHAL,
       student:CHOUF_STUDENT
     },
+    tavor:{
+      bashal:TAVOR_BASHAL,
+      student:TAVOR_STUDENT
+    },
+    plili:{
+      bashal:PLILI_BASHAL,
+      student:PLILI_STUDENT
+    },
+    commanders:COMMANDERS,
     deskMap:DESK_MAP
   };
   setSyncing(true);
@@ -3222,35 +3445,106 @@ function saveWorkerRosters(){
   });
 }
 
+// עזר: קבלת הרשימה המתאימה לחמ"ל+pop
+function _getListFor(site,pop){
+  if(site==='jerusalem'){
+    if(pop==='bashal')return WORKERS_BASHAL;
+    if(pop==='student')return WORKERS_STUDENT;
+    if(pop==='keva')return WORKERS_KEVA;
+  }
+  if(site==='carmel'||site==='chouf'){
+    if(pop==='bashal')return CHOUF_BASHAL;
+    if(pop==='student')return CHOUF_STUDENT;
+  }
+  if(site==='tavor'){
+    if(pop==='bashal')return TAVOR_BASHAL;
+    if(pop==='student')return TAVOR_STUDENT;
+  }
+  if(site==='plili'){
+    if(pop==='bashal')return PLILI_BASHAL;
+    if(pop==='student')return PLILI_STUDENT;
+  }
+  if(site==='commanders')return COMMANDERS;
+  return null;
+}
+
+// עזר: הגדרת רשימה חדשה לחמ"ל+pop + רענון
+function _setListFor(site,pop,newList){
+  if(site==='jerusalem'){
+    if(pop==='bashal')WORKERS_BASHAL=newList;
+    else if(pop==='student')WORKERS_STUDENT=newList;
+    else if(pop==='keva')WORKERS_KEVA=newList;
+    rebuildWorkerLists();
+  } else if(site==='carmel'||site==='chouf'){
+    if(pop==='bashal')CHOUF_BASHAL=newList;
+    else if(pop==='student')CHOUF_STUDENT=newList;
+    rebuildChoufLists();
+  } else if(site==='tavor'){
+    if(pop==='bashal')TAVOR_BASHAL=newList;
+    else if(pop==='student')TAVOR_STUDENT=newList;
+    rebuildTavorLists();
+  } else if(site==='plili'){
+    if(pop==='bashal')PLILI_BASHAL=newList;
+    else if(pop==='student')PLILI_STUDENT=newList;
+    rebuildPliliLists();
+  } else if(site==='commanders'){
+    COMMANDERS=newList;
+  }
+}
+
+// בדיקה האם שם קיים באיזשהו חמ"ל (לא כולל מפקדים)
+function _nameExistsInAnySite(name){
+  const inJer=[...WORKERS_BASHAL,...WORKERS_STUDENT,...WORKERS_KEVA].includes(name);
+  const inCarmel=[...CHOUF_BASHAL,...CHOUF_STUDENT].includes(name);
+  const inTavor=[...TAVOR_BASHAL,...TAVOR_STUDENT].includes(name);
+  const inPlili=[...PLILI_BASHAL,...PLILI_STUDENT].includes(name);
+  return inJer||inCarmel||inTavor||inPlili;
+}
+
 // הוספת עובד חדש
 function addWorker(){
   const name=g('new-worker-name').value.trim();
   const site=g('new-worker-site').value;
   const pop=g('new-worker-pop').value;
   const desk=g('new-worker-desk').value;
+  const alsoCmdr=g('new-worker-is-commander')?.checked;
 
   if(!name){toast('❌ יש להזין שם');return;}
-  // ולידציה - האם השם כבר קיים
-  const existsJer=[...WORKERS_BASHAL,...WORKERS_STUDENT,...WORKERS_KEVA].includes(name);
-  const existsChouf=[...CHOUF_BASHAL,...CHOUF_STUDENT].includes(name);
-  if(existsJer||existsChouf){toast('❌ שם זה כבר קיים במערכת');return;}
-  if(site==='chouf'&&pop==='keva'){toast('❌ בחוף אין קטגוריית קבע');return;}
 
-  // הוספה
+  if(site==='commanders'){
+    // הוספה רק לסידור מפקדים
+    if(COMMANDERS.includes(name)){toast('❌ שם זה כבר ברשימת המפקדים');return;}
+    COMMANDERS.push(name);
+    saveWorkerRosters();
+    toast(`✅ ${name} נוסף לסידור מפקדים!`);
+    renderMgrWorkerMgmt();
+    return;
+  }
+
+  // ולידציה — האם השם כבר קיים באיזשהו חמ"ל
+  if(_nameExistsInAnySite(name)){toast('❌ שם זה כבר קיים באחד החמ"לים');return;}
+  if(site!=='jerusalem'&&pop==='keva'){toast('❌ קטגוריית קבע קיימת רק בשלוחה ראשית');return;}
+
+  // הוספה לחמ"ל המתאים
+  const list=_getListFor(site,pop);
+  if(!list){toast('❌ שגיאה: חמ"ל/קטגוריה לא תקינים');return;}
+  list.push(name);
   if(site==='jerusalem'){
-    if(pop==='bashal')WORKERS_BASHAL.push(name);
-    else if(pop==='student')WORKERS_STUDENT.push(name);
-    else if(pop==='keva')WORKERS_KEVA.push(name);
     if(desk)DESK_MAP[name]=desk;
     rebuildWorkerLists();
-  } else {
-    if(pop==='bashal')CHOUF_BASHAL.push(name);
-    else if(pop==='student')CHOUF_STUDENT.push(name);
-    rebuildChoufLists();
+  } else if(site==='carmel'||site==='chouf')rebuildChoufLists();
+  else if(site==='tavor')rebuildTavorLists();
+  else if(site==='plili')rebuildPliliLists();
+
+  // אם סומן "גם למפקדים"
+  let extraMsg='';
+  if(alsoCmdr&&!COMMANDERS.includes(name)){
+    COMMANDERS.push(name);
+    extraMsg=' + הוסף גם לסידור מפקדים';
   }
 
   saveWorkerRosters();
-  toast(`✅ ${name} נוסף בהצלחה!`);
+  toast(`✅ ${name} נוסף בהצלחה!${extraMsg}`);
   renderMgrWorkerMgmt();
 }
 
@@ -3259,49 +3553,44 @@ function removeWorker(name,site,pop){
   const pw=prompt(`להסיר את ${name}? הזן/י סיסמת מנהל ראשי:`);
   if(pw===null)return;
   if(pw!=='9211'){toast('❌ סיסמה שגויה');return;}
-  if(!confirm(`⚠️ להסיר את ${name} מהמערכת לצמיתות?\nהאילוצים והחופשות של העובד יישארו במערכת אך לא יופיעו בממשק.`))return;
+  if(!confirm(`⚠️ להסיר את ${name} מהמערכת לצמיתות?\nהאילוצים והחופשות של העובד יישארו ב-Firebase אך לא יופיעו בממשק.`))return;
 
-  if(site==='jerusalem'){
-    if(pop==='bashal')WORKERS_BASHAL=WORKERS_BASHAL.filter(n=>n!==name);
-    else if(pop==='student')WORKERS_STUDENT=WORKERS_STUDENT.filter(n=>n!==name);
-    else if(pop==='keva')WORKERS_KEVA=WORKERS_KEVA.filter(n=>n!==name);
-    if(DESK_MAP[name])delete DESK_MAP[name];
-    rebuildWorkerLists();
-  } else {
-    if(pop==='bashal')CHOUF_BASHAL=CHOUF_BASHAL.filter(n=>n!==name);
-    else if(pop==='student')CHOUF_STUDENT=CHOUF_STUDENT.filter(n=>n!==name);
-    rebuildChoufLists();
-  }
+  const list=_getListFor(site,pop);
+  if(!list){toast('❌ שגיאה: חמ"ל/קטגוריה לא תקינים');return;}
+  const newList=list.filter(n=>n!==name);
+  _setListFor(site,pop,newList);
+  // ניקוי DESK_MAP רק אם זו ההסרה מהחמ"ל שלו (לא מסידור מפקדים)
+  if(site==='jerusalem'&&DESK_MAP[name]&&!_nameExistsInAnySite(name))delete DESK_MAP[name];
 
   saveWorkerRosters();
   toast(`🗑 ${name} הוסר`);
   renderMgrWorkerMgmt();
 }
 
-// העברה לקטגוריה אחרת
+// העברה לקטגוריה אחרת (רק בתוך אותו חמ"ל)
 function moveWorker(name,site,fromPop,toPop){
-  if(!toPop)return;
-  if(!confirm(`להעביר את ${name} ל${toPop==='bashal'?'בש"ל':toPop==='student'?'סטודנט':'קבע'}?`)){
-    renderMgrWorkerMgmt();// כדי לאפס את ה-select
+  if(!toPop){renderMgrWorkerMgmt();return;}
+  const popLbl=toPop==='bashal'?'בש"ל':toPop==='student'?'סטודנט':'קבע';
+  if(!confirm(`להעביר את ${name} ל-${popLbl}?`)){
+    renderMgrWorkerMgmt();
     return;
   }
 
-  if(site==='jerusalem'){
-    // הסרה מהקטגוריה הישנה
-    if(fromPop==='bashal')WORKERS_BASHAL=WORKERS_BASHAL.filter(n=>n!==name);
-    else if(fromPop==='student')WORKERS_STUDENT=WORKERS_STUDENT.filter(n=>n!==name);
-    else if(fromPop==='keva')WORKERS_KEVA=WORKERS_KEVA.filter(n=>n!==name);
-    // הוספה לקטגוריה החדשה
-    if(toPop==='bashal')WORKERS_BASHAL.push(name);
-    else if(toPop==='student')WORKERS_STUDENT.push(name);
-    else if(toPop==='keva')WORKERS_KEVA.push(name);
-    rebuildWorkerLists();
-  } else {
-    if(fromPop==='bashal')CHOUF_BASHAL=CHOUF_BASHAL.filter(n=>n!==name);
-    else if(fromPop==='student')CHOUF_STUDENT=CHOUF_STUDENT.filter(n=>n!==name);
-    if(toPop==='bashal')CHOUF_BASHAL.push(name);
-    else if(toPop==='student')CHOUF_STUDENT.push(name);
-    rebuildChoufLists();
+  // הסרה מהקטגוריה הישנה
+  const oldList=_getListFor(site,fromPop);
+  if(oldList){
+    const newList=oldList.filter(n=>n!==name);
+    _setListFor(site,fromPop,newList);
+  }
+  // הוספה לקטגוריה החדשה
+  const targetList=_getListFor(site,toPop);
+  if(targetList){
+    targetList.push(name);
+    // רענון מתאים
+    if(site==='jerusalem')rebuildWorkerLists();
+    else if(site==='carmel'||site==='chouf')rebuildChoufLists();
+    else if(site==='tavor')rebuildTavorLists();
+    else if(site==='plili')rebuildPliliLists();
   }
 
   saveWorkerRosters();
@@ -5597,6 +5886,373 @@ function renderMgrSchedChouf(){
   else{const wk=weeks[mgrChoufWeek]||[];output=`<div style="display:flex;gap:.4rem;align-items:center;margin-bottom:.5rem"><button class="btn" style="background:#1e2a40;color:#94a3b8;padding:.3rem .6rem" onclick="changeChoufWeek(-1)" ${mgrChoufWeek===0?'disabled':''}>‹</button><span style="flex:1;text-align:center;font-weight:700;font-size:.82rem">${wk[0]?.label}–${wk[wk.length-1]?.label}</span><button class="btn" style="background:#1e2a40;color:#94a3b8;padding:.3rem .6rem" onclick="changeChoufWeek(1)" ${mgrChoufWeek>=weeks.length-1?'disabled':''}>›</button></div>${buildChoufWeekTable(wk,_choufViewSched)}`;}
   g('mgr-panel-chouf').innerHTML=btns+`<div id="chouf-sched-output">${output}</div>`;
 }
+
+// ══════════════════════ רינדור סידור לחמ"לים חדשים (תבור / פלילי) ══════════════════════
+// זמנית — מציג placeholder עד שתהיה לוגיקת יצירת סידור ייעודית
+function renderMgrSchedSite(siteKey){
+  const el=g('mgr-panel-'+siteKey);if(!el)return;
+  const site=SITES[siteKey];
+  const bashalList=siteKey==='tavor'?TAVOR_BASHAL:PLILI_BASHAL;
+  const studentList=siteKey==='tavor'?TAVOR_STUDENT:PLILI_STUDENT;
+  const totalWorkers=bashalList.length+studentList.length;
+  const fbSchedKey=`schedule_${siteKey}_${CONS_MONTH}_${CONS_YEAR}`;
+  const siteSched=window[`_schedule_${siteKey}`]||{};
+  const siteReady=Object.keys(siteSched).length>0;
+
+  // כפתור יצירת סידור — זמנית מציג הודעה
+  const btns=`<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;align-items:center">
+    <div style="font-size:.78rem;font-weight:700;color:${site.color};background:${site.color}20;border:1px solid ${site.color}50;padding:.25rem .6rem;border-radius:6px">${site.label} — ${NEXT_MONTH_LABEL}</div>
+    <button class="btn" style="background:${site.color}30;color:${site.color};border:1px solid ${site.color}60;font-size:.88rem;padding:.55rem 1rem" onclick="generateSiteSchedule('${siteKey}')">⚡ צור סידור ${site.shortLabel}</button>
+    ${siteReady?`<button class="btn" style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);font-size:.78rem" onclick="makeSiteOfficial('${siteKey}')">📌 הגדר כרשמי</button>`:''}
+  </div>`;
+
+  if(totalWorkers===0){
+    el.innerHTML=btns+`<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:1.5rem;text-align:center;color:#fcd34d">
+      <div style="font-size:1.1rem;font-weight:900;margin-bottom:.5rem">⚠️ אין עובדים ב${site.label}</div>
+      <div style="font-size:.85rem;color:#fde68a">יש להוסיף עובדים דרך טאב "👥 ניהול עובדים" לפני יצירת סידור.</div>
+    </div>`;
+    return;
+  }
+
+  // רשימת עובדים
+  const workerListHTML=`<div class="card">
+    <div style="font-weight:800;color:${site.color};margin-bottom:.5rem">👥 עובדים (${totalWorkers})</div>
+    <div style="display:flex;flex-wrap:wrap;gap:.4rem">
+      ${bashalList.map(n=>`<span style="background:${site.color}20;color:${site.color};border:1px solid ${site.color}50;padding:.2rem .55rem;border-radius:5px;font-size:.75rem">⭐ ${n}</span>`).join('')}
+      ${studentList.map(n=>`<span style="background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.35);padding:.2rem .55rem;border-radius:5px;font-size:.75rem">🎓 ${n}</span>`).join('')}
+    </div>
+  </div>`;
+
+  // תצוגת סידור — אם קיים
+  let schedHTML='';
+  if(siteReady){
+    const activeDays=NEXT_MONTH_DAYS;
+    const weeks=getWeeks(activeDays);
+    schedHTML=weeks.map((wk,wi)=>{
+      const headers=wk.map(d=>{const h=d.holiday;return`<th style="min-width:72px;background:${h?HOLIDAY_COLORS[h.type]||`${site.color}15`:d.isWeekend?`${site.color}10`:'#080c14'}"><div style="font-weight:800;color:${h?HOLIDAY_TEXT[h.type]:d.isWeekend?'#fcd34d':'#e2e8f0'};font-size:.68rem">${HEB_DAYS[d.jsDay]}</div><div style="font-size:.55rem;color:#64748b">${d.label}</div></th>`;}).join('');
+      // משמרות: בוקר/ערב חובה, לילה רשות
+      const siteShifts=site.nightOptional?[{key:'a',label:'א׳ בוקר'},{key:'b',label:'ב׳ ערב'},{key:'c',label:'ג׳ לילה (רשות)'}]:[{key:'a',label:'א׳ בוקר'},{key:'b',label:'ב׳ ערב'}];
+      const rows=siteShifts.map(sh=>`<tr><td style="background:#080c14;position:sticky;right:0;z-index:1;white-space:nowrap;padding:.35rem .4rem;min-width:70px"><div style="font-weight:700;color:#e2e8f0;font-size:.68rem">${sh.label}</div></td>${wk.map(d=>{
+        const sk=`${d.day}-${d.month}`;const slot=siteSched[sk]||{};
+        const entries=Object.entries(slot).filter(([k,v])=>v&&k.startsWith(sh.key+'_'));
+        const cells=entries.map(([k,v])=>{
+          const conflict=hasCommanderConflict(v,d.day,d.month);
+          const conflictMark=conflict?' ⚠️':'';
+          return`<div class="cell-inner" style="background:${site.color}15;border-color:${site.color}60;cursor:pointer" onclick="openSiteCellModal('${siteKey}','${sk}','${k}')" title="${conflict?'התנגשות עם סידור מפקדים!':''}"><div style="color:${site.color};font-size:.7rem">${v}${conflictMark}</div></div>`;
+        }).join('');
+        return`<td style="min-width:72px;background:${d.isWeekend?`${site.color}08`:'transparent'}">${cells}<div class="cell-inner" style="background:transparent;border-color:${site.color}30;cursor:pointer" onclick="openSiteAddModal('${siteKey}','${sk}','${sh.key}')"><div style="color:${site.color}60;font-size:.65rem;text-align:center">＋</div></div></td>`;
+      }).join('')}</tr>`).join('');
+      return`<div style="margin-bottom:1rem"><div style="font-size:.68rem;color:#64748b;margin-bottom:.3rem">שבוע ${wi+1}</div><div class="week-table-wrap"><table><thead><tr><th style="background:#080c14;position:sticky;right:0;z-index:3;min-width:70px;border:none"></th>${headers}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    }).join('');
+  } else {
+    schedHTML=`<div style="text-align:center;color:#475569;padding:2rem">לחץ ⚡ צור סידור כדי להתחיל</div>`;
+  }
+
+  el.innerHTML=btns+workerListHTML+schedHTML;
+}
+
+// ייצור סידור בסיסי לחמ"ל חדש — חלוקה שווה בין עובדים
+function generateSiteSchedule(siteKey){
+  const site=SITES[siteKey];
+  const bashalList=siteKey==='tavor'?TAVOR_BASHAL:PLILI_BASHAL;
+  const studentList=siteKey==='tavor'?TAVOR_STUDENT:PLILI_STUDENT;
+  const allWorkers=[...bashalList,...studentList];
+  if(allWorkers.length===0){toast('❌ אין עובדים — הוסף תחילה דרך "ניהול עובדים"');return;}
+  if(!confirm(`ליצור סידור חדש ל-${site.label} עבור ${NEXT_MONTH_LABEL}?`))return;
+
+  const sched={};
+  const days=NEXT_MONTH_DAYS.filter(d=>d.month===CONS_MONTH&&d.year===CONS_YEAR);
+  const allC=window._allC_next||{};
+  const allV=get_allV();
+
+  // בדיקת חסימה פשוטה
+  const isBlocked=(name,day,month,shKey)=>{
+    if(allV.some(v=>v.status==='approved'&&v.worker===name&&v.days?.some(dd=>dd.day===day&&dd.month===month)))return true;
+    const cons=allC[name]?.constraints||[];
+    if(cons.some(x=>x.day===day&&x.month===month&&x.shiftKey===shKey&&x.type==='block'))return true;
+    return false;
+  };
+
+  // ספירת משמרות לכל עובד — לאיזון
+  const workerShifts={};
+  allWorkers.forEach(n=>workerShifts[n]=0);
+
+  // חלוקה: בוקר + ערב בכל יום, 2 עובדים לכל משמרת (יותר אם יש)
+  days.forEach(d=>{
+    const sk=`${d.day}-${d.month}`;
+    sched[sk]={};
+    ['a','b'].forEach(shKey=>{
+      // סדר עובדים לפי כמות משמרות (פחות ראשון)
+      const available=allWorkers.filter(n=>!isBlocked(n,d.day,d.month,shKey))
+        .sort((a,b)=>workerShifts[a]-workerShifts[b]);
+      // 2 עובדים לכל משמרת
+      const assigned=available.slice(0,Math.min(2,available.length));
+      assigned.forEach((n,i)=>{
+        sched[sk][`${shKey}_w${i+1}`]=n;
+        workerShifts[n]++;
+      });
+    });
+  });
+
+  window[`_schedule_${siteKey}`]=sched;
+  setSyncing(true);
+  window._fbSet(`schedule_${siteKey}_${CONS_MONTH}_${CONS_YEAR}`,{schedule:sched,ready:true,official:false}).then(()=>{
+    setSyncing(false);
+    toast(`✅ סידור ${site.shortLabel} נוצר!`);
+    renderMgrSchedSite(siteKey);
+  });
+}
+
+function makeSiteOfficial(siteKey){
+  if(!confirm(`להגדיר את סידור ${SITES[siteKey].shortLabel} כרשמי?`))return;
+  const sched=window[`_schedule_${siteKey}`]||{};
+  setSyncing(true);
+  window._fbSet(`schedule_${siteKey}_${CONS_MONTH}_${CONS_YEAR}`,{schedule:sched,ready:true,official:true}).then(()=>{
+    setSyncing(false);
+    toast('📌 הוגדר כרשמי!');
+    renderMgrSchedSite(siteKey);
+  });
+}
+
+// פתיחת modal לעריכת תא
+function openSiteCellModal(siteKey,sk,field){
+  const site=SITES[siteKey];
+  const bashalList=siteKey==='tavor'?TAVOR_BASHAL:PLILI_BASHAL;
+  const studentList=siteKey==='tavor'?TAVOR_STUDENT:PLILI_STUDENT;
+  const pool=[...bashalList.map(n=>({name:n,type:'bashal'})),...studentList.map(n=>({name:n,type:'student'}))];
+  const sched=window[`_schedule_${siteKey}`]||{};
+  const current=(sched[sk]||{})[field];
+  g('modal-box').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem"><div style="font-weight:900;font-size:.9rem">✏️ ${site.shortLabel} — ${sk}</div><button onclick="closeModal()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:1.3rem">✕</button></div><div style="display:flex;flex-direction:column;gap:.3rem;margin-bottom:.6rem">${pool.map(r=>{const escN=String(r.name).replace(/"/g,'&quot;');return`<button data-name="${escN}" onclick="siteCellSet('${siteKey}','${sk}','${field}',this.dataset.name)" style="text-align:right;padding:.4rem .6rem;border-radius:7px;border:1px solid ${site.color}40;background:${current===r.name?'#1e3a5f':'#0f1623'};color:#e2e8f0;cursor:pointer;font-family:Heebo,sans-serif"><span style="color:${site.color};font-weight:700">${escN}</span> <span style="font-size:.62rem;color:#94a3b8">${r.type==='bashal'?'⭐ בש"ל':'🎓 סטודנט'}</span></button>`;}).join('')}</div><button data-name="" onclick="siteCellSet('${siteKey}','${sk}','${field}',null)" style="width:100%;background:rgba(220,38,38,.1);color:#fca5a5;border:1px solid rgba(220,38,38,.25);padding:.5rem;border-radius:7px;cursor:pointer;font-family:Heebo,sans-serif">🗑 פנה תא</button>`;
+  g('modal').classList.add('show');
+}
+
+function siteCellSet(siteKey,sk,field,name){
+  const sched=window[`_schedule_${siteKey}`]||{};
+  const newSlot={...(sched[sk]||{}),[field]:name||null};
+  const newSched={...sched,[sk]:newSlot};
+  window[`_schedule_${siteKey}`]=newSched;
+  setSyncing(true);
+  window._fbSet(`schedule_${siteKey}_${CONS_MONTH}_${CONS_YEAR}`,{schedule:newSched,ready:true,official:false}).then(()=>setSyncing(false));
+  closeModal();
+  toast(name?`✏️ ${name}`:'🗑 תא פונה');
+  renderMgrSchedSite(siteKey);
+}
+
+function openSiteAddModal(siteKey,sk,shKey){
+  const site=SITES[siteKey];
+  const sched=window[`_schedule_${siteKey}`]||{};
+  const slot=sched[sk]||{};
+  // מצא field חדש
+  let i=1;while(slot[`${shKey}_w${i}`])i++;
+  openSiteCellModal(siteKey,sk,`${shKey}_w${i}`);
+}
+
+// ══════════════════════ סידור מפקדים ══════════════════════
+function renderMgrCommandersSched(){
+  const el=g('mgr-panel-commanders');if(!el)return;
+  const site=SITES.commanders;
+  const sched=window._schedule_commanders||{};
+  const ready=Object.keys(sched).length>0;
+
+  const btns=`<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;align-items:center">
+    <div style="font-size:.78rem;font-weight:700;color:${site.color};background:${site.color}20;border:1px solid ${site.color}50;padding:.25rem .6rem;border-radius:6px">${site.label} — ${NEXT_MONTH_LABEL}</div>
+    <button class="btn" style="background:${site.color}30;color:${site.color};border:1px solid ${site.color}60;font-size:.88rem;padding:.55rem 1rem" onclick="generateCommandersSchedule()">⚡ צור סידור מפקדים</button>
+    ${ready?`<button class="btn" style="background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.4);font-size:.78rem" onclick="makeCommandersOfficial()">📌 הגדר כרשמי</button>`:''}
+  </div>`;
+
+  if(COMMANDERS.length===0){
+    el.innerHTML=btns+`<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:1.5rem;text-align:center;color:#fcd34d">
+      <div style="font-size:1.1rem;font-weight:900;margin-bottom:.5rem">⚠️ אין מפקדים בסידור</div>
+      <div style="font-size:.85rem;color:#fde68a">יש להוסיף מפקדים דרך טאב "👥 ניהול עובדים".</div>
+    </div>`;
+    return;
+  }
+
+  // רשימת מפקדים
+  const cmdrListHTML=`<div class="card">
+    <div style="font-weight:800;color:${site.color};margin-bottom:.5rem">👮 מפקדים (${COMMANDERS.length})</div>
+    <div style="display:flex;flex-wrap:wrap;gap:.4rem">
+      ${COMMANDERS.map(n=>{
+        const alsoIn=getWorkerSite(n);
+        const alsoBadge=alsoIn?` <span style="font-size:.6rem;color:#fcd34d">(גם ב-${SITES[alsoIn].shortLabel})</span>`:'';
+        return`<span style="background:${site.color}20;color:${site.color};border:1px solid ${site.color}50;padding:.2rem .55rem;border-radius:5px;font-size:.75rem">${n}${alsoBadge}</span>`;
+      }).join('')}
+    </div>
+  </div>`;
+
+  // תצוגת סידור
+  let schedHTML='';
+  if(ready){
+    const activeDays=NEXT_MONTH_DAYS.filter(d=>d.month===CONS_MONTH&&d.year===CONS_YEAR);
+    const weeks=getWeeks(activeDays);
+    // בדיקת התנגשויות
+    const conflicts=detectCommanderConflicts();
+    const conflictBanner=conflicts.length>0?`<div style="background:rgba(245,158,11,.12);border:2px solid rgba(245,158,11,.5);border-radius:10px;padding:.75rem 1rem;margin-bottom:.75rem">
+      <div style="font-weight:900;color:#fcd34d;margin-bottom:.3rem">⚠️ ${conflicts.length} התנגשויות — מפקד מופיע בשני סידורים באותו יום</div>
+      <div style="font-size:.75rem;color:#fde68a">${conflicts.slice(0,5).map(c=>`${c.name} ב-${c.day}/${c.month} (${SITES[c.otherSite].shortLabel})`).join(' • ')}${conflicts.length>5?` ועוד ${conflicts.length-5}...`:''}</div>
+    </div>`:'';
+
+    schedHTML=conflictBanner+weeks.map((wk,wi)=>{
+      const headers=wk.map(d=>{const h=d.holiday;return`<th style="min-width:72px;background:${h?HOLIDAY_COLORS[h.type]||`${site.color}15`:d.isWeekend?`${site.color}10`:'#080c14'}"><div style="font-weight:800;color:${h?HOLIDAY_TEXT[h.type]:d.isWeekend?'#fcd34d':'#e2e8f0'};font-size:.68rem">${HEB_DAYS[d.jsDay]}</div><div style="font-size:.55rem;color:#64748b">${d.label}</div></th>`;}).join('');
+      // מפקדים: רק א' ו-ב'
+      const cmdrShifts=[{key:'a',label:'א׳ בוקר'},{key:'b',label:'ב׳ ערב'}];
+      const rows=cmdrShifts.map(sh=>`<tr><td style="background:#080c14;position:sticky;right:0;z-index:1;white-space:nowrap;padding:.35rem .4rem;min-width:70px"><div style="font-weight:700;color:#e2e8f0;font-size:.68rem">${sh.label}</div></td>${wk.map(d=>{
+        const sk=`${d.day}-${d.month}`;const slot=sched[sk]||{};
+        const entries=Object.entries(slot).filter(([k,v])=>v&&k.startsWith(sh.key+'_'));
+        const cells=entries.map(([k,v])=>{
+          const conflict=hasCommanderConflict(v,d.day,d.month);
+          const conflictMark=conflict?' ⚠️':'';
+          const bg=conflict?'rgba(245,158,11,.2)':`${site.color}15`;
+          const border=conflict?'rgba(245,158,11,.6)':`${site.color}60`;
+          return`<div class="cell-inner" style="background:${bg};border-color:${border};cursor:pointer" onclick="openCommanderCellModal('${sk}','${k}')" title="${conflict?'⚠️ התנגשות!':''}"><div style="color:${conflict?'#fcd34d':site.color};font-size:.7rem">${v}${conflictMark}</div></div>`;
+        }).join('');
+        return`<td style="min-width:72px;background:${d.isWeekend?`${site.color}08`:'transparent'}">${cells}<div class="cell-inner" style="background:transparent;border-color:${site.color}30;cursor:pointer" onclick="openCommanderAddModal('${sk}','${sh.key}')"><div style="color:${site.color}60;font-size:.65rem;text-align:center">＋</div></div></td>`;
+      }).join('')}</tr>`).join('');
+      return`<div style="margin-bottom:1rem"><div style="font-size:.68rem;color:#64748b;margin-bottom:.3rem">שבוע ${wi+1}</div><div class="week-table-wrap"><table><thead><tr><th style="background:#080c14;position:sticky;right:0;z-index:3;min-width:70px;border:none"></th>${headers}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    }).join('');
+  } else {
+    schedHTML=`<div style="text-align:center;color:#475569;padding:2rem">לחץ ⚡ צור סידור כדי להתחיל</div>`;
+  }
+
+  el.innerHTML=btns+cmdrListHTML+schedHTML;
+}
+
+function generateCommandersSchedule(){
+  if(COMMANDERS.length===0){toast('❌ אין מפקדים');return;}
+  if(!confirm(`ליצור סידור מפקדים חדש ל-${NEXT_MONTH_LABEL}?`))return;
+
+  const sched={};
+  const days=NEXT_MONTH_DAYS.filter(d=>d.month===CONS_MONTH&&d.year===CONS_YEAR);
+  const allV=get_allV();
+  const workerShifts={};
+  COMMANDERS.forEach(n=>workerShifts[n]=0);
+
+  const isBlocked=(name,day,month)=>allV.some(v=>v.status==='approved'&&v.worker===name&&v.days?.some(dd=>dd.day===day&&dd.month===month));
+
+  days.forEach(d=>{
+    const sk=`${d.day}-${d.month}`;
+    sched[sk]={};
+    ['a','b'].forEach(shKey=>{
+      const available=COMMANDERS.filter(n=>!isBlocked(n,d.day,d.month))
+        .sort((a,b)=>workerShifts[a]-workerShifts[b]);
+      // מפקד אחד לכל משמרת
+      if(available.length>0){
+        sched[sk][`${shKey}_cmdr`]=available[0];
+        workerShifts[available[0]]++;
+      }
+    });
+  });
+
+  window._schedule_commanders=sched;
+  setSyncing(true);
+  window._fbSet(`schedule_commanders_${CONS_MONTH}_${CONS_YEAR}`,{schedule:sched,ready:true,official:false}).then(()=>{
+    setSyncing(false);
+    toast('✅ סידור מפקדים נוצר!');
+    renderMgrCommandersSched();
+  });
+}
+
+function makeCommandersOfficial(){
+  if(!confirm('להגדיר את סידור המפקדים כרשמי?'))return;
+  const sched=window._schedule_commanders||{};
+  setSyncing(true);
+  window._fbSet(`schedule_commanders_${CONS_MONTH}_${CONS_YEAR}`,{schedule:sched,ready:true,official:true}).then(()=>{
+    setSyncing(false);
+    toast('📌 סידור מפקדים הוגדר כרשמי!');
+    renderMgrCommandersSched();
+  });
+}
+
+function openCommanderCellModal(sk,field){
+  const sched=window._schedule_commanders||{};
+  const current=(sched[sk]||{})[field];
+  g('modal-box').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem"><div style="font-weight:900;font-size:.9rem">✏️ מפקד — ${sk}</div><button onclick="closeModal()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:1.3rem">✕</button></div><div style="display:flex;flex-direction:column;gap:.3rem;margin-bottom:.6rem">${COMMANDERS.map(n=>{const escN=String(n).replace(/"/g,'&quot;');const conflict=hasCommanderConflict(n,parseInt(sk.split('-')[0]),parseInt(sk.split('-')[1]));return`<button data-name="${escN}" onclick="commanderCellSet('${sk}','${field}',this.dataset.name)" style="text-align:right;padding:.4rem .6rem;border-radius:7px;border:1px solid rgba(139,92,246,.4);background:${current===n?'#1e3a5f':'#0f1623'};color:#e2e8f0;cursor:pointer;font-family:Heebo,sans-serif"><span style="color:#c4b5fd;font-weight:700">${escN}</span>${conflict?' <span style="font-size:.65rem;color:#fcd34d">⚠️ מופיע בחמ"ל אחר</span>':''}</button>`;}).join('')}</div><button data-name="" onclick="commanderCellSet('${sk}','${field}',null)" style="width:100%;background:rgba(220,38,38,.1);color:#fca5a5;border:1px solid rgba(220,38,38,.25);padding:.5rem;border-radius:7px;cursor:pointer;font-family:Heebo,sans-serif">🗑 פנה תא</button>`;
+  g('modal').classList.add('show');
+}
+
+function commanderCellSet(sk,field,name){
+  const sched=window._schedule_commanders||{};
+  const newSlot={...(sched[sk]||{}),[field]:name||null};
+  const newSched={...sched,[sk]:newSlot};
+  window._schedule_commanders=newSched;
+  setSyncing(true);
+  window._fbSet(`schedule_commanders_${CONS_MONTH}_${CONS_YEAR}`,{schedule:newSched,ready:true,official:false}).then(()=>setSyncing(false));
+  closeModal();
+  // הקפצת אזהרה אם יש התנגשות
+  if(name){
+    const [d,m]=sk.split('-').map(Number);
+    const conflict=hasCommanderConflict(name,d,m);
+    if(conflict){
+      setTimeout(()=>{
+        alert(`⚠️ אזהרה: ${name} מופיע/ה גם בסידור של ${SITES[conflict].label} באותו יום (${d}/${m}).\nזוהי אזהרה בלבד — ההחלטה בידיך.`);
+      },100);
+    }
+  }
+  toast(name?`✏️ ${name}`:'🗑 תא פונה');
+  renderMgrCommandersSched();
+}
+
+function openCommanderAddModal(sk,shKey){
+  const sched=window._schedule_commanders||{};
+  const slot=sched[sk]||{};
+  let i=1;while(slot[`${shKey}_cmdr${i>1?i:''}`])i++;
+  openCommanderCellModal(sk,`${shKey}_cmdr${i>1?i:''}`);
+}
+
+// ══════════════════════ זיהוי התנגשויות מפקדים ══════════════════════
+// בודק אם מפקד נתון מופיע באותו יום גם בחמ"ל אחר
+function hasCommanderConflict(name,day,month){
+  if(!isCommander(name))return null;
+  const sk=`${day}-${month}`;
+  // בדוק את סידורי כל החמ"לים (לא כולל מפקדים)
+  const schedules={
+    jerusalem:window._schedule_next||{},
+    carmel:window._choufSched_next||window._choufSched||{},
+    tavor:window._schedule_tavor||{},
+    plili:window._schedule_plili||{}
+  };
+  for(const [siteKey,sched] of Object.entries(schedules)){
+    const slot=sched[sk]||{};
+    if(Object.values(slot).includes(name))return siteKey;
+  }
+  // גם צד שני: אם קורה בחמ"ל וקיים גם בסידור מפקדים
+  const cmdrSched=window._schedule_commanders||{};
+  const cmdrSlot=cmdrSched[sk]||{};
+  if(Object.values(cmdrSlot).includes(name)){
+    // חפש בחמ"לים
+    for(const [siteKey,sched] of Object.entries(schedules)){
+      const slot=sched[sk]||{};
+      if(Object.values(slot).includes(name))return siteKey;
+    }
+  }
+  return null;
+}
+
+function detectCommanderConflicts(){
+  const conflicts=[];
+  const cmdrSched=window._schedule_commanders||{};
+  const schedules={
+    jerusalem:window._schedule_next||{},
+    carmel:window._choufSched_next||window._choufSched||{},
+    tavor:window._schedule_tavor||{},
+    plili:window._schedule_plili||{}
+  };
+  Object.entries(cmdrSched).forEach(([sk,slot])=>{
+    const cmdrsToday=new Set(Object.values(slot).filter(Boolean));
+    cmdrsToday.forEach(name=>{
+      for(const [siteKey,sched] of Object.entries(schedules)){
+        const otherSlot=sched[sk]||{};
+        if(Object.values(otherSlot).includes(name)){
+          const [day,month]=sk.split('-').map(Number);
+          conflicts.push({name,day,month,otherSite:siteKey});
+          break;
+        }
+      }
+    });
+  });
+  return conflicts;
+}
+
 function toggleChoufView(){mgrChoufView=mgrChoufView==='week'?'month':'week';renderMgrSchedChouf();}
 function toggleChoufMonth(){window._choufViewMonth=(window._choufViewMonth==='next'?'curr':'next');mgrChoufWeek=0;renderMgrSchedChouf();}
 function runGenerateChoufForMonth(){
